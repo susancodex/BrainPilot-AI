@@ -1,0 +1,48 @@
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+
+from .serializers import (
+    ConversationSerializer, ConversationDetailSerializer,
+    MessageSerializer, SendMessageSerializer,
+)
+from .services import ChatService
+from common.responses import success_response, created_response
+
+
+class ConversationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        conversations = ChatService.get_user_conversations(request.user)
+        return success_response(data=ConversationSerializer(conversations, many=True).data)
+
+
+class ConversationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        conversation = ChatService.get_conversation(request.user, pk)
+        return success_response(data=ConversationDetailSerializer(conversation).data)
+
+    def delete(self, request, pk):
+        conversation = ChatService.get_conversation(request.user, pk)
+        conversation.is_active = False
+        conversation.save(update_fields=["is_active"])
+        return success_response(message="Conversation archived.")
+
+
+class SendMessageView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = SendMessageSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = ChatService.send_message(
+            request.user,
+            content=serializer.validated_data["content"],
+            conversation_id=serializer.validated_data.get("conversation_id"),
+        )
+        return success_response(data={
+            "conversation_id": result["conversation_id"],
+            "message": MessageSerializer(result["message"]).data,
+        })

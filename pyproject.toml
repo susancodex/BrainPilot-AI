@@ -1,0 +1,24 @@
+[project]
+name = "repl-nix-workspace"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "celery>=5.6.3",
+    "dj-database-url>=3.1.2",
+    "django>=6.0.5",
+    "django-cors-headers>=4.9.0",
+    "django-filter>=25.2",
+    "django-redis>=6.0.0",
+    "djangorestframework>=3.17.1",
+    "djangorestframework-simplejwt>=5.5.1",
+    "google-generativeai>=0.8.6",
+    "gunicorn>=26.0.0",
+    "pillow>=12.2.0",
+    "psycopg2-binary>=2.9.12",
+    "python-dateutil>=2.9.0.post0",
+    "python-dotenv>=1.2.2",
+    "redis>=8.0.0",
+    "tenacity>=9.1.4",
+    "whitenoise>=6.12.0",
+]

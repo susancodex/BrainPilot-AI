@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: brainpilot_db
+      POSTGRES_USER: brainpilot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localpassword}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  api:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://brainpilot:${POSTGRES_PASSWORD:-localpassword}@db:5432/brainpilot_db
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./logs:/app/logs
+      - ./media:/app/media
+
+  celery:
+    build: .
+    command: celery -A config.celery worker --loglevel=info --concurrency=2
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://brainpilot:${POSTGRES_PASSWORD:-localpassword}@db:5432/brainpilot_db
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+  celery-beat:
+    build: .
+    command: celery -A config.celery beat --loglevel=info
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://brainpilot:${POSTGRES_PASSWORD:-localpassword}@db:5432/brainpilot_db
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  postgres_data:

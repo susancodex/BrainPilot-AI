@@ -35,7 +35,9 @@ class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = AuthService.register_user(**serializer.validated_data)
+        data = serializer.validated_data.copy()
+        data.pop("password_confirm", None)
+        user = AuthService.register_user(**data)
         return created_response(
             data=UserSerializer(user).data,
             message="Account created. Please verify your email.",

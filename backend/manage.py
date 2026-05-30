@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 import os
 import sys
+from pathlib import Path
 
 
 def main():
+    backend_dir = str(Path(__file__).resolve().parent)
+    if backend_dir not in sys.path:
+        sys.path.insert(0, backend_dir)
+
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.development")
     try:
         from django.core.management import execute_from_command_line

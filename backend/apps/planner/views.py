@@ -60,6 +60,15 @@ class GenerateAIPlanView(APIView):
         return created_response(data=StudyPlanSerializer(plan).data, message="AI study plan generated.")
 
 
+class StudySessionListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        date_filter = request.query_params.get("date")
+        sessions = PlannerService.get_user_sessions(request.user, date=date_filter)
+        return success_response(data=StudySessionSerializer(sessions, many=True).data)
+
+
 class StudySessionUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 

@@ -94,8 +94,11 @@ class AuthService:
         user.password_reset_expires = timezone.now() + timedelta(hours=2)
         user.save(update_fields=["password_reset_token", "password_reset_expires"])
 
-        from apps.accounts.tasks import send_password_reset_email
-        send_password_reset_email.delay(user.id, token)
+        try:
+            from apps.accounts.tasks import send_password_reset_email
+            send_password_reset_email.delay(user.id, token)
+        except Exception:
+            logger.warning("Could not queue password reset email for %s (broker unavailable)", user.email)
 
     @staticmethod
     def confirm_password_reset(token: str, new_password: str) -> User:
@@ -123,8 +126,11 @@ class AuthService:
             token=token,
             expires_at=timezone.now() + timedelta(hours=24),
         )
-        from apps.accounts.tasks import send_verification_email
-        send_verification_email.delay(user.id, token)
+        try:
+            from apps.accounts.tasks import send_verification_email
+            send_verification_email.delay(user.id, token)
+        except Exception:
+            logger.warning("Could not queue verification email for %s (broker unavailable)", user.email)
 
 
 class UserProfileService:

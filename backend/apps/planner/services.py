@@ -72,6 +72,13 @@ class PlannerService:
         return session
 
     @staticmethod
+    def get_user_sessions(user, date=None):
+        qs = StudySession.objects.filter(plan__user=user).select_related("plan")
+        if date:
+            qs = qs.filter(scheduled_date=date)
+        return qs
+
+    @staticmethod
     def reschedule_session(user, session_id, new_date: date) -> StudySession:
         try:
             session = StudySession.objects.select_related("plan").get(id=session_id, plan__user=user)

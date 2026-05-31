@@ -4,10 +4,9 @@ from rest_framework.views import APIView
 from .models import Note
 from .serializers import (
     NoteSerializer, NoteListSerializer, FlashcardSerializer,
-    GenerateSummarySerializer, GenerateFlashcardsSerializer,
+    GenerateFlashcardsSerializer,
 )
 from .services import NoteService
-from services.ai_engine.workflows.study_planner_workflow import StudyPlannerWorkflow
 from common.responses import success_response, created_response
 
 
@@ -53,12 +52,11 @@ class GenerateNoteSummaryView(APIView):
 
     def post(self, request, pk):
         note = NoteService.get_note(request.user, pk)
-        from services.ai_engine.adapters.gemini_adapter import GeminiAdapter
-        from services.ai_engine.prompts.summary_generation import build_summary_prompt
-        adapter = GeminiAdapter()
-        summary = adapter.generate_text(build_summary_prompt(note.content))
-        note = NoteService.save_ai_summary(note, summary)
-        return success_response(data={"summary": note.ai_summary}, message="Summary generated.")
+        note = NoteService.generate_summary(note)
+        return success_response(
+            data={"summary": note.ai_summary, "generated_at": note.summary_generated_at},
+            message="Summary generated.",
+        )
 
 
 class GenerateFlashcardsView(APIView):
@@ -66,13 +64,14 @@ class GenerateFlashcardsView(APIView):
 
     def post(self, request, pk):
         note = NoteService.get_note(request.user, pk)
-        count = request.data.get("count", 5)
-        from services.ai_engine.adapters.gemini_adapter import GeminiAdapter
-        from services.ai_engine.prompts.summary_generation import build_flashcards_prompt
-        adapter = GeminiAdapter()
-        flashcards_data = adapter.generate_json(build_flashcards_prompt(note.content, count))
-        flashcards = NoteService.save_flashcards(request.user, note, flashcards_data.get("flashcards", []))
-        return created_response(data=FlashcardSerializer(flashcards, many=True).data, message="Flashcards generated.")
+        serializer = GenerateFlashcardsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        count = serializer.validated_data.get("count", 5)
+        flashcards = NoteService.generate_flashcards(request.user, note, count=count)
+        return created_response(
+            data=FlashcardSerializer(flashcards, many=True).data,
+            message=f"{len(flashcards)} flashcard(s) generated.",
+        )
 
 
 class FlashcardDueView(APIView):
@@ -87,6 +86,6 @@ class FlashcardReviewView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
-        correct = request.data.get("correct", False)
+        correct = bool(request.data.get("correct", False))
         flashcard = NoteService.review_flashcard(request.user, pk, correct)
         return success_response(data=FlashcardSerializer(flashcard).data)

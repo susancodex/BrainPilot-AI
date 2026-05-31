@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 from django.utils import timezone
 from .models import Note, Flashcard
 from common.exceptions import NotFoundError
@@ -28,6 +29,50 @@ class NoteService:
         return Note.objects.create(user=user, **data)
 
     @staticmethod
+    def generate_summary(note: Note) -> Note:
+        """Call Gemini to summarise note content, persist, and return updated note."""
+        from services.ai_engine.adapters.gemini_adapter import GeminiAdapter
+        from services.ai_engine.prompts.summary_generation import build_summary_prompt
+
+        adapter = GeminiAdapter()
+        summary = adapter.generate_text(build_summary_prompt(note.content))
+        note.ai_summary = summary
+        note.summary_generated_at = timezone.now()
+        note.save(update_fields=["ai_summary", "summary_generated_at"])
+        logger.info("Summary generated for note %s (%d chars)", note.id, len(summary))
+        return note
+
+    @staticmethod
+    def generate_flashcards(user, note: Note, count: int = 5) -> list[Flashcard]:
+        """Call Gemini to generate flashcards from note content, persist, and return them."""
+        from services.ai_engine.adapters.gemini_adapter import GeminiAdapter
+        from services.ai_engine.prompts.summary_generation import build_flashcards_prompt
+
+        adapter = GeminiAdapter()
+        result = adapter.generate_json(build_flashcards_prompt(note.content, count))
+        raw_cards = result.get("flashcards", [])
+
+        allowed_fields = {"question", "answer", "difficulty"}
+        flashcards = []
+        for fc in raw_cards:
+            clean = {k: v for k, v in fc.items() if k in allowed_fields}
+            if not clean.get("question") or not clean.get("answer"):
+                continue
+            flashcards.append(
+                Flashcard.objects.create(
+                    user=user,
+                    note=note,
+                    subject=note.subject,
+                    question=clean["question"],
+                    answer=clean["answer"],
+                    difficulty=clean.get("difficulty", "medium"),
+                )
+            )
+
+        logger.info("Generated %d flashcards for note %s", len(flashcards), note.id)
+        return flashcards
+
+    @staticmethod
     def save_ai_summary(note: Note, summary: str) -> Note:
         note.ai_summary = summary
         note.summary_generated_at = timezone.now()
@@ -37,14 +82,17 @@ class NoteService:
     @staticmethod
     def save_flashcards(user, note: Note, flashcards_data: list) -> list[Flashcard]:
         created = []
+        allowed_fields = {"question", "answer", "difficulty"}
         for fc in flashcards_data:
-            flashcard = Flashcard.objects.create(
+            clean = {k: v for k, v in fc.items() if k in allowed_fields}
+            if not clean.get("question") or not clean.get("answer"):
+                continue
+            created.append(Flashcard.objects.create(
                 user=user,
                 note=note,
                 subject=note.subject,
-                **fc,
-            )
-            created.append(flashcard)
+                **clean,
+            ))
         return created
 
     @staticmethod
@@ -52,7 +100,7 @@ class NoteService:
         return Flashcard.objects.filter(
             user=user,
             next_review_at__lte=timezone.now(),
-        ).order_by("next_review_at")
+        ).select_related("note").order_by("next_review_at")
 
     @staticmethod
     def review_flashcard(user, flashcard_id, correct: bool) -> Flashcard:
@@ -65,8 +113,8 @@ class NoteService:
         if correct:
             fc.times_correct += 1
         fc.last_reviewed_at = timezone.now()
+        # Spaced repetition: correct answers double the interval (max 30 days), wrong resets to 1 day
         interval_days = 1 if not correct else min(2 ** (fc.times_correct - 1), 30)
-        from datetime import timedelta
         fc.next_review_at = timezone.now() + timedelta(days=interval_days)
         fc.save()
         return fc

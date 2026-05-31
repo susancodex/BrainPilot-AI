@@ -31,10 +31,5 @@ class NoteListSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "ai_summary", "created_at"]
 
 
-class GenerateSummarySerializer(serializers.Serializer):
-    note_id = serializers.UUIDField()
-
-
 class GenerateFlashcardsSerializer(serializers.Serializer):
-    note_id = serializers.UUIDField()
     count = serializers.IntegerField(min_value=1, max_value=20, default=5)

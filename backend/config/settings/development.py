@@ -25,3 +25,7 @@ CACHES = {
 }
 
 LOGGING["root"]["level"] = "DEBUG"
+
+for logger_config in LOGGING.get("loggers", {}).values():
+    logger_config["handlers"] = [h for h in logger_config.get("handlers", []) if h == "console"]
+LOGGING["handlers"] = {"console": LOGGING["handlers"]["console"]}

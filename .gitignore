@@ -1,49 +1,61 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
-
-# compiled output
+# ── Node / TypeScript ─────────────────────────────────────────────────────────
 dist
 tmp
 out-tsc
 *.tsbuildinfo
+node_modules
 .expo
 .expo-shared
 
-# dependencies
-node_modules
+# ── Python / Django ───────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pythonlibs/
+.venv/
+venv/
+env/
 
-# IDEs and editors
-/.idea
+# Django runtime
+backend/staticfiles/
+backend/media/
+backend/logs/*.log
+db.sqlite3
+db.sqlite3-journal
+
+# uv / pip cache
+uv.lock
+.cache/
+pip-log.txt
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# ── IDEs ──────────────────────────────────────────────────────────────────────
+.idea/
 .project
 .classpath
 .c9/
 *.launch
 .settings/
 *.sublime-workspace
-
-# IDE - VSCode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# misc
+# ── Misc ──────────────────────────────────────────────────────────────────────
 /.sass-cache
 /connect.lock
 /coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
-
-# System Files
 .DS_Store
 Thumbs.db
 
-.cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
-
-# Replit
+# ── Replit (internal — never ignore) ─────────────────────────────────────────
 .cache/
 .local/

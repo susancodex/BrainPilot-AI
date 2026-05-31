@@ -24,8 +24,30 @@ CACHES = {
     }
 }
 
-LOGGING["root"]["level"] = "DEBUG"
-
-for logger_config in LOGGING.get("loggers", {}).values():
-    logger_config["handlers"] = [h for h in logger_config.get("handlers", []) if h == "console"]
-LOGGING["handlers"] = {"console": LOGGING["handlers"]["console"]}
+# Development: console-only logging (no file handlers needed)
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "DEBUG",
+    },
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "django.db.backends": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "apps": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        "services": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+    },
+}

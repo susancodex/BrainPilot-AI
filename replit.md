@@ -1,70 +1,114 @@
 # BrainPilot AI
 
-An AI-powered study companion SaaS backend — helps students plan, revise, quiz themselves, and track their academic progress with Gemini AI.
+An AI-powered study companion SaaS backend — helps students plan, revise, quiz themselves, and track academic progress using Google Gemini.
 
 ## Run & Operate
 
-- The Django API server runs automatically via the `artifacts/api-server: API Server` workflow
+- The Django API server runs automatically via the **`BrainPilot Django Backend`** workflow
 - Health check: `GET /api/v1/health/`
-- All endpoints are under `/api/v1/`
+- All endpoints are prefixed with `/api/v1/`
 
-### Manual dev run (from workspace root):
+### Dev server (from `backend/`):
 ```bash
-PYTHONPATH=/home/runner/workspace/backend DJANGO_SETTINGS_MODULE=config.settings.development python /home/runner/workspace/backend/manage.py runserver 0.0.0.0:8000
-```
-
-### Django management:
-```bash
-cd backend && PYTHONPATH=. DJANGO_SETTINGS_MODULE=config.settings.development python manage.py <command>
+make run
+# or manually:
+cd backend && bash run_dev.sh
 ```
 
 ### Migrations:
 ```bash
-cd backend && PYTHONPATH=. DJANGO_SETTINGS_MODULE=config.settings.development python manage.py makemigrations
-cd backend && PYTHONPATH=. DJANGO_SETTINGS_MODULE=config.settings.development python manage.py migrate
+cd backend && make migrate
+cd backend && make makemigrations
+```
+
+### Django shell:
+```bash
+cd backend && make shell
+```
+
+### All dev commands:
+```bash
+cd backend && make help
 ```
 
 ## Stack
 
-- **Runtime**: Python 3.12, Django 6, Django REST Framework
-- **DB**: PostgreSQL (Replit managed) + Django ORM
-- **Auth**: JWT via `djangorestframework-simplejwt`
-- **AI**: Google Gemini (`google-genai` SDK) — `gemini-2.0-flash`
-- **Async**: Celery (eager mode in dev, needs Redis broker in prod)
-- **Server**: Django dev server (dev), Gunicorn (prod)
+| Layer | Technology |
+|-------|-----------|
+| Runtime | Python 3.12, Django 6 |
+| API | Django REST Framework |
+| Auth | JWT via `djangorestframework-simplejwt` |
+| AI | Google Gemini `gemini-2.5-flash` (`google-genai` SDK) |
+| DB | PostgreSQL (Replit managed) |
+| Async | Celery (eager/sync in dev, Redis broker in prod) |
+| Server | Django dev server (dev) / Gunicorn (prod) |
+| Static | WhiteNoise (prod) |
 
-## Where things live
+## Project Layout
 
 ```
 backend/
-  config/          — Django settings (base, development, production), URLs, WSGI
-  apps/            — 11 feature apps (accounts, planner, goals, revision, notes,
-                     quizzes, chatbot, analytics, productivity, dashboard, notifications)
-  services/        — Shared services: ai_engine (Gemini adapter, workflows, tasks)
-  common/          — Base models, exceptions, permissions, responses, pagination
-  requirements/    — base.txt, development.txt, production.txt
+├── apps/                   11 feature apps
+│   ├── accounts/           auth, JWT, user profiles
+│   ├── planner/            AI study plans + sessions
+│   ├── goals/              learning goals
+│   ├── revision/           spaced-repetition topics
+│   ├── notes/              rich notes
+│   ├── quizzes/            AI quiz generation + attempts
+│   ├── chatbot/            Gemini chat + SSE streaming
+│   ├── analytics/          study trend queries
+│   ├── productivity/       Pomodoro, focus logs, streaks
+│   ├── dashboard/          summary view
+│   └── notifications/      in-app alerts
+├── services/
+│   └── ai_engine/
+│       ├── adapters/       gemini_adapter.py — all Gemini calls
+│       ├── workflows/      quiz_workflow, study_planner_workflow
+│       ├── prompts/        quiz_generation, study_plan, quiz_feedback, summary_generation
+│       └── memory/         conversation_memory (system prompt builder)
+├── common/                 base models, exceptions, responses, pagination
+├── config/
+│   ├── settings/
+│   │   ├── base.py         shared settings
+│   │   ├── development.py  console logging, debug toolbar, eager Celery
+│   │   └── production.py   WhiteNoise, security headers, file logging to /tmp
+│   ├── urls.py             root URL conf
+│   ├── wsgi.py
+│   └── asgi.py
+├── scripts/
+│   └── start.sh            production Gunicorn startup (migrate → collectstatic → serve)
+├── requirements/
+│   ├── base.txt
+│   ├── development.txt
+│   └── production.txt
+├── Makefile                common dev commands
+├── .env.example            all env var documentation
+└── run_dev.sh              dev server entrypoint
 ```
 
-## Architecture decisions
+## AI-Powered Endpoints
 
-- **Django over Node**: user chose Python/Django for the backend; the existing Node.js `artifacts/api-server` artifact shell is kept but now runs Django on port 8000 via PYTHONPATH.
-- **11 apps**: each domain (auth, planner, goals, revision, notes, quizzes, chatbot, analytics, productivity, dashboard, notifications) is an independent Django app.
-- **Service layer pattern**: views are thin; all business logic lives in `services.py` per app. AI logic is in `services/ai_engine/`.
-- **Celery task dispatch is fault-tolerant**: `.delay()` calls are wrapped in try/except so the server gracefully degrades if no broker is available (development without Redis).
-- **PYTHONPATH must be set**: `backend/` must be on `PYTHONPATH` since the artifact workflow runs from the workspace root, not `backend/`. The artifact.toml sets `PYTHONPATH=/home/runner/workspace/backend`.
+| Endpoint | What Gemini does |
+|----------|-----------------|
+| `POST /api/v1/chatbot/send/` | Study assistant reply (full JSON response) |
+| `POST /api/v1/chatbot/send/stream/` | Same, streamed word-by-word via SSE |
+| `POST /api/v1/quizzes/generate/` | Generates MCQ + T/F + short answer quiz from topic or notes |
+| `POST /api/v1/quizzes/<id>/submit/` | Personalised coaching feedback after each attempt |
+| `POST /api/v1/planner/plans/generate/` | Builds daily/weekly/emergency schedule with spaced repetition |
 
-## API Endpoints (all under /api/v1/)
+## Full API Reference (all under `/api/v1/`)
 
-| Module | Path prefix |
-|--------|------------|
+| Module | Path |
+|--------|------|
 | Health | `health/` |
-| Auth | `auth/` (register, login, logout, me, me/profile, password/reset/) |
-| Planner | `planner/plans/`, `planner/sessions/` |
+| Auth | `auth/register/`, `auth/login/`, `auth/logout/`, `auth/me/`, `auth/me/profile/`, `auth/password/reset/` |
+| Token | `token/refresh/` |
+| Planner | `planner/plans/`, `planner/plans/generate/`, `planner/plans/<id>/`, `planner/sessions/`, `planner/sessions/<id>/` |
 | Goals | `goals/` |
 | Revision | `revision/topics/`, `revision/record/` |
 | Notes | `notes/` |
-| Quizzes | `quizzes/`, `quizzes/generate/`, `quizzes/<id>/submit/` |
-| Chatbot | `chatbot/conversations/`, `chatbot/send/` |
+| Quizzes | `quizzes/`, `quizzes/generate/`, `quizzes/<id>/`, `quizzes/<id>/submit/`, `quizzes/attempts/` |
+| Chatbot | `chatbot/conversations/`, `chatbot/conversations/<id>/`, `chatbot/send/`, `chatbot/send/stream/` |
 | Analytics | `analytics/trends/`, `analytics/subjects/`, `analytics/report/` |
 | Productivity | `productivity/pomodoro/`, `productivity/streak/`, `productivity/focus-logs/` |
 | Dashboard | `dashboard/summary/` |
@@ -72,18 +116,24 @@ backend/
 
 ## Required Env Vars
 
-- `DATABASE_URL` — PostgreSQL connection string (Replit managed)
-- `GEMINI_API_KEY` — Google AI API key (set in Replit secrets)
-- `SESSION_SECRET` — Django SECRET_KEY equivalent (set in Replit secrets)
+| Variable | Source | Notes |
+|----------|--------|-------|
+| `DATABASE_URL` | Replit managed | Auto-set in deployed env |
+| `GEMINI_API_KEY` | Replit Secrets | Get from aistudio.google.com |
+| `DJANGO_SECRET_KEY` | Replit Secrets | Generate with `get_random_secret_key()` |
+
+## Architecture Notes
+
+- **Service layer**: views are thin; all business logic in `services.py` per app; all AI logic in `services/ai_engine/`.
+- **SSE streaming**: `chatbot/send/stream/` uses Django `StreamingHttpResponse` + Gemini `generate_content_stream`. Events: `chunk`, `done`, `error`.
+- **Celery is fault-tolerant**: task `.delay()` calls are wrapped in try/except — server gracefully degrades without a Redis broker (expected in dev).
+- **PYTHONPATH**: `backend/` must be on `PYTHONPATH` since the workflow runs from the workspace root.
+- **Analytics app**: has no models — reads data cross-app from other tables.
 
 ## Gotchas
 
-- Always set `PYTHONPATH=/home/runner/workspace/backend` when running Django from workspace root.
-- `DJANGO_SETTINGS_MODULE=config.settings.development` for local dev.
-- Celery tasks will warn "broker unavailable" in dev — this is expected and non-fatal.
-- `analytics` app has no models — it reads data from other app tables.
-- Django takes ~10s to start (migrations check + app loading); the workflow health check allows for this.
+- `DJANGO_SETTINGS_MODULE=config.settings.development` must be set for dev.
+- Celery broker warnings in dev are expected and non-fatal.
+- Django takes ~5–10s to start on first boot (app registry + migration check).
 
 ## User preferences
-
-_Populate as you build — explicit user instructions worth remembering across sessions._

@@ -1,0 +1,2 @@
+- [BrainPilot architecture](brainpilot-arch.md) — Django backend in `backend/`, single canonical workflow is `artifacts/api-server: API Server` on port 8000
+- [Gemini integration](gemini-integration.md) — Python SDK `google-genai`, model `gemini-2.5-flash`, key in `GEMINI_API_KEY` secret

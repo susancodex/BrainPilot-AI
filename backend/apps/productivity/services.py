@@ -1,5 +1,5 @@
 import logging
-from datetime import date, timedelta
+from datetime import timedelta
 from django.utils import timezone
 from django.db import transaction
 
@@ -61,6 +61,36 @@ class ProductivityService:
         streak.total_study_days += 1
         streak.save()
         return streak
+
+    @staticmethod
+    @transaction.atomic
+    def log_session(user, subject: str, focus_minutes: int, task_description: str = "") -> dict:
+        """
+        One-shot endpoint: create a completed session, update today's focus log,
+        and increment the streak. Returns all three updated objects.
+        """
+        now = timezone.now()
+        session = PomodoroSession.objects.create(
+            user=user,
+            subject=subject,
+            task_description=task_description,
+            work_duration_minutes=focus_minutes,
+            break_duration_minutes=0,
+            pomodoros_completed=1,
+            pomodoros_planned=1,
+            status=PomodoroSession.Status.COMPLETED,
+            ended_at=now,
+            total_focus_minutes=focus_minutes,
+        )
+
+        focus_log = ProductivityService._update_focus_log(user, session)
+        streak = ProductivityService._update_streak(user)
+
+        logger.info(
+            "Session logged for user=%s subject=%r focus=%dmin streak=%d",
+            user.id, subject, focus_minutes, streak.current_streak,
+        )
+        return {"session": session, "focus_log": focus_log, "streak": streak}
 
     @staticmethod
     def get_user_sessions(user, status=None):

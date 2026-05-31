@@ -1,7 +1,10 @@
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from .serializers import PomodoroSessionSerializer, StudyStreakSerializer, FocusLogSerializer, CompletePomodороSerializer
+from .serializers import (
+    PomodoroSessionSerializer, StudyStreakSerializer, FocusLogSerializer,
+    CompletePomodороSerializer, LogSessionSerializer, SessionCompleteResponseSerializer,
+)
 from .services import ProductivityService
 from common.responses import success_response, created_response
 
@@ -38,6 +41,29 @@ class StreakView(APIView):
     def get(self, request):
         streak = ProductivityService.get_streak(request.user)
         return success_response(data=StudyStreakSerializer(streak).data)
+
+
+class SessionCompleteView(APIView):
+    """
+    POST /api/v1/productivity/sessions/complete/
+
+    Log a completed study session without a pre-existing Pomodoro timer.
+    Atomically creates a session record, updates today's focus log, and
+    increments the user's streak. Returns all three in one response.
+
+    Body: { "subject": "Maths", "focus_minutes": 45, "task_description": "..." }
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = LogSessionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = ProductivityService.log_session(request.user, **serializer.validated_data)
+        data = SessionCompleteResponseSerializer(result).data
+        return created_response(
+            data=data,
+            message=f"Session logged. Current streak: {result['streak'].current_streak} day(s).",
+        )
 
 
 class FocusLogListView(APIView):

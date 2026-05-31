@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     path("pomodoro/", views.PomodoroListView.as_view(), name="productivity-pomodoro"),
     path("pomodoro/<uuid:pk>/complete/", views.CompletePomodoroView.as_view(), name="productivity-pomodoro-complete"),
+    path("sessions/complete/", views.SessionCompleteView.as_view(), name="productivity-sessions-complete"),
     path("streak/", views.StreakView.as_view(), name="productivity-streak"),
     path("focus-logs/", views.FocusLogListView.as_view(), name="productivity-focus-logs"),
 ]

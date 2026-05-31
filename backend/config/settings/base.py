@@ -26,6 +26,7 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_filters",
+    "drf_spectacular",
 ]
 
 LOCAL_APPS = [
@@ -104,7 +105,36 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+SPECTACULAR_SETTINGS = {
+    "TITLE": "BrainPilot AI API",
+    "DESCRIPTION": (
+        "Gemini 2.5 Flash–powered study companion SaaS.\n\n"
+        "All endpoints require `Authorization: Bearer <access_token>` except auth routes.\n\n"
+        "**Rate limits:** anonymous 30 req/min · authenticated 120 req/min · auth endpoints 10 req/min."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_PATH_PREFIX": "/api/v1/",
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SORT_OPERATIONS": False,
+    "TAGS": [
+        {"name": "Health", "description": "Service liveness probe"},
+        {"name": "Auth", "description": "Registration, login, JWT token management, password reset"},
+        {"name": "Chatbot", "description": "AI study assistant — full JSON and SSE streaming responses"},
+        {"name": "Quizzes", "description": "AI-generated quizzes with personalised coaching feedback"},
+        {"name": "Notes", "description": "Notes, AI summaries, and spaced-repetition flashcards"},
+        {"name": "Planner", "description": "AI-generated daily/weekly study plans and sessions"},
+        {"name": "Productivity", "description": "Pomodoro timer, one-shot session logging, focus logs, streak tracking"},
+        {"name": "Dashboard", "description": "Single-request home screen summary"},
+        {"name": "Analytics", "description": "Study trends and per-subject analysis"},
+        {"name": "Goals", "description": "Learning goal tracking"},
+        {"name": "Revision", "description": "Spaced-repetition revision topic management"},
+        {"name": "Notifications", "description": "In-app alerts"},
+    ],
+}
+
 REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
@@ -201,41 +231,14 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "simple",
         },
-        "file": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": BASE_DIR / "logs" / "app.log",
-            "maxBytes": 1024 * 1024 * 10,
-            "backupCount": 5,
-            "formatter": "verbose",
-        },
-        "error_file": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": BASE_DIR / "logs" / "error.log",
-            "maxBytes": 1024 * 1024 * 10,
-            "backupCount": 5,
-            "formatter": "verbose",
-            "level": "ERROR",
-        },
     },
     "root": {
         "handlers": ["console"],
         "level": "INFO",
     },
     "loggers": {
-        "django": {
-            "handlers": ["console", "file"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "apps": {
-            "handlers": ["console", "file", "error_file"],
-            "level": "DEBUG",
-            "propagate": False,
-        },
-        "services": {
-            "handlers": ["console", "file", "error_file"],
-            "level": "DEBUG",
-            "propagate": False,
-        },
+        "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "apps": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        "services": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
     },
 }

@@ -93,6 +93,7 @@ class GeminiAdapter:
                 contents=contents,
                 config=types.GenerateContentConfig(
                     system_instruction=system_prompt,
+                    max_output_tokens=8192,
                 ),
             )
             return response.text.strip()
@@ -101,3 +102,32 @@ class GeminiAdapter:
         except Exception as exc:
             logger.error("Gemini chat failed: %s", exc)
             raise AIServiceError(f"Chat service failed: {exc}")
+
+    def stream_chat(self, system_prompt: str, messages: list[dict]):
+        """Yields text chunks from Gemini as a streaming generator."""
+        try:
+            contents = []
+            for msg in messages:
+                role = "user" if msg["role"] == "user" else "model"
+                contents.append(types.Content(role=role, parts=[types.Part(text=msg["content"])]))
+
+            if not contents:
+                contents = [types.Content(role="user", parts=[types.Part(text="Hello")])]
+
+            logger.debug("Gemini stream_chat call, %d messages", len(contents))
+            for chunk in self.client.models.generate_content_stream(
+                model=self.model_name,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    max_output_tokens=8192,
+                ),
+            ):
+                text = chunk.text
+                if text:
+                    yield text
+        except AIServiceError:
+            raise
+        except Exception as exc:
+            logger.error("Gemini stream_chat failed: %s", exc)
+            raise AIServiceError(f"Chat streaming failed: {exc}")

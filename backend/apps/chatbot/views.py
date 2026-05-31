@@ -1,3 +1,4 @@
+from django.http import StreamingHttpResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
@@ -46,3 +47,22 @@ class SendMessageView(APIView):
             "conversation_id": result["conversation_id"],
             "message": MessageSerializer(result["message"]).data,
         })
+
+
+class StreamMessageView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = SendMessageSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        stream = ChatService.stream_message(
+            request.user,
+            content=serializer.validated_data["content"],
+            conversation_id=serializer.validated_data.get("conversation_id"),
+        )
+
+        response = StreamingHttpResponse(stream, content_type="text/event-stream")
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        return response

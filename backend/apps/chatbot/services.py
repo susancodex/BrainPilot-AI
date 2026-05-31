@@ -1,3 +1,4 @@
+import json
 import logging
 from django.utils import timezone
 from django.db import transaction
@@ -35,6 +36,52 @@ class ChatService:
     def get_context_messages(conversation: Conversation) -> list[dict]:
         messages = conversation.messages.order_by("-created_at")[:MAX_CONTEXT_MESSAGES]
         return [{"role": m.role, "content": m.content} for m in reversed(list(messages))]
+
+    @staticmethod
+    def stream_message(user, content: str, conversation_id=None):
+        """
+        Saves the user message, then yields SSE-formatted chunks from Gemini.
+        Saves the complete assistant message to DB after streaming finishes.
+        Yields strings ready to write directly to an SSE response.
+        """
+        conversation = ChatService.get_or_create_conversation(user, conversation_id)
+
+        Message.objects.create(conversation=conversation, role="user", content=content)
+
+        context = ChatService.get_context_messages(conversation)
+
+        from services.ai_engine.adapters.gemini_adapter import GeminiAdapter
+        from services.ai_engine.memory.conversation_memory import ConversationMemory
+
+        adapter = GeminiAdapter()
+        memory = ConversationMemory()
+        system_prompt = memory.build_system_prompt(user)
+
+        full_response = []
+        try:
+            for text_chunk in adapter.stream_chat(system_prompt=system_prompt, messages=context):
+                full_response.append(text_chunk)
+                yield f"data: {json.dumps({'type': 'chunk', 'content': text_chunk, 'conversation_id': str(conversation.id)})}\n\n"
+        except Exception as exc:
+            logger.error("Streaming chat failed: %s", exc)
+            yield f"data: {json.dumps({'type': 'error', 'message': 'AI service error, please try again.'})}\n\n"
+            return
+
+        ai_response = "".join(full_response)
+        assistant_message = Message.objects.create(
+            conversation=conversation,
+            role="assistant",
+            content=ai_response,
+            token_count=len(ai_response.split()),
+        )
+        conversation.message_count += 2
+        conversation.last_message_at = timezone.now()
+        if not conversation.title and content:
+            conversation.title = content[:100]
+        conversation.save(update_fields=["message_count", "last_message_at", "title"])
+
+        from .serializers import MessageSerializer
+        yield f"data: {json.dumps({'type': 'done', 'conversation_id': str(conversation.id), 'message': MessageSerializer(assistant_message).data})}\n\n"
 
     @staticmethod
     @transaction.atomic

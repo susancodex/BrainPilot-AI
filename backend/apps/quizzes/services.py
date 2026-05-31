@@ -5,6 +5,18 @@ from common.exceptions import NotFoundError
 logger = logging.getLogger(__name__)
 
 
+def _generate_attempt_feedback(quiz: Quiz, evaluated_answers: list, percentage: float) -> str:
+    try:
+        from services.ai_engine.adapters.gemini_adapter import GeminiAdapter
+        from services.ai_engine.prompts.quiz_feedback import build_quiz_feedback_prompt
+        adapter = GeminiAdapter()
+        prompt = build_quiz_feedback_prompt(quiz.title, quiz.subject, percentage, evaluated_answers)
+        return adapter.generate_text(prompt)
+    except Exception as exc:
+        logger.warning("AI feedback generation failed (non-fatal): %s", exc)
+        return ""
+
+
 class QuizService:
     @staticmethod
     def get_user_quizzes(user, subject=None):
@@ -57,6 +69,8 @@ class QuizService:
         max_score = len(questions)
         percentage = (score / max_score * 100) if max_score > 0 else 0
 
+        ai_feedback = _generate_attempt_feedback(quiz, evaluated_answers, percentage)
+
         attempt = QuizAttempt.objects.create(
             quiz=quiz,
             user=user,
@@ -65,6 +79,7 @@ class QuizService:
             max_score=max_score,
             percentage=round(percentage, 2),
             time_taken_seconds=time_taken,
+            ai_feedback=ai_feedback,
             completed=True,
         )
         return attempt

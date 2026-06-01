@@ -49,7 +49,7 @@ export default function AdminUsers() {
   const userList = (users as User[] | undefined) ?? [];
   const filteredUsers = userList.filter(
     (u) =>
-      u.name?.toLowerCase().includes(search.toLowerCase()) ||
+      u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
       u.email?.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -154,10 +154,10 @@ export default function AdminUsers() {
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
                             <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
-                              {u.name?.charAt(0) ?? u.email?.charAt(0) ?? "U"}
+                              {u.first_name?.charAt(0) ?? u.email?.charAt(0) ?? "U"}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="font-medium text-sm text-foreground">{u.name || "—"}</span>
+                          <span className="font-medium text-sm text-foreground">{u.full_name || "—"}</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{u.email}</TableCell>

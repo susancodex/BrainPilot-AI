@@ -15,8 +15,16 @@ export default function Profile() {
   const { toast } = useToast();
 
   const [profileData, setProfileData] = useState({
-    name: "", bio: "", phone: "", timezone: "", institution: "", 
-    field_of_study: "", academic_level: "", study_goal_hours_per_week: 0, preferred_study_time: ""
+    first_name: "",
+    last_name: "",
+    bio: "",
+    phone: "",
+    timezone: "UTC",
+    institution: "",
+    field_of_study: "",
+    academic_level: "undergraduate",
+    study_goal_hours_per_week: 10,
+    preferred_study_time: "morning",
   });
 
   const [pwdData, setPwdData] = useState({ current_password: "", new_password: "" });
@@ -24,7 +32,8 @@ export default function Profile() {
   useEffect(() => {
     if (user) {
       setProfileData({
-        name: user.name || "",
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
         bio: user.profile?.bio || "",
         phone: user.profile?.phone || "",
         timezone: user.profile?.timezone || "UTC",
@@ -32,15 +41,16 @@ export default function Profile() {
         field_of_study: user.profile?.field_of_study || "",
         academic_level: user.profile?.academic_level || "undergraduate",
         study_goal_hours_per_week: user.profile?.study_goal_hours_per_week || 10,
-        preferred_study_time: user.profile?.preferred_study_time || "morning"
+        preferred_study_time: user.profile?.preferred_study_time || "morning",
       });
     }
   }, [user]);
 
   const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile.mutate({ name: profileData.name, profile: profileData }, {
-      onSuccess: () => toast({ title: "Profile updated successfully." })
+    updateProfile.mutate(profileData, {
+      onSuccess: () => toast({ title: "Profile updated successfully." }),
+      onError: () => toast({ title: "Failed to update profile.", variant: "destructive" }),
     });
   };
 
@@ -51,7 +61,7 @@ export default function Profile() {
         toast({ title: "Password changed successfully." });
         setPwdData({ current_password: "", new_password: "" });
       },
-      onError: () => toast({ title: "Failed to change password.", variant: "destructive" })
+      onError: () => toast({ title: "Failed to change password.", variant: "destructive" }),
     });
   };
 
@@ -62,15 +72,18 @@ export default function Profile() {
         <p className="text-muted-foreground mt-1">Manage your academic profile and preferences.</p>
       </div>
 
-      <div className="flex items-center gap-6 mb-8 p-6 bg-card rounded-xl border border-border shadow-sm">
+      <div className="flex items-center gap-6 p-6 bg-card rounded-xl border border-border shadow-sm">
         <Avatar className="h-24 w-24 border-4 border-background shadow-sm">
           <AvatarFallback className="text-3xl bg-primary text-primary-foreground font-bold">
-            {user?.name?.charAt(0) || "U"}
+            {user?.first_name?.charAt(0) || "U"}
           </AvatarFallback>
         </Avatar>
         <div>
-          <h3 className="font-bold text-2xl tracking-tight">{user?.name || "User"}</h3>
+          <h3 className="font-bold text-2xl tracking-tight">{user?.full_name || "User"}</h3>
           <p className="text-muted-foreground bg-muted w-fit px-3 py-1 rounded-full text-sm mt-2">{user?.email}</p>
+          {user?.role && (
+            <p className="text-xs text-muted-foreground mt-1 capitalize">{user.role}</p>
+          )}
         </div>
       </div>
 
@@ -83,20 +96,39 @@ export default function Profile() {
           <form onSubmit={handleUpdate} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label>Full Name</Label>
-                <Input value={profileData.name} onChange={e => setProfileData({...profileData, name: e.target.value})} />
+                <Label>First Name</Label>
+                <Input
+                  value={profileData.first_name}
+                  onChange={(e) => setProfileData({ ...profileData, first_name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Last Name</Label>
+                <Input
+                  value={profileData.last_name}
+                  onChange={(e) => setProfileData({ ...profileData, last_name: e.target.value })}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Institution</Label>
-                <Input value={profileData.institution} onChange={e => setProfileData({...profileData, institution: e.target.value})} />
+                <Input
+                  value={profileData.institution}
+                  onChange={(e) => setProfileData({ ...profileData, institution: e.target.value })}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Field of Study</Label>
-                <Input value={profileData.field_of_study} onChange={e => setProfileData({...profileData, field_of_study: e.target.value})} />
+                <Input
+                  value={profileData.field_of_study}
+                  onChange={(e) => setProfileData({ ...profileData, field_of_study: e.target.value })}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Academic Level</Label>
-                <Select value={profileData.academic_level} onValueChange={v => setProfileData({...profileData, academic_level: v})}>
+                <Select
+                  value={profileData.academic_level}
+                  onValueChange={(v) => setProfileData({ ...profileData, academic_level: v })}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="high_school">High School</SelectItem>
@@ -109,12 +141,11 @@ export default function Profile() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Weekly Study Goal (Hours)</Label>
-                <Input type="number" min={1} value={profileData.study_goal_hours_per_week} onChange={e => setProfileData({...profileData, study_goal_hours_per_week: parseInt(e.target.value) || 0})} />
-              </div>
-              <div className="space-y-2">
                 <Label>Preferred Study Time</Label>
-                <Select value={profileData.preferred_study_time} onValueChange={v => setProfileData({...profileData, preferred_study_time: v})}>
+                <Select
+                  value={profileData.preferred_study_time}
+                  onValueChange={(v) => setProfileData({ ...profileData, preferred_study_time: v })}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="morning">Morning</SelectItem>
@@ -124,12 +155,38 @@ export default function Profile() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Weekly Study Goal (Hours)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={profileData.study_goal_hours_per_week}
+                  onChange={(e) =>
+                    setProfileData({ ...profileData, study_goal_hours_per_week: parseInt(e.target.value) || 0 })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Phone</Label>
+                <Input
+                  value={profileData.phone}
+                  onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                  placeholder="+1 555 000 0000"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Bio / Study Goals</Label>
-              <Textarea value={profileData.bio} onChange={e => setProfileData({...profileData, bio: e.target.value})} rows={3} />
+              <Textarea
+                value={profileData.bio}
+                onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                rows={3}
+                placeholder="Tell us about your academic goals..."
+              />
             </div>
-            <Button type="submit" disabled={updateProfile.isPending}>Save Profile</Button>
+            <Button type="submit" disabled={updateProfile.isPending}>
+              {updateProfile.isPending ? "Saving…" : "Save Profile"}
+            </Button>
           </form>
         </CardContent>
       </Card>
@@ -143,13 +200,27 @@ export default function Profile() {
           <form onSubmit={handlePasswordChange} className="space-y-4 max-w-sm">
             <div className="space-y-2">
               <Label>Current Password</Label>
-              <Input type="password" value={pwdData.current_password} onChange={e => setPwdData({...pwdData, current_password: e.target.value})} required />
+              <Input
+                type="password"
+                value={pwdData.current_password}
+                onChange={(e) => setPwdData({ ...pwdData, current_password: e.target.value })}
+                autoComplete="current-password"
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label>New Password</Label>
-              <Input type="password" value={pwdData.new_password} onChange={e => setPwdData({...pwdData, new_password: e.target.value})} required />
+              <Input
+                type="password"
+                value={pwdData.new_password}
+                onChange={(e) => setPwdData({ ...pwdData, new_password: e.target.value })}
+                autoComplete="new-password"
+                required
+              />
             </div>
-            <Button type="submit" variant="secondary" disabled={changePassword.isPending}>Update Password</Button>
+            <Button type="submit" variant="secondary" disabled={changePassword.isPending}>
+              {changePassword.isPending ? "Updating…" : "Update Password"}
+            </Button>
           </form>
         </CardContent>
       </Card>

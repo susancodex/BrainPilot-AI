@@ -89,7 +89,7 @@ export default function Dashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground flex items-center gap-2 flex-wrap">
-              {getGreeting(user?.name)}
+              {getGreeting(user?.first_name ?? user?.full_name)}
               {(streak?.current_streak ?? 0) > 0 && (
                 <span className="inline-flex items-center gap-1 text-orange-500 text-xl font-semibold">
                   <Flame className="w-5 h-5 fill-current" /> {streak?.current_streak}

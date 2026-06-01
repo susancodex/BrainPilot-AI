@@ -151,15 +151,15 @@ function Layout({ children }: LayoutProps) {
                 <Button variant="ghost" className="flex-1 justify-start gap-2 h-8 px-2 min-w-0">
                   <Avatar className="h-6 w-6 shrink-0">
                     <AvatarFallback className="text-[10px] bg-primary text-primary-foreground font-bold">
-                      {user?.name?.charAt(0) ?? "U"}
+                      {user?.first_name?.charAt(0) ?? "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm font-medium truncate">{user?.name?.split(" ")[0] ?? "User"}</span>
+                  <span className="text-sm font-medium truncate">{user?.first_name ?? "User"}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium">{user?.name}</p>
+                  <p className="text-sm font-medium">{user?.full_name}</p>
                   <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                 </div>
                 <DropdownMenuSeparator />
@@ -182,14 +182,14 @@ function Layout({ children }: LayoutProps) {
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                   <Avatar className="h-6 w-6">
                     <AvatarFallback className="text-[10px] bg-primary text-primary-foreground font-bold">
-                      {user?.name?.charAt(0) ?? "U"}
+                      {user?.first_name?.charAt(0) ?? "U"}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="right" align="end" className="w-48">
                 <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium">{user?.name}</p>
+                  <p className="text-sm font-medium">{user?.full_name}</p>
                   <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                 </div>
                 <DropdownMenuSeparator />

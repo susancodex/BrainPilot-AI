@@ -16,8 +16,9 @@ export const useAuth = () => {
   });
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: any) => {
+    mutationFn: async (credentials: { email: string; password: string }) => {
       const { data } = await api.post("/auth/login/", credentials);
+      // After unwrap interceptor, data = { access, refresh, user }
       setTokens(data.access, data.refresh);
       return data;
     },
@@ -27,7 +28,13 @@ export const useAuth = () => {
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (userData: any) => {
+    mutationFn: async (userData: {
+      first_name: string;
+      last_name: string;
+      email: string;
+      password: string;
+      password_confirm: string;
+    }) => {
       const { data } = await api.post("/auth/register/", userData);
       return data;
     },
@@ -47,10 +54,42 @@ export const useAuth = () => {
     },
   });
 
-  const updateProfileMutation = useMutation({
-    mutationFn: async (profileData: any) => {
-      const { data } = await api.patch("/auth/me/profile/", profileData);
+  // Update user fields (first_name, last_name) via PATCH /auth/me/
+  const updateUserMutation = useMutation({
+    mutationFn: async (fields: { first_name?: string; last_name?: string }) => {
+      const { data } = await api.patch("/auth/me/", fields);
       return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+    },
+  });
+
+  // Update extended profile fields via PATCH /auth/me/profile/
+  const updateProfileMutation = useMutation({
+    mutationFn: async (profileData: {
+      first_name?: string;
+      last_name?: string;
+      bio?: string;
+      phone?: string;
+      timezone?: string;
+      institution?: string;
+      field_of_study?: string;
+      academic_level?: string;
+      study_goal_hours_per_week?: number;
+      preferred_study_time?: string;
+    }) => {
+      const { first_name, last_name, ...profileFields } = profileData;
+      const promises: Promise<any>[] = [];
+      // Update user name if provided
+      if (first_name !== undefined || last_name !== undefined) {
+        promises.push(api.patch("/auth/me/", { first_name, last_name }));
+      }
+      // Update profile fields if any exist
+      if (Object.keys(profileFields).length > 0) {
+        promises.push(api.patch("/auth/me/profile/", profileFields));
+      }
+      await Promise.all(promises);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
@@ -64,6 +103,7 @@ export const useAuth = () => {
     login: loginMutation,
     register: registerMutation,
     logout: logoutMutation,
+    updateUser: updateUserMutation,
     updateProfile: updateProfileMutation,
   };
 };

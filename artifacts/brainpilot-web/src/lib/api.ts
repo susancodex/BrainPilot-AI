@@ -13,25 +13,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (value?: unknown) => void;
-  reject: (reason?: any) => void;
-}> = [];
-
-const processQueue = (error: any, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-};
-
+// Unwrap the standard backend envelope: { success, message, data: X } → X
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "success" in response.data &&
+      "data" in response.data
+    ) {
+      response.data = response.data.data;
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
@@ -64,7 +58,7 @@ api.interceptors.response.use(
 
       try {
         const { data } = await axios.post("/api/v1/token/refresh/", { refresh });
-        setTokens(data.access, refresh); // Sometimes API returns new refresh, sometimes only access
+        setTokens(data.access, refresh);
         api.defaults.headers.common.Authorization = `Bearer ${data.access}`;
         originalRequest.headers.Authorization = `Bearer ${data.access}`;
         processQueue(null, data.access);
@@ -82,5 +76,22 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: unknown) => void;
+  reject: (reason?: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
 
 export default api;

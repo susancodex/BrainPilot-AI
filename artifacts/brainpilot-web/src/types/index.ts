@@ -1,12 +1,14 @@
 export interface User {
   id: string;
   email: string;
-  name: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  role?: string;
   is_email_verified: boolean;
   is_staff?: boolean;
   is_superuser?: boolean;
-  date_joined?: string;
-  last_login?: string;
+  created_at?: string;
   profile?: UserProfile;
 }
 
@@ -22,7 +24,7 @@ export interface UserProfile {
 }
 
 export interface LoginPayload { email: string; password: string; }
-export interface RegisterPayload { email: string; name: string; password: string; password_confirm: string; }
+export interface RegisterPayload { email: string; first_name: string; last_name: string; password: string; password_confirm: string; }
 
 export interface Note {
   id: string;

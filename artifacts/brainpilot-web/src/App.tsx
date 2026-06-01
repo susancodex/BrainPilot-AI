@@ -23,6 +23,7 @@ import Analytics from "@/pages/analytics";
 import Productivity from "@/pages/productivity";
 import Notifications from "@/pages/notifications";
 import Profile from "@/pages/profile";
+import AdminUsers from "@/pages/admin/users";
 
 import { AppLayout } from "@/components/layout";
 import { PrivateRoute } from "@/components/private-route";
@@ -40,6 +41,7 @@ function PrivateRoutes() {
   return (
     <AppLayout>
       <Switch>
+        <Route path="/" component={Dashboard} />
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/chat" component={Chat} />
         <Route path="/planner" component={Planner} />
@@ -52,9 +54,8 @@ function PrivateRoutes() {
         <Route path="/productivity" component={Productivity} />
         <Route path="/notifications" component={Notifications} />
         <Route path="/profile" component={Profile} />
-        <Route path="/">
-          <Redirect to="/dashboard" />
-        </Route>
+        <Route path="/admin/users" component={AdminUsers} />
+        <Route path="/admin" component={AdminUsers} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

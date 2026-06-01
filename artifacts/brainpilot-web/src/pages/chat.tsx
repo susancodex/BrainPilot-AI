@@ -1,207 +1,265 @@
 import { useState, useEffect, useRef } from "react";
-import { useConversations, useConversation, useSendMessage, useDeleteConversation } from "@/hooks/use-chat";
-import { useLocation } from "wouter";
-import { Input } from "@/components/ui/input";
+import {
+  useConversations,
+  useConversation,
+  useCreateConversation,
+  useSendMessage,
+  useDeleteConversation,
+} from "@/hooks/use-chat";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { BrainCircuit, Send, User, MessageSquarePlus, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
-import { getAccessToken } from "@/lib/auth";
+import type { Conversation, Message } from "@/types";
+import {
+  BrainCircuit, Plus, Send, Trash2, MessageSquare,
+  MoreHorizontal, ChevronRight,
+} from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+interface LocalMessage {
+  role: "user" | "assistant";
+  content: string;
+  pending?: boolean;
+}
 
 export default function Chat() {
-  const [location, setLocation] = useLocation();
-  const searchParams = new URLSearchParams(window.location.search);
-  const activeId = searchParams.get("id");
-
-  const { data: conversations, isLoading: isLoadingList } = useConversations();
-  const { data: activeConversation, isLoading: isLoadingChat, refetch } = useConversation(activeId);
+  const { data: conversations, isLoading: convsLoading } = useConversations();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { data: conversation } = useConversation(selectedId);
+  const createConversation = useCreateConversation();
   const sendMessage = useSendMessage();
   const deleteConversation = useDeleteConversation();
-  
+  const { toast } = useToast();
+
   const [input, setInput] = useState("");
-  const [streamingMessage, setStreamingMessage] = useState("");
-  const [isStreaming, setIsStreaming] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [localMessages, setLocalMessages] = useState<LocalMessage[]>([]);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const convList = (conversations as Conversation[] | undefined) ?? [];
+  const selectedConv = conversation as Conversation | undefined;
+
+  const allMessages: LocalMessage[] =
+    localMessages.length > 0
+      ? localMessages
+      : (selectedConv?.messages ?? []).map((m: Message) => ({ role: m.role, content: m.content }));
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [activeConversation?.messages, streamingMessage]);
+    setLocalMessages([]);
+  }, [selectedId]);
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isStreaming) return;
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [allMessages]);
 
-    const messageText = input;
-    setInput("");
-    setIsStreaming(true);
-    setStreamingMessage("");
-
-    try {
-      const url = new URL("/api/v1/chatbot/send/stream/", window.location.origin);
-      url.searchParams.append("message", messageText);
-      if (activeId) {
-        url.searchParams.append("conversation_id", activeId);
+  const handleNewConversation = () => {
+    createConversation.mutate(
+      { title: "New Chat" },
+      {
+        onSuccess: (data: Conversation) => {
+          setSelectedId(data.id);
+        },
       }
-
-      const token = getAccessToken();
-      const eventSource = new EventSource(`${url.toString()}&token=${token}`);
-
-      eventSource.addEventListener("chunk", (e) => {
-        try {
-          const data = JSON.parse(e.data);
-          setStreamingMessage((prev) => prev + data.text);
-        } catch (err) {}
-      });
-
-      eventSource.addEventListener("done", () => {
-        eventSource.close();
-        setIsStreaming(false);
-        refetch(); // Refresh to get the finalized message from DB
-      });
-
-      eventSource.addEventListener("error", () => {
-        eventSource.close();
-        setIsStreaming(false);
-        // Fallback to standard mutation if streaming fails
-        sendMessage.mutate({ content: messageText, conversation_id: activeId || undefined });
-      });
-
-    } catch (err) {
-      setIsStreaming(false);
-      sendMessage.mutate({ content: messageText, conversation_id: activeId || undefined });
-    }
+    );
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (confirm("Are you sure you want to delete this conversation?")) {
-      deleteConversation.mutate(id, {
-        onSuccess: () => {
-          if (activeId === id) setLocation("/chat");
-        }
-      });
-    }
+  const handleSend = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || !selectedId) return;
+
+    const userMsg: LocalMessage = { role: "user", content: input };
+    const pendingMsg: LocalMessage = { role: "assistant", content: "...", pending: true };
+
+    setLocalMessages((prev) => {
+      const base =
+        prev.length > 0
+          ? prev
+          : (selectedConv?.messages ?? []).map((m: Message) => ({ role: m.role, content: m.content }));
+      return [...base, userMsg, pendingMsg];
+    });
+
+    const msgContent = input;
+    setInput("");
+
+    sendMessage.mutate(
+      { conversation_id: selectedId, content: msgContent },
+      {
+        onSuccess: (data: { user_message: Message; ai_message: Message }) => {
+          setLocalMessages((prev) => {
+            const without = prev.filter((m) => !m.pending);
+            return [
+              ...without,
+              { role: "assistant", content: data.ai_message?.content ?? "No response" },
+            ];
+          });
+          inputRef.current?.focus();
+        },
+        onError: () => {
+          setLocalMessages((prev) => prev.filter((m) => !m.pending));
+          toast({ title: "Failed to send", description: "Please try again.", variant: "destructive" });
+        },
+      }
+    );
   };
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.24))] gap-6">
+    <div className="flex h-[calc(100vh-7rem)] overflow-hidden rounded-xl border border-border bg-card shadow-sm">
       {/* Sidebar */}
-      <div className="w-64 flex flex-col gap-4 border border-border rounded-xl bg-card overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-border bg-muted/20">
-          <Button 
-            className="w-full gap-2 shadow-sm font-semibold" 
-            onClick={() => setLocation("/chat")}
-            variant={!activeId ? "default" : "outline"}
-          >
-            <MessageSquarePlus className="w-4 h-4" />
-            New Chat
+      <div className="w-64 flex flex-col border-r border-border shrink-0">
+        <div className="p-3 border-b border-border">
+          <Button className="w-full gap-2 h-9" onClick={handleNewConversation} disabled={createConversation.isPending}>
+            <Plus className="w-4 h-4" /> New Chat
           </Button>
         </div>
-        <ScrollArea className="flex-1">
-          <div className="p-2 space-y-1">
-            {conversations?.map((conv: any) => (
-              <div key={conv.id} className="relative group">
-                <Button
-                  variant={activeId === conv.id ? "secondary" : "ghost"}
-                  className={cn("w-full justify-start font-medium truncate pr-10", activeId === conv.id && "bg-primary/10 text-primary hover:bg-primary/15")}
-                  onClick={() => setLocation(`/chat?id=${conv.id}`)}
-                >
-                  <span className="truncate">{conv.title || "New Conversation"}</span>
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive hover:bg-destructive/10"
-                  onClick={(e) => handleDelete(conv.id, e)}
-                >
-                  <Trash2 className="w-3 h-3" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
-      </div>
-
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col border border-border rounded-xl bg-card overflow-hidden shadow-sm">
-        {activeConversation?.subject_context && (
-          <div className="px-4 py-2 border-b border-border bg-accent/5 text-xs font-semibold text-accent flex items-center justify-center">
-            Subject Context: {activeConversation.subject_context}
-          </div>
-        )}
-        <ScrollArea className="flex-1 p-4 md:p-6" ref={scrollRef}>
-          <div className="space-y-6 max-w-3xl mx-auto pb-4">
-            {activeConversation?.messages?.map((msg: any, i: number) => (
-              <div key={i} className={cn("flex gap-4", msg.role === "user" ? "flex-row-reverse" : "flex-row")}>
-                <Avatar className="h-8 w-8 shrink-0 border border-border shadow-sm">
-                  {msg.role === "user" ? (
-                    <AvatarFallback className="bg-primary text-primary-foreground font-bold">
-                      <User className="w-4 h-4"/>
-                    </AvatarFallback>
-                  ) : (
-                    <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white">
-                      <BrainCircuit className="w-4 h-4"/>
-                    </AvatarFallback>
+        <div className="flex-1 overflow-y-auto">
+          {convsLoading ? (
+            <div className="p-3 space-y-2">
+              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
+            </div>
+          ) : convList.length ? (
+            convList.map((conv) => (
+              <button
+                key={conv.id}
+                onClick={() => setSelectedId(conv.id)}
+                className={cn(
+                  "w-full text-left px-3 py-2.5 border-b border-border/50 hover:bg-muted/60 transition-colors group flex items-start justify-between gap-1",
+                  selectedId === conv.id && "bg-primary/10 border-l-2 border-l-primary"
+                )}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <MessageSquare className="w-3 h-3 text-muted-foreground shrink-0" />
+                    <span className="text-sm font-medium truncate text-foreground">{conv.title || "Untitled"}</span>
+                  </div>
+                  {conv.subject_context && (
+                    <span className="text-[10px] text-muted-foreground">{conv.subject_context}</span>
                   )}
-                </Avatar>
-                <div className={cn(
-                  "px-5 py-3.5 rounded-2xl max-w-[85%] text-sm shadow-sm leading-relaxed",
-                  msg.role === "user" 
-                    ? "bg-primary text-primary-foreground rounded-tr-sm" 
-                    : "bg-muted/60 border border-border text-foreground rounded-tl-sm whitespace-pre-wrap"
-                )}>
-                  {msg.content}
                 </div>
-              </div>
-            ))}
-            
-            {isStreaming && (
-              <div className="flex gap-4 flex-row">
-                <Avatar className="h-8 w-8 shrink-0 border border-border shadow-sm">
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white"><BrainCircuit className="w-4 h-4"/></AvatarFallback>
-                </Avatar>
-                <div className="px-5 py-3.5 rounded-2xl max-w-[85%] text-sm bg-muted/60 border border-border text-foreground rounded-tl-sm whitespace-pre-wrap shadow-sm leading-relaxed">
-                  {streamingMessage}
-                  <span className="inline-block w-1.5 h-4 ml-1 bg-primary animate-pulse align-middle rounded-full" />
-                </div>
-              </div>
-            )}
-            
-            {(!activeConversation?.messages?.length && !isStreaming) && (
-              <div className="h-full flex flex-col items-center justify-center text-center p-12 mt-20">
-                <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full flex items-center justify-center mb-6">
-                  <BrainCircuit className="w-10 h-10 text-primary" />
-                </div>
-                <h3 className="text-2xl font-bold tracking-tight text-foreground">How can I help you study today?</h3>
-                <p className="text-muted-foreground mt-2 max-w-sm">Ask me to explain a concept, quiz you, or help organize your notes.</p>
-              </div>
-            )}
-          </div>
-        </ScrollArea>
-
-        <div className="p-4 bg-background border-t border-border">
-          <form onSubmit={handleSend} className="flex gap-3 max-w-3xl mx-auto relative">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Message BrainPilot..."
-              className="flex-1 rounded-full pl-6 pr-14 py-6 shadow-sm border-primary/20 focus-visible:ring-primary/50 text-base"
-              disabled={isStreaming}
-            />
-            <Button 
-              type="submit" 
-              size="icon" 
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full w-9 h-9 shadow-sm"
-              disabled={!input.trim() || isStreaming}
-            >
-              <Send className="w-4 h-4 ml-0.5" />
-            </Button>
-          </form>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-muted" onClick={(e) => e.stopPropagation()}>
+                      <MoreHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteConversation.mutate(conv.id);
+                        if (selectedId === conv.id) setSelectedId(null);
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </button>
+            ))
+          ) : (
+            <div className="p-4 text-center text-muted-foreground">
+              <MessageSquare className="w-8 h-8 mx-auto mb-2 text-muted" />
+              <p className="text-xs">No conversations yet</p>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Chat area */}
+      {selectedId ? (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="px-5 py-3 border-b border-border bg-muted/20 flex items-center gap-3">
+            <BrainCircuit className="w-5 h-5 text-primary" />
+            <div>
+              <p className="font-semibold text-sm text-foreground">{selectedConv?.title || "AI Tutor"}</p>
+              {selectedConv?.subject_context && (
+                <p className="text-xs text-muted-foreground">{selectedConv.subject_context}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+            {allMessages.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                <BrainCircuit className="w-14 h-14 mb-4 text-muted" />
+                <h3 className="text-lg font-medium text-foreground">Ask me anything</h3>
+                <p className="text-sm text-center max-w-sm mt-1">
+                  I'm your AI tutor powered by Gemini. Ask about concepts, get explanations, or quiz yourself.
+                </p>
+              </div>
+            )}
+
+            {allMessages.map((msg, i) => (
+              <div key={i} className={cn("flex gap-3", msg.role === "user" ? "justify-end" : "justify-start")}>
+                {msg.role === "assistant" && (
+                  <div className="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                    <BrainCircuit className="w-3.5 h-3.5 text-primary" />
+                  </div>
+                )}
+                <div
+                  className={cn(
+                    "rounded-2xl px-4 py-2.5 max-w-[75%] text-sm",
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground rounded-br-sm"
+                      : "bg-muted text-foreground rounded-bl-sm"
+                  )}
+                >
+                  {msg.pending ? (
+                    <div className="flex gap-1 items-center h-5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:0ms]" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:150ms]" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:300ms]" />
+                    </div>
+                  ) : msg.role === "assistant" ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-li:my-0.5 prose-pre:bg-background/50">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Input */}
+          <form onSubmit={handleSend} className="px-5 py-3 border-t border-border bg-muted/20">
+            <div className="flex gap-2 items-center max-w-3xl mx-auto">
+              <Input
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask your AI tutor anything..."
+                className="flex-1 bg-background"
+                disabled={sendMessage.isPending}
+                autoFocus
+              />
+              <Button type="submit" size="icon" disabled={!input.trim() || sendMessage.isPending} className="shrink-0">
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground bg-muted/10">
+          <BrainCircuit className="w-16 h-16 mb-4 text-muted" />
+          <h3 className="text-lg font-medium text-foreground">BrainPilot AI Tutor</h3>
+          <p className="text-sm mt-1 max-w-sm text-center">Start a new conversation or pick an existing one to chat with your AI tutor.</p>
+          <Button className="mt-4 gap-2" onClick={handleNewConversation} disabled={createConversation.isPending}>
+            <Plus className="w-4 h-4" /> New Conversation
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,166 +1,267 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useNotifications } from "@/hooks/use-notifications";
-import { useStreak } from "@/hooks/use-productivity";
 import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard,
-  MessageSquare,
-  CalendarDays,
-  Target,
-  BookOpen,
-  FileText,
-  BrainCircuit,
-  BarChart2,
-  Clock,
-  Bell,
-  User,
-  LogOut,
-  Moon,
-  Sun,
-  Layers
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTheme } from "next-themes";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useTheme } from "next-themes";
+import type { Notification } from "@/types";
+import {
+  LayoutDashboard, FileText, MessageSquare, BrainCircuit, Layers,
+  Target, Calendar, RotateCcw, BarChart2, Timer, Bell, User,
+  Settings, LogOut, Moon, Sun, ChevronLeft, ChevronRight,
+  Shield, Menu, X,
+} from "lucide-react";
+import { useState } from "react";
 
-const navItems = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Chat", href: "/chat", icon: MessageSquare },
-  { name: "Planner", href: "/planner", icon: CalendarDays },
-  { name: "Goals", href: "/goals", icon: Target },
-  { name: "Revision", href: "/revision", icon: BookOpen },
-  { name: "Notes", href: "/notes", icon: FileText },
-  { name: "Flashcards", href: "/flashcards", icon: Layers },
-  { name: "Quizzes", href: "/quizzes", icon: BrainCircuit },
-  { name: "Analytics", href: "/analytics", icon: BarChart2 },
-  { name: "Productivity", href: "/productivity", icon: Clock },
-  { name: "Notifications", href: "/notifications", icon: Bell },
+const NAV_ITEMS = [
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/notes", label: "Notes", icon: FileText },
+  { href: "/chat", label: "AI Tutor", icon: MessageSquare },
+  { href: "/quizzes", label: "Quizzes", icon: BrainCircuit },
+  { href: "/flashcards", label: "Flashcards", icon: Layers },
+  { href: "/goals", label: "Goals", icon: Target },
+  { href: "/planner", label: "Planner", icon: Calendar },
+  { href: "/revision", label: "Revision", icon: RotateCcw },
+  { href: "/analytics", label: "Analytics", icon: BarChart2 },
+  { href: "/productivity", label: "Focus", icon: Timer },
 ];
 
-export function AppLayout({ children }: { children: React.ReactNode }) {
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+export function AppLayout({ children }: LayoutProps) {
+  return <Layout>{children}</Layout>;
+}
+
+function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
-  const { theme, setTheme } = useTheme();
-  
   const { data: notifications } = useNotifications();
-  const { data: streakData } = useStreak();
-  
-  const unreadCount = notifications?.filter((n: any) => !n.is_read).length || 0;
+  const { theme, setTheme } = useTheme();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const notifList = (notifications as Notification[] | undefined) ?? [];
+  const unreadCount = notifList.filter((n) => !n.is_read).length;
+
+  const isActive = (href: string) =>
+    href === "/" ? location === "/" : location.startsWith(href);
+
+  const NavContent = () => (
+    <>
+      {/* Logo */}
+      <div className={cn("flex items-center gap-2.5 px-4 py-4 border-b border-border", collapsed && "justify-center px-3")}>
+        <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-sm">
+          <BrainCircuit className="w-4.5 h-4.5 text-primary-foreground" />
+        </div>
+        {!collapsed && (
+          <span className="font-bold text-foreground text-base tracking-tight">BrainPilot</span>
+        )}
+      </div>
+
+      {/* Nav items */}
+      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+        {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
+          <Link key={href} href={href}>
+            <button
+              onClick={() => setMobileOpen(false)}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors group",
+                isActive(href)
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+                collapsed && "justify-center px-2"
+              )}
+              title={collapsed ? label : undefined}
+            >
+              <Icon className={cn("w-4 h-4 shrink-0", isActive(href) ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+              {!collapsed && <span>{label}</span>}
+            </button>
+          </Link>
+        ))}
+
+        {user?.is_staff && (
+          <>
+            <div className={cn("pt-2 pb-1", !collapsed && "px-3")}>
+              {!collapsed && <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest">Admin</p>}
+              {collapsed && <div className="border-t border-border my-1" />}
+            </div>
+            <Link href="/admin/users">
+              <button
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors group",
+                  location.startsWith("/admin")
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+                  collapsed && "justify-center px-2"
+                )}
+                title={collapsed ? "Admin" : undefined}
+              >
+                <Shield className="w-4 h-4 shrink-0" />
+                {!collapsed && <span>Admin Portal</span>}
+              </button>
+            </Link>
+          </>
+        )}
+      </nav>
+
+      {/* Bottom user section */}
+      <div className={cn("border-t border-border p-3", collapsed && "px-2")}>
+        <div className={cn("flex items-center gap-2", collapsed && "flex-col")}>
+          {/* Notifications */}
+          <Link href="/notifications">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 relative shrink-0"
+              onClick={() => setMobileOpen(false)}
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </Button>
+          </Link>
+
+          {/* Theme toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          </Button>
+
+          {/* Profile */}
+          {!collapsed && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex-1 justify-start gap-2 h-8 px-2 min-w-0">
+                  <Avatar className="h-6 w-6 shrink-0">
+                    <AvatarFallback className="text-[10px] bg-primary text-primary-foreground font-bold">
+                      {user?.name?.charAt(0) ?? "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-medium truncate">{user?.name?.split(" ")[0] ?? "User"}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <div className="px-2 py-1.5">
+                  <p className="text-sm font-medium">{user?.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/profile"><User className="w-4 h-4 mr-2" />Profile</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => logout.mutate()}
+                >
+                  <LogOut className="w-4 h-4 mr-2" />Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          {collapsed && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Avatar className="h-6 w-6">
+                    <AvatarFallback className="text-[10px] bg-primary text-primary-foreground font-bold">
+                      {user?.name?.charAt(0) ?? "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" align="end" className="w-48">
+                <div className="px-2 py-1.5">
+                  <p className="text-sm font-medium">{user?.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/profile"><User className="w-4 h-4 mr-2" />Profile</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive" onClick={() => logout.mutate()}>
+                  <LogOut className="w-4 h-4 mr-2" />Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </div>
+    </>
+  );
 
   return (
-    <SidebarProvider>
-      <div className="min-h-[100dvh] flex w-full">
-        <Sidebar className="border-r border-sidebar-border bg-sidebar">
-          <SidebarHeader className="p-4">
-            <div className="flex items-center gap-3 px-2 font-bold text-xl text-sidebar-primary tracking-tight">
-              <div className="bg-primary text-primary-foreground p-1.5 rounded-lg shadow-sm">
-                <BrainCircuit className="h-5 w-5" />
-              </div>
-              <span>BrainPilot</span>
+    <div className="flex h-screen bg-background overflow-hidden">
+      {/* Desktop sidebar */}
+      <aside
+        className={cn(
+          "hidden md:flex flex-col border-r border-border bg-card/50 backdrop-blur-sm transition-all duration-200 shrink-0 relative",
+          collapsed ? "w-14" : "w-56"
+        )}
+      >
+        <NavContent />
+        {/* Collapse toggle */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="absolute -right-3 top-6 w-6 h-6 bg-background border border-border rounded-full flex items-center justify-center hover:bg-muted transition-colors z-10 shadow-sm"
+        >
+          {collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+        </button>
+      </aside>
+
+      {/* Mobile sidebar */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
+          <aside className="absolute left-0 top-0 h-full w-64 bg-card border-r border-border flex flex-col z-10">
+            <NavContent />
+          </aside>
+        </div>
+      )}
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        {/* Mobile header */}
+        <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card/50 shrink-0">
+          <button onClick={() => setMobileOpen(true)}>
+            <Menu className="w-5 h-5 text-foreground" />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center">
+              <BrainCircuit className="w-3.5 h-3.5 text-primary-foreground" />
             </div>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-1 px-2">
-                  {navItems.map((item) => (
-                    <SidebarMenuItem key={item.name}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={location === item.href}
-                        tooltip={item.name}
-                        className={cn(
-                          "transition-colors rounded-md h-10",
-                          location === item.href ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"
-                        )}
-                      >
-                        <Link href={item.href} className="flex items-center justify-between w-full">
-                          <div className="flex items-center gap-3">
-                            <item.icon className="h-4 w-4" />
-                            <span>{item.name}</span>
-                          </div>
-                          {item.name === "Notifications" && unreadCount > 0 && (
-                            <Badge variant="destructive" className="h-5 min-w-5 flex items-center justify-center rounded-full px-1 text-[10px]">
-                              {unreadCount}
-                            </Badge>
-                          )}
-                          {item.name === "Productivity" && (streakData?.current_streak || 0) > 0 && (
-                            <Badge variant="outline" className="h-5 flex items-center gap-1 border-orange-500/30 bg-orange-500/10 text-orange-500 px-1.5 text-[10px]">
-                              🔥 {streakData.current_streak}
-                            </Badge>
-                          )}
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-          <SidebarFooter className="p-4 border-t border-sidebar-border">
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between px-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground"
-                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  data-testid="button-toggle-theme"
-                >
-                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </Button>
-              </div>
-              <div className="flex items-center gap-3 px-2 py-2 mt-2 bg-muted/50 rounded-lg border border-border shadow-sm">
-                <Avatar className="h-8 w-8 border border-background">
-                  <AvatarFallback className="bg-primary text-primary-foreground font-bold">{user?.name?.charAt(0) || "U"}</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col flex-1 overflow-hidden">
-                  <span className="text-sm font-semibold truncate text-foreground">{user?.name || "User"}</span>
-                  <span className="text-[10px] text-muted-foreground truncate uppercase tracking-wider">{user?.profile?.academic_level || "Student"}</span>
-                </div>
-              </div>
-              <div className="flex gap-2 mt-2">
-                <Button variant="ghost" className="flex-1 justify-start h-9 text-xs" asChild>
-                  <Link href="/profile" className="flex items-center gap-2">
-                    <User className="h-3.5 w-3.5" />
-                    <span>Profile</span>
-                  </Link>
-                </Button>
-                <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive" onClick={() => logout.mutate()} data-testid="button-logout">
-                  <LogOut className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </div>
-          </SidebarFooter>
-        </Sidebar>
-        
-        <main className="flex-1 flex flex-col min-h-[100dvh] overflow-hidden bg-background">
-          <header className="h-14 border-b border-border flex items-center px-4 md:hidden bg-card sticky top-0 z-10 shadow-sm">
-            <SidebarTrigger />
-            <div className="ml-4 font-bold text-lg tracking-tight flex items-center gap-2 text-foreground">
-              <BrainCircuit className="w-5 h-5 text-primary" /> BrainPilot
-            </div>
-          </header>
-          <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 bg-muted/10">
-            {children}
+            <span className="font-bold text-sm">BrainPilot</span>
           </div>
+          <Link href="/notifications">
+            <Button variant="ghost" size="icon" className="h-8 w-8 relative">
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{unreadCount}</span>}
+            </Button>
+          </Link>
+        </div>
+
+        <main className="flex-1 overflow-auto p-5 md:p-6">
+          {children}
         </main>
       </div>
-    </SidebarProvider>
+    </div>
   );
 }

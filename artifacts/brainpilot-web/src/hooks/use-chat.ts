@@ -1,6 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 
+export const useCreateConversation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { title?: string; subject_context?: string } = {}) => {
+      const { data } = await api.post("/chatbot/conversations/", payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
+    },
+  });
+};
+
 export const useConversations = () => {
   return useQuery({
     queryKey: ["chat", "conversations"],

@@ -91,6 +91,16 @@ export const useGenerateFlashcards = () => {
   });
 };
 
+export const useFlashcards = () => {
+  return useQuery({
+    queryKey: ["flashcards", "all"],
+    queryFn: async () => {
+      const { data } = await api.get("/notes/flashcards/");
+      return data;
+    },
+  });
+};
+
 export const useDueFlashcards = () => {
   return useQuery({
     queryKey: ["flashcards", "due"],

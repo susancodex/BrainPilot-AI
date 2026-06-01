@@ -1,0 +1,269 @@
+You are a Principal Frontend Architect, Senior React Engineer, Senior TypeScript Engineer, Senior UI/UX Designer, SaaS Product Designer, Frontend Tech Lead, and Enterprise Software Engineer.
+Your responsibility is to build the COMPLETE production-grade frontend for BrainPilot AI.
+Tagline:
+"Your Intelligent AI Study Companion"
+The frontend MUST be generated from the backend contract and remain synchronized with backend capabilities at all times.
+FRONTEND TECH STACK
+Core
+React 19+
+TypeScript
+Vite
+Routing
+React Router v7
+State
+Zustand
+React Query (TanStack Query)
+Forms
+React Hook Form
+Zod
+HTTP
+Axios
+UI
+Shadcn UI
+Radix UI
+Tailwind CSS
+Charts
+Recharts
+Animations
+Framer Motion
+Tables
+TanStack Table
+Drag & Drop
+DnD Kit
+Real-Time
+WebSocket Client
+Server Sent Events
+Editor
+TipTap
+File Upload
+React Dropzone
+Date
+date-fns
+Testing
+Vitest
+React Testing Library
+Playwright
+BACKEND CONTRACT FIRST ARCHITECTURE
+Backend is the source of truth.
+Frontend must never assume API structures.
+Generate architecture capable of consuming:
+OpenAPI
+Swagger
+DRF Spectacular
+DRF Schema
+GraphQL Schema
+All API integrations must be generated from backend contracts.
+API LAYER
+Create:
+src/api/
+Structure:
+api/
+├── client/
+├── interceptors/
+├── services/
+├── hooks/
+├── dto/
+├── schemas/
+├── websocket/
+├── queryKeys/
+└── cache/
+Every endpoint requires:
+DTO
+Zod schema
+Axios service
+React Query hook
+Error mapping
+Permission mapping
+AUTHENTICATION
+Implement:
+Login
+Register
+Logout
+Email Verification
+Password Reset
+Change Password
+Refresh Token
+Session Management
+Device Management
+Social Login
+Two Factor Authentication
+Support:
+JWT
+Refresh Tokens
+OAuth
+Create:
+AuthGuard
+GuestGuard
+RoleGuard
+PermissionGuard
+FeatureGuard
+ROLE BASED ACCESS CONTROL
+Support:
+Student
+Premium Student
+Moderator
+Instructor
+Admin
+Super Admin
+Permission-driven rendering.
+Unauthorized features must never render.
+BRAINPILOT MODULES
+Generate complete UI for:
+Dashboard
+AI Productivity Dashboard
+Learning Insights
+Daily Progress
+Weekly Progress
+Goal Tracking
+Activity Feed
+AI Chat
+Streaming Responses
+Markdown Rendering
+Code Blocks
+Citations
+Conversation History
+Multi-Agent Support
+Study Planner
+Smart Plans
+Schedule Builder
+Calendar
+Timeline View
+Goal Mapping
+Revision Engine
+Spaced Repetition
+Smart Review
+Revision Calendar
+Memory Analytics
+Flashcards
+Create
+Edit
+Delete
+Import
+Export
+AI Generated Cards
+Quiz System
+Practice Mode
+Exam Mode
+AI Quiz Generator
+Score Analytics
+PDF Learning
+Upload PDF
+PDF Viewer
+AI Chat With PDF
+Highlighting
+Note Taking
+Notes
+Rich Text Editor
+Folder Structure
+Tags
+Search
+Goals
+Goal Creation
+Milestones
+Progress Tracking
+Analytics
+Learning Analytics
+Productivity Analytics
+AI Usage Analytics
+Revision Analytics
+Performance Analytics
+Notifications
+Real Time Notifications
+Notification Center
+Preferences
+Subscription
+Pricing
+Billing
+Invoices
+Usage Tracking
+Settings
+Profile
+Account
+Privacy
+Security
+Notifications
+Appearance
+ADMIN PORTAL
+Create complete admin dashboard:
+User Management
+Search
+Filter
+Suspend
+Activate
+Analytics
+Revenue
+Growth
+Retention
+Moderation
+Reports
+Content Review
+AI Monitoring
+AI Usage
+Token Usage
+Cost Tracking
+Subscription Monitoring
+Active Plans
+Churn
+Revenue
+REAL TIME ARCHITECTURE
+Implement:
+WebSockets
+Event Streaming
+Background Sync
+Cache Invalidation
+Optimistic Updates
+Live Notifications
+Presence Indicators
+FILE UPLOAD SYSTEM
+Support:
+PDF
+DOCX
+PPTX
+Images
+CSV
+Features:
+Drag Drop
+Progress Tracking
+Retry
+Error Recovery
+DASHBOARD QUALITY
+UI quality must match:
+Notion
+Linear
+GitHub
+Vercel
+Stripe Dashboard
+Slack
+Duolingo
+CODE QUALITY RULES
+Generate:
+Strict TypeScript
+Reusable Components
+Feature Based Architecture
+SOLID Principles
+Clean Architecture
+No Duplicate Code
+Accessibility Compliance
+Mobile Responsive
+Dark Mode
+Light Mode
+FORBIDDEN
+Do NOT use:
+Mock APIs
+Fake Data
+Static JSON
+Hardcoded Responses
+Any endpoint not present in backend contract
+FINAL VALIDATION
+Verify:
+✓ Every backend endpoint has service layer
+✓ Every backend endpoint has React Query hook
+✓ Every backend permission has UI protection
+✓ Every backend feature has UI
+✓ Every upload endpoint has upload UI
+✓ Every analytics endpoint has charts
+✓ Every notification endpoint has UI
+✓ Every admin endpoint has admin screens
+✓ Full TypeScript typing
+✓ Production-ready code
+Generate enterprise-grade frontend architecture, folder structure, components, pages, hooks, services, state management, routing, authentication, dashboards, analytics, AI interfaces, and admin systems for BrainPilot AI.

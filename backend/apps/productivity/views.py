@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 
 from .serializers import (
     PomodoroSessionSerializer, StudyStreakSerializer, FocusLogSerializer,
-    CompletePomodороSerializer, LogSessionSerializer, SessionCompleteResponseSerializer,
+    CompletePomodoroSerializer, LogSessionSerializer, SessionCompleteResponseSerializer,
 )
 from .services import ProductivityService
 from common.responses import success_response, created_response
@@ -27,7 +27,7 @@ class CompletePomodoroView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
-        serializer = CompletePomodороSerializer(data=request.data)
+        serializer = CompletePomodoroSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         session = ProductivityService.complete_pomodoro(
             request.user, pk, serializer.validated_data["pomodoros_completed"]

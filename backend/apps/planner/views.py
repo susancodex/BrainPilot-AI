@@ -73,5 +73,7 @@ class StudySessionUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, pk):
-        session = PlannerService.update_session(request.user, pk, **request.data)
-        return success_response(data=StudySessionSerializer(session).data, message="Session updated.")
+        serializer = StudySessionSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        updated = PlannerService.update_session(request.user, pk, **serializer.validated_data)
+        return success_response(data=StudySessionSerializer(updated).data, message="Session updated.")

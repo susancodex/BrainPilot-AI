@@ -40,3 +40,20 @@ All endpoints are under `/api/v1/`. The axios baseURL is `/api/v1`, so hooks cal
 - Adapter: `backend/services/ai_engine/adapters/gemini_adapter.py` (Google Gemini `gemini-2.5-flash`)
 - Requires `GEMINI_API_KEY` env var
 - Streaming chat: `chatbot/send/stream/` uses Django `StreamingHttpResponse` + SSE events: `chunk`, `done`, `error`
+
+## Known data shape fixes (response shapes must match frontend types)
+
+**Dashboard** `dashboard/summary/` — must return flat fields: `streak` (int), `today_focus_minutes`, `notes_count`, `goals_summary: {active, completed, total}`, `due_revisions`, `recent_activity: [{description, time, type}]`, `upcoming_sessions`, `ai_suggestion`. Fixed in `dashboard/services.py`.
+
+**Analytics trends** — must return `{name: "Jun 01", hours: float, date: "YYYY-MM-DD"}`. Frontend `StudyTrend` type. Fixed in `analytics/views.py` via `_trends_to_frontend()`.
+
+**Analytics subjects** — must return `{name: str, value: float, hours: float}`. Frontend `SubjectBreakdown` type. Fixed via `_subjects_to_frontend()`.
+
+**Planner AI plan** — `create_ai_plan` stores `validated_data` as JSONField `ai_context`, but DRF DateFields give Python `date` objects which are not JSON-serializable. Fix: convert dates to strings before storing. In `planner/services.py`.
+
+**Pomodoro** — requires `subject` field in POST body (not optional).
+
+**Chatbot send/stream** — requires `content` field (not `message`).
+
+## Frontend port
+- Frontend runs on port 5000 (required for Replit webview). `PORT=5000` env var set.

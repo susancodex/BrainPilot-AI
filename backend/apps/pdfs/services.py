@@ -51,7 +51,7 @@ class PDFService:
                 doc.extracted_text = "\n\n".join(text_parts)
             except ImportError:
                 doc.page_count = 1
-                doc.extracted_text = "[PDF text extraction requires pypdf. Install it to enable full text search.]"
+                doc.extracted_text = ""
 
             doc.is_processed = True
             doc.save(update_fields=["page_count", "extracted_text", "is_processed"])

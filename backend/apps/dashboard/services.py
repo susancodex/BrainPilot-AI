@@ -13,54 +13,117 @@ class DashboardService:
         from apps.goals.models import Goal
         from apps.revision.models import RevisionTopic
         from apps.quizzes.models import QuizAttempt
+        from apps.notes.models import Note
 
         today = timezone.now().date()
         week_start = today - timedelta(days=today.weekday())
 
         streak, _ = StudyStreak.objects.get_or_create(user=user)
         today_log = FocusLog.objects.filter(user=user, date=today).first()
-        week_focus = FocusLog.objects.filter(user=user, date__gte=week_start).aggregate(
-            total=__import__("django.db.models", fromlist=["Sum"]).Sum("focus_minutes")
-        )["total"] or 0
 
-        active_plans = StudyPlan.objects.filter(user=user, status="active").count()
-        today_sessions = StudySession.objects.filter(
+        today_sessions_qs = StudySession.objects.filter(
             plan__user=user,
             scheduled_date=today,
         ).select_related("plan")
 
         active_goals = Goal.objects.filter(user=user, status="in_progress").count()
-        due_revisions = RevisionTopic.objects.filter(user=user, next_revision_at__lte=timezone.now()).count()
-        weak_topics = RevisionTopic.objects.filter(user=user, is_weak=True).count()
-        recent_quiz = QuizAttempt.objects.filter(user=user, completed=True).order_by("-created_at").first()
+        completed_goals = Goal.objects.filter(user=user, status="completed").count()
+        total_goals = Goal.objects.filter(user=user).count()
+
+        due_revisions = RevisionTopic.objects.filter(
+            user=user, next_revision_at__lte=timezone.now()
+        ).count()
+
+        notes_count = Note.objects.filter(user=user).count()
+
+        recent_activity = DashboardService._build_recent_activity(user)
+        upcoming_sessions = DashboardService._build_upcoming_sessions(user, today)
+        ai_suggestion = DashboardService._build_ai_suggestion(streak, active_goals, due_revisions)
 
         return {
-            "streak": {
-                "current": streak.current_streak,
-                "longest": streak.longest_streak,
-                "total_days": streak.total_study_days,
-            },
-            "today": {
-                "focus_minutes": today_log.focus_minutes if today_log else 0,
-                "productivity_score": today_log.productivity_score if today_log else 0,
-                "sessions_scheduled": today_sessions.count(),
-                "sessions_completed": today_sessions.filter(status="completed").count(),
-            },
-            "week": {
-                "focus_minutes": week_focus,
-            },
-            "goals": {
+            "streak": streak.current_streak,
+            "today_sessions": today_sessions_qs.count(),
+            "notes_count": notes_count,
+            "goals_summary": {
                 "active": active_goals,
+                "completed": completed_goals,
+                "total": total_goals,
             },
-            "revision": {
-                "due": due_revisions,
-                "weak_topics": weak_topics,
-            },
-            "plans": {
-                "active": active_plans,
-            },
-            "last_quiz": {
-                "subject": recent_quiz.quiz.subject if recent_quiz else None,
-                "percentage": recent_quiz.percentage if recent_quiz else None,
-            } if recent_quiz else None,
+            "due_revisions": due_revisions,
+            "today_focus_minutes": today_log.focus_minutes if today_log else 0,
+            "recent_activity": recent_activity,
+            "upcoming_sessions": upcoming_sessions,
+            "ai_suggestion": ai_suggestion,
         }
+
+    @staticmethod
+    def _build_recent_activity(user) -> list:
+        from apps.productivity.models import FocusLog
+        from apps.quizzes.models import QuizAttempt
+        from apps.notes.models import Note
+        from apps.planner.models import StudySession
+
+        activities = []
+
+        for log in FocusLog.objects.filter(user=user).order_by("-date")[:3]:
+            subjects = ", ".join(log.subjects_studied) if log.subjects_studied else "study"
+            activities.append({
+                "description": f"Studied {subjects} for {log.focus_minutes} minutes",
+                "time": log.date.strftime("%b %d"),
+                "type": "focus",
+            })
+
+        for attempt in QuizAttempt.objects.filter(user=user, completed=True).select_related("quiz").order_by("-created_at")[:3]:
+            activities.append({
+                "description": f"Completed {attempt.quiz.subject} quiz — {attempt.percentage:.0f}%",
+                "time": attempt.created_at.strftime("%b %d"),
+                "type": "quiz",
+            })
+
+        for note in Note.objects.filter(user=user).order_by("-updated_at")[:2]:
+            activities.append({
+                "description": f"Updated note: {note.title}",
+                "time": note.updated_at.strftime("%b %d"),
+                "type": "note",
+            })
+
+        activities.sort(key=lambda x: x["time"], reverse=True)
+        return activities[:8]
+
+    @staticmethod
+    def _build_upcoming_sessions(user, today) -> list:
+        from apps.planner.models import StudySession
+        from datetime import timedelta
+
+        sessions = StudySession.objects.filter(
+            plan__user=user,
+            scheduled_date__gte=today,
+            scheduled_date__lte=today + timedelta(days=7),
+            status="scheduled",
+        ).select_related("plan").order_by("scheduled_date", "start_time")[:5]
+
+        return [
+            {
+                "id": str(s.id),
+                "subject": s.subject,
+                "topic": s.topic,
+                "scheduled_date": str(s.scheduled_date),
+                "start_time": str(s.start_time) if s.start_time else None,
+                "end_time": str(s.end_time) if s.end_time else None,
+                "status": s.status,
+                "duration_minutes": s.duration_minutes,
+            }
+            for s in sessions
+        ]
+
+    @staticmethod
+    def _build_ai_suggestion(streak, active_goals, due_revisions) -> str:
+        if due_revisions > 3:
+            return f"You have {due_revisions} topics due for revision. Prioritise these to strengthen your memory."
+        if streak.current_streak >= 7:
+            return f"Amazing {streak.current_streak}-day streak! Keep the momentum — consistency is the key to mastery."
+        if active_goals == 0:
+            return "Set a learning goal to give your study sessions direction and motivation."
+        if streak.current_streak == 0:
+            return "Start a study session today to begin building your streak — even 20 minutes counts!"
+        return "Great consistency! Keep reviewing your topics and stay ahead of your goals."

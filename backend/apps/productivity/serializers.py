@@ -27,7 +27,7 @@ class FocusLogSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "productivity_score", "created_at"]
 
 
-class CompletePomodороSerializer(serializers.Serializer):
+class CompletePomodoroSerializer(serializers.Serializer):
     pomodoros_completed = serializers.IntegerField(min_value=1)
 
 

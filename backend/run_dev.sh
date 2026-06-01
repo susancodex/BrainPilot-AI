@@ -6,9 +6,9 @@ export PYTHONPATH="$SCRIPT_DIR:$PYTHONPATH"
 export DJANGO_SETTINGS_MODULE="config.settings.development"
 cd "$WORKSPACE_DIR"
 
-PYTHON312="$HOME/.pythonlibs/bin/python3.12"
+PYTHON312="/nix/store/sj74dzrygwdxpb54fv7zc6ry75ay4f3n-python-wrapped-0.1.0/bin/python3"
 if [ ! -x "$PYTHON312" ]; then
-  PYTHON312=$(which python3.12 2>/dev/null || which python3 2>/dev/null)
+  PYTHON312=$(python3.12 2>/dev/null || python3 2>/dev/null)
 fi
 
 uv run --python "$PYTHON312" python "$SCRIPT_DIR/manage.py" migrate --noinput 2>&1 || true

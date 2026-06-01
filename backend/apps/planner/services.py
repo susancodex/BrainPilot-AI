@@ -35,6 +35,11 @@ class PlannerService:
     @staticmethod
     @transaction.atomic
     def create_ai_plan(user, ai_response: dict, request_data: dict) -> StudyPlan:
+        from datetime import date
+        serializable_context = {
+            k: str(v) if isinstance(v, date) else v
+            for k, v in request_data.items()
+        }
         plan = StudyPlan.objects.create(
             user=user,
             title=ai_response.get("title", "AI Study Plan"),
@@ -44,7 +49,7 @@ class PlannerService:
             end_date=request_data["end_date"],
             total_hours=ai_response.get("total_hours", 0),
             ai_generated=True,
-            ai_context=request_data,
+            ai_context=serializable_context,
             status="active",
         )
         for session in ai_response.get("sessions", []):

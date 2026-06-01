@@ -1,6 +1,6 @@
 kind = "web"
-previewPath = "/"
-title = "BrainPilot AI"
+previewPath = "/v0"
+title = "BrainPilot AI (Legacy)"
 version = "1.0.0"
 id = "artifacts/brainpilot"
 router = "path"
@@ -11,11 +11,11 @@ version = "1.0.0"
 
 [[services]]
 name = "web"
-paths = [ "/" ]
+paths = [ "/v0" ]
 localPort = 25585
 
 [services.development]
-run = "pnpm --filter @workspace/brainpilot run dev"
+run = "PORT=25585 BASE_PATH=/v0/ pnpm --filter @workspace/brainpilot run dev"
 
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/brainpilot", "run", "build" ]
@@ -28,4 +28,4 @@ to = "/index.html"
 
 [services.env]
 PORT = "25585"
-BASE_PATH = "/"
+BASE_PATH = "/v0/"

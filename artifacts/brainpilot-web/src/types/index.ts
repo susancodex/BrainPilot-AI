@@ -249,6 +249,61 @@ export interface Notification {
   created_at: string;
 }
 
+export interface PDFDocument {
+  id: string;
+  title: string;
+  file_url?: string;
+  file_size: number;
+  page_count: number;
+  is_processed: boolean;
+  subject?: string;
+  tags?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PDFHighlight {
+  id: string;
+  text: string;
+  page_number: number;
+  color: string;
+  note?: string;
+  created_at: string;
+}
+
+export interface PDFChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+}
+
+export interface Subscription {
+  id: string;
+  plan: "free" | "premium" | "enterprise";
+  plan_display: string;
+  status: "active" | "cancelled" | "expired" | "trial";
+  status_display: string;
+  started_at: string;
+  expires_at?: string;
+  is_premium: boolean;
+  ai_requests_used: number;
+  ai_requests_limit: number;
+  ai_requests_remaining: number;
+  pdfs_uploaded: number;
+  pdfs_limit: number;
+}
+
+export interface PlanInfo {
+  plan_key: string;
+  name: string;
+  price_monthly: number;
+  price_yearly: number;
+  ai_requests: number;
+  pdf_uploads: number;
+  features: string[];
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message?: string;

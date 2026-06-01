@@ -1,0 +1,397 @@
+You are a Principal Software Architect, Staff Full-Stack Engineer, Senior Product Engineer, Senior React Engineer, Senior Django Engineer, AI Systems Architect, DevOps Engineer, Security Engineer, Database Architect, and SaaS Platform Architect.
+Your task is to design and build the COMPLETE production-grade full-stack SaaS application:
+
+BrainPilot AI
+Tagline:
+"Your Intelligent AI Study Companion"
+BrainPilot AI is an AI-powered learning platform that helps students plan, learn, revise, practice, analyze performance, and improve academic outcomes through intelligent AI systems.
+
+The application must be built with enterprise-grade architecture, clean code, scalability, maintainability, security, observability, and excellent user experience.
+
+TECH STACK (MANDATORY)
+Frontend
+React 19+
+TypeScript
+Vite
+React Router
+TanStack Query
+Zustand
+Axios
+React Hook Form
+Zod
+Tailwind CSS
+Shadcn UI
+Radix UI
+Framer Motion
+Recharts
+TipTap Editor
+React Dropzone
+Backend
+Python 3.13+
+Django 5+
+Django REST Framework
+PostgreSQL
+Redis
+Celery
+Django Channels
+WebSockets
+JWT Authentication
+DRF Spectacular (OpenAPI)
+Pydantic (validation where appropriate)
+AI Layer
+OpenAI APIs
+RAG Architecture
+Vector Database Support
+Embeddings
+AI Agent Framework
+Prompt Management System
+DevOps
+Docker
+Docker Compose
+GitHub Actions
+Nginx
+Production Environment Configuration
+CORE PRODUCT MODULES
+Build complete backend and frontend support for:
+Authentication
+Register
+Login
+Logout
+Refresh Token
+Email Verification
+Password Reset
+Change Password
+Device Management
+Session Management
+Two-Factor Authentication
+User Management
+Profile
+Preferences
+Learning Style
+Academic Information
+Avatar Upload
+AI Study Assistant
+AI Chat
+Multi-Conversation Support
+Streaming Responses
+Conversation History
+Saved Chats
+Context Memory
+Study Planner
+Study Goals
+Milestones
+Calendar Planning
+Weekly Plans
+Daily Tasks
+AI Generated Plans
+Smart Revision Engine
+Spaced Repetition
+Revision Scheduling
+Retention Tracking
+Revision Recommendations
+Flashcards
+Create
+Edit
+Delete
+Tagging
+AI Generation
+Import/Export
+Quiz System
+AI Quiz Generation
+Practice Mode
+Exam Mode
+Scoring
+Analytics
+PDF Learning
+Upload PDFs
+Parse PDFs
+AI Chat with PDF
+Highlights
+Notes
+Notes System
+Rich Text Notes
+Folders
+Tags
+Search
+Goal Tracking
+Academic Goals
+Progress Tracking
+Completion Analytics
+Recommendations
+AI Learning Recommendations
+Weak Area Detection
+Smart Suggestions
+Analytics
+Study Time
+Consistency
+Progress
+Revision Performance
+Goal Achievement
+AI Usage
+Notifications
+Real-Time Notifications
+In-App Notifications
+Email Notifications
+Notification Preferences
+Subscription & Billing
+Free Plan
+Premium Plan
+Usage Tracking
+Invoices
+Billing History
+Admin Portal
+User Management
+Content Moderation
+Platform Analytics
+Revenue Analytics
+AI Usage Monitoring
+System Health
+FRONTEND ARCHITECTURE
+Generate:
+src/
+├── app/
+├── routes/
+├── pages/
+├── features/
+├── components/
+├── layouts/
+├── hooks/
+├── store/
+├── api/
+├── services/
+├── types/
+├── schemas/
+├── constants/
+├── assets/
+├── utils/
+├── providers/
+├── styles/
+└── tests/
+Requirements:
+Feature-based architecture
+Reusable components
+Strict TypeScript
+Responsive design
+Dark Mode
+Light Mode
+Accessibility support
+BACKEND ARCHITECTURE
+Generate:
+backend/
+├── config/
+├── apps/
+│   ├── accounts/
+│   ├── users/
+│   ├── ai/
+│   ├── planner/
+│   ├── revision/
+│   ├── flashcards/
+│   ├── quizzes/
+│   ├── pdfs/
+│   ├── notes/
+│   ├── analytics/
+│   ├── notifications/
+│   ├── subscriptions/
+│   └── adminpanel/
+├── common/
+├── core/
+├── services/
+├── integrations/
+├── tasks/
+├── websocket/
+└── tests/
+Requirements:
+Service Layer Pattern
+Repository Pattern where useful
+Clean Architecture
+Modular Django Apps
+OpenAPI Documentation
+Business Logic Isolation
+DATABASE DESIGN
+Create production-grade PostgreSQL schema.
+Include:
+
+UUID Primary Keys
+Audit Fields
+Soft Delete Support
+Proper Indexing
+Foreign Key Constraints
+Optimized Queries
+Generate:
+ER Diagram Description
+Models
+Relationships
+Constraints
+API DESIGN
+Every endpoint must include:
+Serializer
+Request DTO
+Response DTO
+Validation
+Permission Classes
+Documentation
+Generate:
+RESTful APIs
+OpenAPI Spec
+Versioning Strategy
+REAL-TIME SYSTEM
+Implement:
+WebSocket Notifications
+Live Study Updates
+Real-Time Analytics
+Live Chat Streaming
+Presence Tracking
+Using:
+Django Channels
+Redis
+AI ARCHITECTURE
+Create:
+AI Chat Engine
+Streaming
+Memory
+Context Management
+Study Planner Agent
+Revision Agent
+Quiz Generator Agent
+PDF Tutor Agent
+Recommendation Agent
+Analytics Agent
+Generate:
+Prompt Architecture
+Agent Communication Design
+Tool Calling Design
+RAG Flow
+SECURITY REQUIREMENTS
+Implement:
+Authentication
+JWT
+Refresh Tokens
+Authorization
+RBAC
+Permissions
+Security
+Rate Limiting
+CSRF Protection
+XSS Protection
+SQL Injection Protection
+Input Validation
+File Validation
+Logging
+Audit Logs
+Security Logs
+PERFORMANCE REQUIREMENTS
+Frontend:
+Lazy Loading
+Code Splitting
+Optimized Bundles
+Backend:
+Query Optimization
+Redis Caching
+Background Jobs
+Pagination
+BACKGROUND TASKS
+Using Celery:
+Email Sending
+Notifications
+AI Processing
+PDF Processing
+Analytics Aggregation
+Cleanup Jobs
+TESTING
+Frontend:
+Vitest
+React Testing Library
+Playwright
+Backend:
+Pytest
+DRF Testing
+Integration Testing
+Coverage Goal:
+Minimum 80%
+DEVOPS
+Generate:
+Docker
+Frontend Container
+Backend Container
+PostgreSQL
+Redis
+Nginx
+CI/CD
+Using:
+GitHub Actions
+
+Pipeline:
+
+Lint
+Test
+Build
+Security Checks
+Deployment
+CODE QUALITY RULES
+Mandatory:
+Clean Architecture
+SOLID Principles
+DRY
+KISS
+Type Safety
+Reusable Components
+Reusable Services
+Human Readable Code
+Avoid:
+Spaghetti Code
+Massive Components
+Massive Views
+Business Logic in UI
+Business Logic in Serializers
+Hardcoded Values
+Duplicate Code
+UI/UX REQUIREMENTS
+Design quality comparable to:
+Notion
+Linear
+Stripe Dashboard
+GitHub
+Slack
+Duolingo
+Requirements:
+Modern SaaS Design
+Premium Feel
+Responsive
+Accessible
+Fast
+Minimal
+Student-Focused
+NO MOCK DATA POLICY
+Forbidden:
+Fake APIs
+Mock Responses
+Hardcoded JSON
+Placeholder Business Logic
+All frontend functionality must connect to actual backend services.
+FINAL DELIVERABLES
+Generate:
+Complete System Architecture
+Frontend Architecture
+Backend Architecture
+Database Design
+API Design
+Authentication System
+AI Architecture
+WebSocket Architecture
+Background Jobs
+Security Design
+Folder Structures
+Core Models
+API Endpoints
+UI Screens
+State Management Design
+Deployment Architecture
+CI/CD Architecture
+Testing Strategy
+Monitoring Strategy
+Production Readiness Checklist
+The final output must be enterprise-grade, scalable, secure, maintainable, and production-ready, capable of supporting tens of thousands of concurrent users while remaining easy for human developers to understand and extend.
+
+
+
+

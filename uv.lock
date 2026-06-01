@@ -111,6 +111,7 @@ requires-dist = [
     { name = "django-redis", specifier = ">=6.0.0" },
     { name = "djangorestframework", specifier = ">=3.17.1" },
     { name = "djangorestframework-simplejwt", specifier = ">=5.5.1" },
+    { name = "drf-spectacular", specifier = ">=0.28.0" },
     { name = "drf-spectacular", specifier = ">=0.29.0" },
     { name = "factory-boy", specifier = ">=3.3.3" },
     { name = "google-genai", specifier = ">=2.7.0" },

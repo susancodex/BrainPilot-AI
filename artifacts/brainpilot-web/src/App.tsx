@@ -24,6 +24,8 @@ import Productivity from "@/pages/productivity";
 import Notifications from "@/pages/notifications";
 import Profile from "@/pages/profile";
 import AdminUsers from "@/pages/admin/users";
+import PDFs from "@/pages/pdfs";
+import Subscription from "@/pages/subscription";
 
 import { AppLayout } from "@/components/layout";
 import { PrivateRoute } from "@/components/private-route";
@@ -54,6 +56,8 @@ function PrivateRoutes() {
         <Route path="/productivity" component={Productivity} />
         <Route path="/notifications" component={Notifications} />
         <Route path="/profile" component={Profile} />
+        <Route path="/pdfs" component={PDFs} />
+        <Route path="/subscription" component={Subscription} />
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin" component={AdminUsers} />
         <Route component={NotFound} />

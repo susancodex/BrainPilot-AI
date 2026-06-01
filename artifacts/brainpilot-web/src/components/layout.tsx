@@ -15,7 +15,7 @@ import {
   LayoutDashboard, FileText, MessageSquare, BrainCircuit, Layers,
   Target, Calendar, RotateCcw, BarChart2, Timer, Bell, User,
   Settings, LogOut, Moon, Sun, ChevronLeft, ChevronRight,
-  Shield, Menu, X,
+  Shield, Menu, X, File, CreditCard,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -25,11 +25,13 @@ const NAV_ITEMS = [
   { href: "/chat", label: "AI Tutor", icon: MessageSquare },
   { href: "/quizzes", label: "Quizzes", icon: BrainCircuit },
   { href: "/flashcards", label: "Flashcards", icon: Layers },
+  { href: "/pdfs", label: "PDF Library", icon: File },
   { href: "/goals", label: "Goals", icon: Target },
   { href: "/planner", label: "Planner", icon: Calendar },
   { href: "/revision", label: "Revision", icon: RotateCcw },
   { href: "/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/productivity", label: "Focus", icon: Timer },
+  { href: "/subscription", label: "Subscription", icon: CreditCard },
 ];
 
 interface LayoutProps {

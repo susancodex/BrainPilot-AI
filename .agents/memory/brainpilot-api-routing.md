@@ -1,55 +1,42 @@
 ---
 name: BrainPilot API routing
-description: Full URL map for the BrainPilot Express/TypeScript API server, route prefix conventions, and key gotchas.
+description: Full URL map for the Django/DRF backend, route prefix conventions, and key gotchas.
 ---
 
-## Route prefix convention (CRITICAL)
+## Stack (IMPORTANT — this changed)
 
-The Express app (`app.ts`) mounts all routes at `/api`. Route handlers must use bare paths like `/tasks`, `/quizzes` (NOT `/v1/tasks`).
+The backend is **Django + DRF + PostgreSQL** (Python), NOT Express/TypeScript. Ignore any notes about an Express stack.
 
-- Generated client calls: `/api/tasks`, `/api/quizzes`, `/api/flashcard-decks`, etc.
-- Routes are mounted at `/api`, so handlers use: `/tasks`, `/quizzes`, etc.
-- If you write `/v1/tasks` in a handler, the full path becomes `/api/v1/tasks` → 404 from client.
+- Backend: `backend/` Django project, runs on port 8000
+- API client: `artifacts/brainpilot-web/src/lib/api.ts` (axios, baseURL `/api/v1`)
+- Vite proxy forwards `/api/*` → `http://localhost:8000`
 
-**Why:** The API client was generated from an OpenAPI spec with paths like `/api/tasks`. The Express app mounts at `/api`, so route handlers must only specify the suffix after `/api`.
+## Route prefix convention
 
-## Full URL map (client → handler)
+All endpoints are under `/api/v1/`. The axios baseURL is `/api/v1`, so hooks call relative paths like `/auth/login/`, `/chatbot/conversations/`, etc.
 
-| Client calls | Handler path | File |
-|---|---|---|
-| GET /api/dashboard/summary | /dashboard/summary | dashboard.ts |
-| GET /api/dashboard/activity | /dashboard/activity | dashboard.ts |
-| GET /api/dashboard/recommendations | /dashboard/recommendations | dashboard.ts |
-| GET/POST /api/tasks | /tasks | tasks.ts |
-| POST /api/tasks/:id/complete | /tasks/:id/complete | tasks.ts |
-| DELETE /api/tasks/:id | /tasks/:id | tasks.ts |
-| GET/POST /api/goals | /goals | goals.ts |
-| PUT/DELETE /api/goals/:id | /goals/:id | goals.ts |
-| GET/POST /api/flashcard-decks | /flashcard-decks | flashcards.ts |
-| GET/DELETE /api/flashcard-decks/:id | /flashcard-decks/:id | flashcards.ts |
-| POST /api/flashcard-decks/:deckId/cards | /flashcard-decks/:deckId/cards | flashcards.ts |
-| PUT/DELETE /api/flashcard-decks/:deckId/cards/:cardId | /flashcard-decks/:deckId/cards/:cardId | flashcards.ts |
-| GET/POST /api/quizzes | /quizzes | quizzes.ts |
-| GET/DELETE /api/quizzes/:id | /quizzes/:id | quizzes.ts |
-| POST /api/quizzes/:id/submit | /quizzes/:id/submit | quizzes.ts |
-| GET/POST /api/chats | /chats | chats.ts |
-| GET/DELETE /api/chats/:id | /chats/:id | chats.ts |
-| POST /api/chats/:id/messages | /chats/:id/messages | chats.ts |
-| GET/POST /api/revisions | /revisions | revisions.ts |
-| POST /api/revisions/:id/review | /revisions/:id/review | revisions.ts |
-| DELETE /api/revisions/:id | /revisions/:id | revisions.ts |
-| GET/POST /api/pdfs | /pdfs | pdfs.ts |
-| DELETE /api/pdfs/:id | /pdfs/:id | pdfs.ts |
-| GET/POST /api/notifications | /notifications | notifications.ts |
-| POST /api/notifications/:id/read | /notifications/:id/read | notifications.ts |
-| POST /api/notifications/read-all | /notifications/read-all | notifications.ts |
-| GET/POST /api/sessions | /sessions | sessions.ts |
+## Full URL map (all under /api/v1/)
 
-## Other key facts
+| Module | Paths |
+|---|---|
+| Health | `health/` |
+| Auth | `auth/register/`, `auth/login/`, `auth/logout/`, `auth/me/`, `auth/me/profile/`, `auth/me/change-password/`, `auth/password/reset/`, `auth/password/reset/confirm/`, `auth/verify-email/` |
+| Token | `token/refresh/` |
+| Planner | `planner/plans/`, `planner/plans/generate/`, `planner/plans/<id>/`, `planner/sessions/`, `planner/sessions/<id>/` |
+| Goals | `goals/`, `goals/<id>/`, `goals/<id>/progress/`, `goals/<id>/milestones/<mid>/complete/` |
+| Revision | `revision/topics/`, `revision/topics/due/`, `revision/topics/weak/`, `revision/record/` |
+| Notes | `notes/`, `notes/<id>/`, `notes/<id>/summarize/`, `notes/<id>/flashcards/generate/`, `notes/flashcards/`, `notes/flashcards/due/`, `notes/flashcards/<id>/review/` |
+| Quizzes | `quizzes/`, `quizzes/generate/`, `quizzes/<id>/`, `quizzes/<id>/submit/`, `quizzes/attempts/` |
+| Chatbot | `chatbot/conversations/`, `chatbot/conversations/<id>/`, `chatbot/send/`, `chatbot/send/stream/` |
+| Analytics | `analytics/trends/`, `analytics/subjects/`, `analytics/quiz-performance/`, `analytics/revision/`, `analytics/report/` |
+| Productivity | `productivity/pomodoro/`, `productivity/pomodoro/<id>/complete/`, `productivity/sessions/complete/`, `productivity/streak/`, `productivity/focus-logs/` |
+| Dashboard | `dashboard/summary/` |
+| Notifications | `notifications/`, `notifications/<id>/read/`, `notifications/read-all/` |
+| PDFs | `pdfs/`, `pdfs/<id>/`, `pdfs/<id>/chat/`, `pdfs/<id>/highlights/`, `pdfs/<id>/highlights/<hid>/` |
+| Subscriptions | `subscriptions/`, `subscriptions/plans/` |
 
-- Stack: Express + Drizzle + PostgreSQL (TypeScript, NOT Django)
-- API server port: 8000, artifact dir: artifacts/api-server
-- `pg` must be a direct dependency of `@workspace/api-server` (not just in `@workspace/db`)
-- DB connection: `artifacts/api-server/src/lib/db.ts` exports `db` using drizzle + pg Pool from DATABASE_URL
-- Seed via REST API calls (not tsx/ts-node) — the build outputs ESM and schema imports are TypeScript
-- Notifications need a POST route to be seedable; one was added to notifications.ts
+## AI engine
+
+- Adapter: `backend/services/ai_engine/adapters/gemini_adapter.py` (Google Gemini `gemini-2.5-flash`)
+- Requires `GEMINI_API_KEY` env var
+- Streaming chat: `chatbot/send/stream/` uses Django `StreamingHttpResponse` + SSE events: `chunk`, `done`, `error`

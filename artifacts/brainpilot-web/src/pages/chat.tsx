@@ -91,12 +91,12 @@ export default function Chat() {
     sendMessage.mutate(
       { conversation_id: selectedId, content: msgContent },
       {
-        onSuccess: (data: { user_message: Message; ai_message: Message }) => {
+        onSuccess: (data: { conversation_id: string; message: Message }) => {
           setLocalMessages((prev) => {
             const without = prev.filter((m) => !m.pending);
             return [
               ...without,
-              { role: "assistant", content: data.ai_message?.content ?? "No response" },
+              { role: "assistant", content: data.message?.content ?? "No response" },
             ];
           });
           inputRef.current?.focus();

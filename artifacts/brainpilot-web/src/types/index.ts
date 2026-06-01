@@ -69,45 +69,45 @@ export interface Message {
 
 export interface Quiz {
   id: string;
-  topic: string;
+  title: string;
+  topic?: string;
+  subject: string;
   difficulty?: string;
-  num_questions: number;
+  question_count: number;
   questions: QuizQuestion[];
-  attempt_count?: number;
-  best_score?: number;
+  ai_generated?: boolean;
   created_at: string;
 }
 
 export interface QuizQuestion {
-  id: string;
-  text: string;
-  question_type: 'mcq' | 'true_false' | 'short_answer';
+  index?: number;
+  text?: string;
+  question?: string;
+  question_type?: 'mcq' | 'true_false' | 'short_answer';
+  type?: string;
   options?: string[];
   correct_answer: string;
   explanation?: string;
-  ai_feedback?: string;
 }
 
 export interface QuizAttempt {
   id: string;
   quiz: string;
-  quiz_topic?: string;
   score: number;
-  total_questions: number;
+  max_score: number;
   percentage: number;
-  passed: boolean;
   time_taken_seconds?: number;
-  completed_at: string;
+  ai_feedback?: string;
+  completed: boolean;
+  created_at: string;
   answers: QuizAnswerResult[];
 }
 
 export interface QuizAnswerResult {
-  question_id: string;
-  question_text?: string;
+  question_index: number;
   user_answer: string;
   is_correct: boolean;
   correct_answer: string;
-  ai_feedback?: string;
 }
 
 export interface StudyPlan {

@@ -26,7 +26,14 @@ export const useQuiz = (id: string | null) => {
 export const useGenerateQuiz = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { topic: string; num_questions?: number; question_types?: string[] }) => {
+    mutationFn: async (payload: {
+      subject: string;
+      topic?: string;
+      difficulty?: string;
+      question_count?: number;
+      note_id?: string;
+      context?: string;
+    }) => {
       const { data } = await api.post("/quizzes/generate/", payload);
       return data;
     },
@@ -39,8 +46,16 @@ export const useGenerateQuiz = () => {
 export const useSubmitQuiz = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, answers }: { id: string; answers: Array<{ question_id: string; answer: string }> }) => {
-      const { data } = await api.post(`/quizzes/${id}/submit/`, { answers });
+    mutationFn: async ({
+      id,
+      answers,
+      time_taken_seconds,
+    }: {
+      id: string;
+      answers: Array<{ question_index: number; answer: string }>;
+      time_taken_seconds: number;
+    }) => {
+      const { data } = await api.post(`/quizzes/${id}/submit/`, { answers, time_taken_seconds });
       return data;
     },
     onSuccess: () => {

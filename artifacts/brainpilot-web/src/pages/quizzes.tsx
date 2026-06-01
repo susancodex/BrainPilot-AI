@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuizzes, useGenerateQuiz, useSubmitQuiz, useAttempts } from "@/hooks/use-quizzes";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -6,15 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import type { Quiz, QuizQuestion, QuizAttempt } from "@/types";
+import type { Quiz, QuizAttempt } from "@/types";
 import {
   BrainCircuit, Play, Plus, CheckCircle2, XCircle, ArrowLeft,
-  ArrowRight, Trophy, Clock, RotateCcw, ChevronRight,
-  Sparkles, Settings2,
+  ArrowRight, RotateCcw, Sparkles,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -22,18 +20,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 
 type AppView = "list" | "taking" | "results";
 
-interface SubmitResult {
-  score: number;
-  total_questions: number;
-  percentage: number;
-  passed: boolean;
-  answers: Array<{
-    question_id: string;
-    is_correct: boolean;
-    correct_answer: string;
-    user_answer: string;
-    ai_feedback?: string;
-  }>;
+function getQuestionText(q: any): string {
+  return q?.question ?? q?.text ?? "";
+}
+
+function getQuestionIndex(q: any, fallback: number): number {
+  return typeof q?.index === "number" ? q.index : fallback;
 }
 
 export default function Quizzes() {
@@ -46,12 +38,14 @@ export default function Quizzes() {
   const [view, setView] = useState<AppView>("list");
   const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null);
   const [currentQ, setCurrentQ] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [results, setResults] = useState<SubmitResult | null>(null);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [results, setResults] = useState<QuizAttempt | null>(null);
+  const startTimeRef = useRef<number>(Date.now());
 
   const [genForm, setGenForm] = useState({
+    subject: "",
     topic: "",
-    num_questions: [5],
+    question_count: [5],
     difficulty: "medium",
   });
   const [genOpen, setGenOpen] = useState(false);
@@ -60,14 +54,22 @@ export default function Quizzes() {
   const attemptList = (attempts as QuizAttempt[] | undefined) ?? [];
 
   const handleGenerate = () => {
-    if (!genForm.topic.trim()) return;
+    if (!genForm.subject.trim()) return;
     generateQuiz.mutate(
-      { topic: genForm.topic, num_questions: genForm.num_questions[0] },
+      {
+        subject: genForm.subject,
+        topic: genForm.topic || undefined,
+        difficulty: genForm.difficulty,
+        question_count: genForm.question_count[0],
+      },
       {
         onSuccess: () => {
           setGenOpen(false);
-          setGenForm({ topic: "", num_questions: [5], difficulty: "medium" });
-          toast({ title: "Quiz created!", description: `${genForm.num_questions[0]} questions on "${genForm.topic}".` });
+          setGenForm({ subject: "", topic: "", question_count: [5], difficulty: "medium" });
+          toast({ title: "Quiz created!", description: `${genForm.question_count[0]} questions on "${genForm.subject}".` });
+        },
+        onError: () => {
+          toast({ title: "Generation failed", description: "Please check your Gemini API key and try again.", variant: "destructive" });
         },
       }
     );
@@ -78,103 +80,92 @@ export default function Quizzes() {
     setCurrentQ(0);
     setAnswers({});
     setResults(null);
+    startTimeRef.current = Date.now();
     setView("taking");
   };
 
-  const selectAnswer = (questionId: string, answer: string) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: answer }));
+  const selectAnswer = (qIndex: number, answer: string) => {
+    setAnswers((prev) => ({ ...prev, [qIndex]: answer }));
   };
 
   const handleSubmit = () => {
     if (!activeQuiz) return;
-    const payload = activeQuiz.questions.map((q) => ({
-      question_id: q.id,
-      answer: answers[q.id] ?? "",
+    const timeTaken = Math.round((Date.now() - startTimeRef.current) / 1000);
+    const payload = activeQuiz.questions.map((q, i) => ({
+      question_index: getQuestionIndex(q, i),
+      answer: answers[getQuestionIndex(q, i)] ?? "",
     }));
     submitQuiz.mutate(
-      { id: activeQuiz.id, answers: payload },
+      { id: activeQuiz.id, answers: payload, time_taken_seconds: timeTaken },
       {
-        onSuccess: (data: SubmitResult) => {
+        onSuccess: (data: QuizAttempt) => {
           setResults(data);
           setView("results");
+        },
+        onError: () => {
+          toast({ title: "Submission failed", description: "Please try again.", variant: "destructive" });
         },
       }
     );
   };
 
-  const q: QuizQuestion | undefined = activeQuiz?.questions[currentQ];
+  const q = activeQuiz?.questions[currentQ];
+  const qIndex = q ? getQuestionIndex(q, currentQ) : currentQ;
+  const qText = q ? getQuestionText(q) : "";
   const answered = Object.keys(answers).length;
   const total = activeQuiz?.questions.length ?? 0;
 
   if (view === "taking" && activeQuiz && q) {
-    const selectedAnswer = answers[q.id];
+    const selectedAnswer = answers[qIndex];
+    const qType = (q as any).question_type ?? (q as any).type;
+    const options: string[] = (q as any).options ?? [];
     return (
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={() => setView("list")} className="gap-1.5">
             <ArrowLeft className="w-4 h-4" /> Back
           </Button>
-          <span className="text-sm font-medium text-muted-foreground">
-            {currentQ + 1} / {total}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 text-destructive border-destructive/30"
-            onClick={() => setView("list")}
-          >
+          <span className="text-sm font-medium text-muted-foreground">{currentQ + 1} / {total}</span>
+          <Button variant="outline" size="sm" className="gap-1.5 text-destructive border-destructive/30" onClick={() => setView("list")}>
             Quit
           </Button>
         </div>
 
-        {/* Progress */}
         <div className="space-y-1.5">
           <Progress value={((currentQ + 1) / total) * 100} className="h-2" />
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{activeQuiz.topic}</span>
+            <span>{activeQuiz.subject}</span>
             <span>{answered} answered</span>
           </div>
         </div>
 
-        {/* Question */}
         <Card className="border-border shadow-md">
           <CardHeader>
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm flex items-center justify-center shrink-0">
                 {currentQ + 1}
               </div>
-              <CardTitle className="text-lg leading-snug font-medium text-foreground">{q.text}</CardTitle>
+              <CardTitle className="text-lg leading-snug font-medium text-foreground">{qText}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {q.question_type === "true_false" ? (
+            {qType === "true_false" ? (
               ["True", "False"].map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => selectAnswer(q.id, opt)}
-                  className={cn(
-                    "w-full text-left p-4 rounded-xl border-2 transition-all font-medium text-sm",
+                <button key={opt} onClick={() => selectAnswer(qIndex, opt)}
+                  className={cn("w-full text-left p-4 rounded-xl border-2 transition-all font-medium text-sm",
                     selectedAnswer === opt
                       ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-card hover:border-primary/40 hover:bg-muted/50"
-                  )}
-                >
+                      : "border-border bg-card hover:border-primary/40 hover:bg-muted/50")}>
                   {opt}
                 </button>
               ))
-            ) : q.question_type === "mcq" && q.options ? (
-              q.options.map((opt, i) => (
-                <button
-                  key={i}
-                  onClick={() => selectAnswer(q.id, opt)}
-                  className={cn(
-                    "w-full text-left p-4 rounded-xl border-2 transition-all text-sm flex items-start gap-3",
+            ) : options.length > 0 ? (
+              options.map((opt, i) => (
+                <button key={i} onClick={() => selectAnswer(qIndex, opt)}
+                  className={cn("w-full text-left p-4 rounded-xl border-2 transition-all text-sm flex items-start gap-3",
                     selectedAnswer === opt
                       ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-card hover:border-primary/40 hover:bg-muted/50 text-foreground"
-                  )}
-                >
+                      : "border-border bg-card hover:border-primary/40 hover:bg-muted/50 text-foreground")}>
                   <span className={cn("w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold shrink-0",
                     selectedAnswer === opt ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40")}>
                     {String.fromCharCode(65 + i)}
@@ -185,22 +176,13 @@ export default function Quizzes() {
             ) : (
               <div className="space-y-2">
                 <Label className="text-sm text-muted-foreground">Your answer:</Label>
-                <Input
-                  value={answers[q.id] ?? ""}
-                  onChange={(e) => selectAnswer(q.id, e.target.value)}
-                  placeholder="Type your answer..."
-                  className="bg-muted/30"
-                />
+                <Input value={answers[qIndex] ?? ""} onChange={(e) => selectAnswer(qIndex, e.target.value)}
+                  placeholder="Type your answer..." className="bg-muted/30" />
               </div>
             )}
           </CardContent>
           <CardFooter className="flex justify-between gap-3 pt-0">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentQ((p) => Math.max(0, p - 1))}
-              disabled={currentQ === 0}
-              className="gap-1.5"
-            >
+            <Button variant="outline" onClick={() => setCurrentQ((p) => Math.max(0, p - 1))} disabled={currentQ === 0} className="gap-1.5">
               <ArrowLeft className="w-4 h-4" /> Previous
             </Button>
             {currentQ < total - 1 ? (
@@ -208,11 +190,7 @@ export default function Quizzes() {
                 Next <ArrowRight className="w-4 h-4" />
               </Button>
             ) : (
-              <Button
-                onClick={handleSubmit}
-                disabled={submitQuiz.isPending}
-                className="gap-1.5 bg-green-600 hover:bg-green-700"
-              >
+              <Button onClick={handleSubmit} disabled={submitQuiz.isPending} className="gap-1.5 bg-green-600 hover:bg-green-700">
                 {submitQuiz.isPending ? "Submitting..." : "Submit Quiz"}
                 <CheckCircle2 className="w-4 h-4" />
               </Button>
@@ -220,22 +198,19 @@ export default function Quizzes() {
           </CardFooter>
         </Card>
 
-        {/* Question navigator */}
         <div className="flex flex-wrap gap-2 justify-center">
-          {activeQuiz.questions.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentQ(i)}
-              className={cn(
-                "w-8 h-8 rounded-full text-xs font-semibold border-2 transition-colors",
-                i === currentQ ? "border-primary bg-primary text-primary-foreground" :
-                answers[activeQuiz.questions[i].id] ? "border-green-500 bg-green-500/10 text-green-600" :
-                "border-border bg-card text-muted-foreground hover:border-primary/40"
-              )}
-            >
-              {i + 1}
-            </button>
-          ))}
+          {activeQuiz.questions.map((_, i) => {
+            const qi = getQuestionIndex(activeQuiz.questions[i], i);
+            return (
+              <button key={i} onClick={() => setCurrentQ(i)}
+                className={cn("w-8 h-8 rounded-full text-xs font-semibold border-2 transition-colors",
+                  i === currentQ ? "border-primary bg-primary text-primary-foreground" :
+                  answers[qi] !== undefined ? "border-green-500 bg-green-500/10 text-green-600" :
+                  "border-border bg-card text-muted-foreground hover:border-primary/40")}>
+                {i + 1}
+              </button>
+            );
+          })}
         </div>
       </div>
     );
@@ -243,10 +218,10 @@ export default function Quizzes() {
 
   if (view === "results" && activeQuiz && results) {
     const pct = results.percentage ?? 0;
-    const passed = results.passed;
+    const passed = pct >= 70;
+    const totalQ = results.max_score ?? activeQuiz.questions.length;
     return (
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* Score header */}
         <Card className={cn("border-2 shadow-lg", passed ? "border-green-500/40 bg-green-500/5" : "border-red-500/40 bg-red-500/5")}>
           <CardContent className="pt-8 pb-6 text-center">
             <div className={cn("w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl font-black",
@@ -257,8 +232,13 @@ export default function Quizzes() {
               {passed ? "🎉 Passed!" : "Keep Practicing"}
             </h2>
             <p className="text-muted-foreground text-sm mt-1">
-              {results.score} / {results.total_questions} correct on "{activeQuiz.topic}"
+              {results.score} / {totalQ} correct on "{activeQuiz.subject}"
             </p>
+            {results.ai_feedback && (
+              <p className="text-sm text-muted-foreground mt-3 mx-auto max-w-md italic bg-muted/50 rounded-lg p-3">
+                {results.ai_feedback}
+              </p>
+            )}
             <div className="flex gap-3 justify-center mt-4">
               <Button variant="outline" onClick={() => startQuiz(activeQuiz)} className="gap-1.5">
                 <RotateCcw className="w-4 h-4" /> Retry
@@ -270,35 +250,34 @@ export default function Quizzes() {
           </CardContent>
         </Card>
 
-        {/* Per-question breakdown */}
         <div className="space-y-3">
           <h3 className="font-semibold text-foreground">Question Review</h3>
           {activeQuiz.questions.map((q, i) => {
-            const ans = results.answers?.find((a) => a.question_id === q.id);
+            const qi = getQuestionIndex(q, i);
+            const ans = results.answers?.find((a) => a.question_index === qi);
             const correct = ans?.is_correct;
             return (
-              <Card key={q.id} className={cn("border", correct ? "border-green-500/30" : "border-red-500/30")}>
+              <Card key={i} className={cn("border", correct ? "border-green-500/30" : "border-red-500/30")}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
-                    {correct ? (
-                      <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                    )}
+                    {correct
+                      ? <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                      : <XCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />}
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground">{i + 1}. {q.text}</p>
+                      <p className="text-sm font-medium text-foreground">{i + 1}. {getQuestionText(q)}</p>
                       <div className="mt-2 space-y-1 text-xs">
-                        <div className={cn("px-2 py-1 rounded", correct ? "bg-green-500/10 text-green-700 dark:text-green-400" : "bg-red-500/10 text-red-700 dark:text-red-400")}>
+                        <div className={cn("px-2 py-1 rounded",
+                          correct ? "bg-green-500/10 text-green-700 dark:text-green-400" : "bg-red-500/10 text-red-700 dark:text-red-400")}>
                           Your answer: {ans?.user_answer || "(no answer)"}
                         </div>
                         {!correct && (
                           <div className="px-2 py-1 rounded bg-green-500/10 text-green-700 dark:text-green-400">
-                            Correct: {q.correct_answer}
+                            Correct: {ans?.correct_answer ?? q.correct_answer}
                           </div>
                         )}
-                        {(ans?.ai_feedback || q.explanation) && (
+                        {(q as any).explanation && (
                           <div className="px-2 py-1 rounded bg-muted text-muted-foreground mt-1 italic">
-                            {ans?.ai_feedback || q.explanation}
+                            {(q as any).explanation}
                           </div>
                         )}
                       </div>
@@ -325,33 +304,55 @@ export default function Quizzes() {
         </Button>
       </div>
 
-      {/* Generate dialog */}
       <Dialog open={genOpen} onOpenChange={setGenOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" />Generate AI Quiz</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" /> Generate AI Quiz
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-5 py-2">
             <div className="space-y-2">
-              <Label>Topic</Label>
+              <Label>Subject <span className="text-destructive">*</span></Label>
+              <Input
+                value={genForm.subject}
+                onChange={(e) => setGenForm({ ...genForm, subject: e.target.value })}
+                placeholder="E.g. Biology, World History, Machine Learning..."
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Topic <span className="text-muted-foreground text-xs">(optional)</span></Label>
               <Input
                 value={genForm.topic}
                 onChange={(e) => setGenForm({ ...genForm, topic: e.target.value })}
-                placeholder="E.g. French Revolution, Machine Learning basics..."
-                autoFocus
+                placeholder="E.g. Photosynthesis, French Revolution..."
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Difficulty</Label>
+              <Select value={genForm.difficulty} onValueChange={(v) => setGenForm({ ...genForm, difficulty: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="easy">Easy</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="hard">Hard</SelectItem>
+                  <SelectItem value="mixed">Mixed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-3">
               <div className="flex justify-between">
                 <Label>Number of questions</Label>
-                <span className="text-sm font-bold text-primary">{genForm.num_questions[0]}</span>
+                <span className="text-sm font-bold text-primary">{genForm.question_count[0]}</span>
               </div>
-              <Slider min={3} max={20} step={1} value={genForm.num_questions} onValueChange={(v) => setGenForm({ ...genForm, num_questions: v })} />
+              <Slider min={3} max={20} step={1} value={genForm.question_count}
+                onValueChange={(v) => setGenForm({ ...genForm, question_count: v })} />
             </div>
           </div>
           <div className="flex gap-3 justify-end">
             <Button variant="outline" onClick={() => setGenOpen(false)}>Cancel</Button>
-            <Button onClick={handleGenerate} disabled={generateQuiz.isPending || !genForm.topic.trim()} className="gap-2">
+            <Button onClick={handleGenerate} disabled={generateQuiz.isPending || !genForm.subject.trim()} className="gap-2">
               <BrainCircuit className="w-4 h-4" />
               {generateQuiz.isPending ? "Generating..." : "Create Quiz"}
             </Button>
@@ -359,13 +360,12 @@ export default function Quizzes() {
         </DialogContent>
       </Dialog>
 
-      {/* Stats */}
       {attemptList.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: "Quizzes Taken", value: attemptList.length },
             { label: "Avg Score", value: `${Math.round(attemptList.reduce((s, a) => s + (a.percentage ?? 0), 0) / attemptList.length)}%` },
-            { label: "Passed", value: attemptList.filter((a) => a.passed).length },
+            { label: "Passed", value: attemptList.filter((a) => (a.percentage ?? 0) >= 70).length },
             { label: "Best Score", value: `${Math.max(...attemptList.map((a) => a.percentage ?? 0))}%` },
           ].map(({ label, value }) => (
             <Card key={label} className="border-border">
@@ -378,7 +378,6 @@ export default function Quizzes() {
         </div>
       )}
 
-      {/* Quiz list */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-48 rounded-xl" />)}
@@ -392,7 +391,7 @@ export default function Quizzes() {
               <Card key={quiz.id} className="border-border flex flex-col hover:border-primary/40 transition-all hover:shadow-md">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base line-clamp-2">{quiz.topic}</CardTitle>
+                    <CardTitle className="text-base line-clamp-2">{quiz.title || quiz.subject}</CardTitle>
                     {best !== null && (
                       <Badge variant={best >= 70 ? "default" : "secondary"} className="shrink-0 text-xs">
                         {Math.round(best)}%
@@ -400,8 +399,9 @@ export default function Quizzes() {
                     )}
                   </div>
                   <CardDescription className="flex items-center gap-2 text-xs mt-1">
-                    <span>{quiz.questions?.length ?? quiz.num_questions} questions</span>
+                    <span>{quiz.question_count ?? quiz.questions?.length} questions</span>
                     {quiz.difficulty && <><span>·</span><span className="capitalize">{quiz.difficulty}</span></>}
+                    {quiz.subject && <><span>·</span><span>{quiz.subject}</span></>}
                     {quizAttempts.length > 0 && <><span>·</span><span>{quizAttempts.length} attempt{quizAttempts.length !== 1 ? "s" : ""}</span></>}
                   </CardDescription>
                 </CardHeader>
@@ -414,11 +414,7 @@ export default function Quizzes() {
                   )}
                 </CardContent>
                 <CardFooter className="pt-4">
-                  <Button
-                    className="w-full gap-2"
-                    onClick={() => startQuiz(quiz)}
-                    disabled={!quiz.questions?.length}
-                  >
+                  <Button className="w-full gap-2" onClick={() => startQuiz(quiz)} disabled={!quiz.questions?.length}>
                     <Play className="w-4 h-4 fill-current" />
                     {quizAttempts.length > 0 ? "Retake Quiz" : "Start Quiz"}
                   </Button>

@@ -1,0 +1,552 @@
+
+•
+Formatting may be inconsistent from source
+You are a Principal Frontend Architect, Senior React Engineer, Senior UI/UX Designer, SaaS Product Designer, and Frontend Tech Lead.
+
+Build the COMPLETE production-grade frontend for:
+
+# BrainPilot AI
+
+Tagline:
+"Your Intelligent AI Study Companion"
+
+This is an AI-powered SaaS web application that helps students plan, learn, revise, track productivity, and improve academic performance using intelligent AI agents.
+
+==================================================
+
+TECH STACK
+
+Frontend Framework
+
+* React 19+
+* TypeScript
+* Vite
+
+Routing
+
+* React Router v7
+
+State Management
+
+* Zustand
+
+API Layer
+
+* Axios
+* React Query (TanStack Query)
+
+Forms
+
+* React Hook Form
+* Zod
+
+UI
+
+* Tailwind CSS
+* Shadcn UI
+* Lucide React
+
+Charts
+
+* Recharts
+
+Animations
+
+* Framer Motion
+
+Notifications
+
+* Sonner
+
+Theme
+
+* Light Mode
+* Dark Mode
+
+Authentication
+
+* JWT
+* Refresh Tokens
+
+==================================================
+
+DESIGN REQUIREMENTS
+
+Build a premium SaaS UI.
+
+Design inspiration:
+
+* Notion
+* Linear
+* Duolingo
+* Headspace
+* Stripe Dashboard
+* Vercel Dashboard
+
+Requirements:
+
+* Modern
+* Clean
+* Minimal
+* Professional
+* Highly Responsive
+* Fast
+* Accessible
+* Mobile Friendly
+* Beautiful Animations
+
+==================================================
+
+COLOR SYSTEM
+
+Primary:
+#4F46E5
+
+Secondary:
+#7C3AED
+
+Success:
+#10B981
+
+Warning:
+#F59E0B
+
+Danger:
+#EF4444
+
+Background:
+#F8FAFC
+
+Dark Theme:
+Fully supported
+
+==================================================
+
+APPLICATION FEATURES
+
+Authentication
+
+* Register
+* Login
+* Logout
+* Email Verification
+* Forgot Password
+* Reset Password
+* JWT Authentication
+
+Dashboard
+
+* AI Productivity Score
+* Study Streak
+* Today's Tasks
+* Upcoming Exams
+* Weekly Progress
+* AI Insights
+
+AI Chat Assistant
+
+* Real-time AI Chat
+* Study Mentor
+* Conversation History
+* Suggested Prompts
+
+Study Planner
+
+* Generate AI Study Plan
+* Daily Plans
+* Weekly Plans
+* Monthly Plans
+* Adaptive Scheduling
+
+Goals
+
+* Create Goals
+* Update Goals
+* Track Progress
+* Goal Analytics
+
+Revision
+
+* Revision Calendar
+* Spaced Repetition Timeline
+* Weak Subject Tracking
+
+Productivity
+
+* Pomodoro Timer
+* Focus Sessions
+* Session Analytics
+
+Notes
+
+* Notes Management
+* AI Summary
+* AI Flashcards
+
+Quizzes
+
+* AI Quiz Generator
+* Quiz Attempts
+* Quiz Analytics
+
+Analytics
+
+* Learning Analytics
+* Subject Performance
+* Productivity Trends
+
+Notifications
+
+* Exam Alerts
+* Study Reminders
+* AI Recommendations
+
+Profile
+
+* User Profile
+* Preferences
+* Theme Settings
+* Security Settings
+
+==================================================
+
+ARCHITECTURE
+
+Use Feature-Based Architecture.
+
+src/
+
+app/
+
+router/
+providers/
+layouts/
+
+api/
+
+auth/
+planner/
+chat/
+notes/
+quizzes/
+analytics/
+goals/
+revision/
+
+components/
+
+ui/
+cards/
+charts/
+forms/
+modals/
+tables/
+navigation/
+
+features/
+
+auth/
+dashboard/
+planner/
+chat/
+goals/
+revision/
+productivity/
+notes/
+quizzes/
+analytics/
+notifications/
+profile/
+
+hooks/
+
+lib/
+
+constants/
+
+services/
+
+store/
+
+types/
+
+utils/
+
+assets/
+
+==================================================
+
+ROUTES
+
+Public Routes
+
+/
+login
+register
+forgot-password
+reset-password
+
+Protected Routes
+
+/dashboard
+/chat
+/planner
+/goals
+/revision
+/productivity
+/notes
+/quizzes
+/analytics
+/notifications
+/profile
+/settings
+
+==================================================
+
+LAYOUT SYSTEM
+
+Create:
+
+AuthLayout
+
+MainLayout
+
+DashboardLayout
+
+Requirements:
+
+* Responsive Sidebar
+* Mobile Drawer
+* Top Navbar
+* Breadcrumbs
+* Notification Center
+* User Dropdown
+
+==================================================
+
+UI COMPONENTS
+
+Generate reusable components:
+
+Buttons
+
+* PrimaryButton
+* SecondaryButton
+* IconButton
+
+Forms
+
+* AppInput
+* PasswordInput
+* SearchInput
+* TextArea
+* Select
+
+Cards
+
+* StatCard
+* ProgressCard
+* InsightCard
+* GoalCard
+* PlannerCard
+* QuizCard
+
+Feedback
+
+* LoadingState
+* EmptyState
+* ErrorState
+* SkeletonLoader
+
+Navigation
+
+* Sidebar
+* Navbar
+* MobileMenu
+* UserMenu
+
+==================================================
+
+STATE MANAGEMENT
+
+Use Zustand.
+
+Create stores:
+
+authStore
+
+userStore
+
+plannerStore
+
+chatStore
+
+goalStore
+
+revisionStore
+
+productivityStore
+
+noteStore
+
+quizStore
+
+analyticsStore
+
+notificationStore
+
+==================================================
+
+API LAYER
+
+Implement:
+
+Axios Client
+
+Request Interceptors
+
+Response Interceptors
+
+Automatic Token Refresh
+
+Error Handling
+
+Retry Mechanism
+
+Request Cancellation
+
+==================================================
+
+REACT QUERY
+
+Implement:
+
+Query Client
+
+Caching
+
+Optimistic Updates
+
+Pagination
+
+Infinite Scrolling
+
+Background Refetching
+
+==================================================
+
+PERFORMANCE
+
+Implement:
+
+Code Splitting
+
+Route Lazy Loading
+
+React.memo
+
+useMemo
+
+useCallback
+
+Bundle Optimization
+
+Image Optimization
+
+Virtualized Lists
+
+==================================================
+
+SECURITY
+
+Implement:
+
+Protected Routes
+
+Role-Based Routes
+
+JWT Storage Strategy
+
+Auto Logout
+
+Session Expiry Handling
+
+CSRF Awareness
+
+XSS Prevention Patterns
+
+==================================================
+
+DASHBOARD REQUIREMENTS
+
+Dashboard must look like a premium SaaS product.
+
+Widgets:
+
+* Productivity Score
+* Study Streak
+* Focus Time
+* Today's Plan
+* Upcoming Exams
+* Revision Status
+* AI Recommendations
+* Weekly Study Chart
+* Monthly Progress Chart
+
+==================================================
+
+AI CHAT REQUIREMENTS
+
+ChatGPT-style interface.
+
+Features:
+
+* Streaming Responses
+* Typing Indicator
+* Chat History
+* Conversation Sidebar
+* Suggested Prompts
+* Markdown Rendering
+* Code Highlighting
+
+==================================================
+
+OUTPUT RULES
+
+Generate COMPLETE code.
+
+For EVERY file provide:
+
+Folder: <folder>
+
+File: <filename>
+
+Purpose: <purpose>
+
+Code: <complete code>
+
+Do NOT skip files.
+
+Do NOT generate pseudo-code.
+
+Do NOT generate placeholders.
+
+Do NOT simplify architecture.
+
+Generate production-quality React code that a senior frontend engineer would approve.
+
+Start with:
+
+1. Project Initialization
+2. Dependencies
+3. Folder Structure
+4. Tailwind Setup
+5. Shadcn Setup
+6. Theme System
+7. Routing
+8. Layouts
+9. Authentication
+10. Dashboard
+11. Remaining Features
+
+Continue until the entire frontend is completed.

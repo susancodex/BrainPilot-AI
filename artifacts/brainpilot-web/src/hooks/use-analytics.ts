@@ -30,3 +30,23 @@ export const useReport = () => {
     },
   });
 };
+
+export const useQuizPerformance = (days: number = 30) => {
+  return useQuery({
+    queryKey: ["analytics", "quiz-performance", days],
+    queryFn: async () => {
+      const { data } = await api.get(`/analytics/quiz-performance/?days=${days}`);
+      return data;
+    },
+  });
+};
+
+export const useRevisionStats = () => {
+  return useQuery({
+    queryKey: ["analytics", "revision-stats"],
+    queryFn: async () => {
+      const { data } = await api.get("/analytics/revision/");
+      return data;
+    },
+  });
+};

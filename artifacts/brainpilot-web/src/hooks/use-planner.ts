@@ -26,7 +26,16 @@ export const usePlan = (id: string | null) => {
 export const useGeneratePlan = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { topic: string; duration_days: number; daily_hours: number }) => {
+    mutationFn: async (payload: {
+      subjects: string[];
+      start_date: string;
+      end_date: string;
+      plan_type: string;
+      daily_hours: number;
+      exam_date?: string;
+      weak_topics?: string[];
+      goals?: string;
+    }) => {
       const { data } = await api.post("/planner/plans/generate/", payload);
       return data;
     },
@@ -55,7 +64,7 @@ export const useUpdateSession = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["planner", "sessions"] });
-      queryClient.invalidateQueries({ queryKey: ["planner", "plans"] }); // in case it affects plan overall
+      queryClient.invalidateQueries({ queryKey: ["planner", "plans"] });
     },
   });
 };

@@ -67,3 +67,39 @@ export const useAuth = () => {
     updateProfile: updateProfileMutation,
   };
 };
+
+export const useVerifyEmail = () => {
+  return useMutation({
+    mutationFn: async (payload: { token: string }) => {
+      const { data } = await api.post("/auth/verify-email/", payload);
+      return data;
+    },
+  });
+};
+
+export const usePasswordResetRequest = () => {
+  return useMutation({
+    mutationFn: async (payload: { email: string }) => {
+      const { data } = await api.post("/auth/password/reset/", payload);
+      return data;
+    },
+  });
+};
+
+export const usePasswordResetConfirm = () => {
+  return useMutation({
+    mutationFn: async (payload: { token: string; new_password: string }) => {
+      const { data } = await api.post("/auth/password/reset/confirm/", payload);
+      return data;
+    },
+  });
+};
+
+export const useChangePassword = () => {
+  return useMutation({
+    mutationFn: async (payload: { current_password: string; new_password: string }) => {
+      const { data } = await api.post("/auth/me/change-password/", payload);
+      return data;
+    },
+  });
+};

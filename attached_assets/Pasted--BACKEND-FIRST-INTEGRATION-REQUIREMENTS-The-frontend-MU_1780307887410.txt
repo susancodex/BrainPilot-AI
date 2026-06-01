@@ -1,0 +1,199 @@
+# BACKEND-FIRST INTEGRATION REQUIREMENTS
+
+The frontend MUST be built directly from the backend architecture and API specification.
+
+Before generating any UI:
+
+1. Analyze all backend modules.
+2. Analyze all API endpoints.
+3. Analyze all serializers/schemas.
+4. Analyze all permissions.
+5. Analyze all user roles.
+6. Analyze all business logic.
+7. Analyze all AI modules.
+8. Analyze all background jobs.
+9. Analyze all notification systems.
+10. Analyze all analytics systems.
+
+The frontend MUST expose EVERY backend capability.
+
+No backend feature may exist without a corresponding frontend implementation.
+
+For every backend endpoint create:
+
+* Page
+* Component
+* Form
+* Modal
+* Table
+* Card
+* Dashboard Widget
+* Analytics View
+* User Flow
+
+whichever is appropriate.
+
+==================================================
+
+# API DISCOVERY REQUIREMENTS
+
+Automatically inspect and integrate:
+
+* Authentication APIs
+* User APIs
+* Profile APIs
+* AI APIs
+* Chat APIs
+* Conversation APIs
+* Study Plan APIs
+* Goal APIs
+* Revision APIs
+* Flashcard APIs
+* Quiz APIs
+* Analytics APIs
+* Notification APIs
+* Subscription APIs
+* Billing APIs
+* File Upload APIs
+* PDF Processing APIs
+* AI Agent APIs
+* Recommendation APIs
+* Search APIs
+* Admin APIs
+* Moderation APIs
+* Settings APIs
+
+Frontend must generate interfaces for every API group.
+
+==================================================
+
+# DYNAMIC FEATURE GENERATION
+
+If the backend contains features not mentioned in this prompt:
+
+Automatically generate frontend support for them.
+
+Examples:
+
+If backend contains:
+
+* AI Agents
+* Voice Assistant
+* OCR
+* PDF Chat
+* Video Analysis
+* Study Recommendations
+* Smart Revision Engine
+* Gamification
+* Leaderboards
+* Achievements
+* Rewards
+* Referral System
+* Subscription System
+* Stripe Billing
+* Razorpay Billing
+* Team Collaboration
+* Group Study
+* Real-Time Messaging
+* Live Notifications
+* WebSockets
+* Admin Dashboard
+
+Then create complete frontend implementations for those features automatically.
+
+Do not ignore backend features simply because they are absent from the frontend specification.
+
+==================================================
+
+# BACKEND CONTRACT COMPLIANCE
+
+Generate frontend directly from API contracts.
+
+Requirements:
+
+* Full TypeScript typing
+* Request DTOs
+* Response DTOs
+* Zod schemas
+* React Query hooks
+* Axios services
+* Error handlers
+
+Every endpoint must have:
+
+* Type definitions
+* API service
+* React Query hook
+* UI integration
+
+==================================================
+
+# FRONTEND ↔ BACKEND SYNCHRONIZATION
+
+Implement:
+
+* Real-time updates
+* Optimistic updates
+* Cache invalidation
+* Background synchronization
+* Polling where required
+* WebSocket support where required
+
+The UI state must always match backend state.
+
+==================================================
+
+# FEATURE COVERAGE VALIDATION
+
+Before final output, verify:
+
+✓ Every backend module has frontend support
+
+✓ Every backend endpoint is connected
+
+✓ Every backend permission has UI protection
+
+✓ Every backend analytics endpoint has charts
+
+✓ Every backend AI endpoint has UI integration
+
+✓ Every backend upload endpoint has upload UI
+
+✓ Every backend notification endpoint has notification UI
+
+✓ Every backend settings endpoint has settings UI
+
+✓ Every backend admin endpoint has admin screens
+
+==================================================
+
+# NO MOCK DATA POLICY
+
+Forbidden:
+
+* Fake data
+* Hardcoded responses
+* Static JSON
+* Placeholder API responses
+
+All frontend functionality must use actual backend endpoints.
+
+==================================================
+
+# FINAL REQUIREMENT
+
+The frontend should behave as a complete visual representation of the backend.
+
+If a backend engineer adds a new feature, endpoint, module, or service, the frontend architecture must be capable of integrating and exposing it with minimal modifications.
+
+Generate a production-grade frontend equivalent to enterprise SaaS products such as:
+
+* Notion
+* Linear
+* Stripe Dashboard
+* Vercel
+* Duolingo
+* GitHub
+* Slack
+
+while maintaining perfect synchronization with the BrainPilot AI backend.

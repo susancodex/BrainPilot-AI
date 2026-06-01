@@ -61,3 +61,55 @@ export const useDeleteNote = () => {
     },
   });
 };
+
+export const useSummarizeNote = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post(`/notes/${id}/summarize/`);
+      return data;
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: ["notes", id] });
+    },
+  });
+};
+
+export const useGenerateFlashcards = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, count = 5 }: { id: string; count?: number }) => {
+      const { data } = await api.post(`/notes/${id}/flashcards/generate/`, { count });
+      return data;
+    },
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: ["notes", id] });
+      queryClient.invalidateQueries({ queryKey: ["flashcards", "due"] });
+    },
+  });
+};
+
+export const useDueFlashcards = () => {
+  return useQuery({
+    queryKey: ["flashcards", "due"],
+    queryFn: async () => {
+      const { data } = await api.get("/notes/flashcards/due/");
+      return data;
+    },
+  });
+};
+
+export const useReviewFlashcard = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, result }: { id: string; result: 'correct' | 'incorrect' }) => {
+      const { data } = await api.post(`/notes/flashcards/${id}/review/`, { result });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["flashcards", "due"] });
+    },
+  });
+};

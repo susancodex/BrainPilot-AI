@@ -26,7 +26,7 @@ export const useConversation = (id: string | null) => {
 export const useSendMessage = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { message: string; conversation_id?: string }) => {
+    mutationFn: async (payload: { content: string; conversation_id?: string }) => {
       const { data } = await api.post("/chatbot/send/", payload);
       return data;
     },
@@ -39,4 +39,14 @@ export const useSendMessage = () => {
   });
 };
 
-// Streaming hook handled directly in component typically, but we can provide a helper later if needed
+export const useDeleteConversation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/chatbot/conversations/${id}/`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
+    },
+  });
+};

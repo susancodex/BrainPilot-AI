@@ -1,3 +1,2 @@
-- [BrainPilot architecture](brainpilot-arch.md) — Django backend in `backend/`, single canonical workflow is `artifacts/api-server: API Server` on port 8000
-- [Gemini integration](gemini-integration.md) — Python SDK `google-genai`, model `gemini-2.5-flash`, key in `GEMINI_API_KEY` secret
-- [BrainPilot auth loop fix](brainpilot-auth-loop.md) — useQuery for /auth/me/ must have `enabled: !!getAccessToken()` or it fires on login page and triggers axios 401 redirect loop; also guard axios interceptor redirect so it skips when already on /login or /register.
+- [BrainPilot API routing](brainpilot-api-routing.md) — all auth routes are /api/v1/auth/ (not /accounts/), full URL map inside
+- [BrainPilot frontend coverage](brainpilot-frontend-coverage.md) — complete list of hooks, pages, and field fixes applied in coverage pass

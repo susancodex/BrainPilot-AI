@@ -7,12 +7,17 @@ import NotFound from "@/pages/not-found";
 
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import VerifyEmail from "@/pages/verify-email";
+import PasswordReset from "@/pages/password-reset";
+import PasswordResetConfirm from "@/pages/password-reset-confirm";
+
 import Dashboard from "@/pages/dashboard";
 import Chat from "@/pages/chat";
 import Planner from "@/pages/planner";
 import Goals from "@/pages/goals";
 import Revision from "@/pages/revision";
 import Notes from "@/pages/notes";
+import Flashcards from "@/pages/flashcards";
 import Quizzes from "@/pages/quizzes";
 import Analytics from "@/pages/analytics";
 import Productivity from "@/pages/productivity";
@@ -41,6 +46,7 @@ function PrivateRoutes() {
         <Route path="/goals" component={Goals} />
         <Route path="/revision" component={Revision} />
         <Route path="/notes" component={Notes} />
+        <Route path="/flashcards" component={Flashcards} />
         <Route path="/quizzes" component={Quizzes} />
         <Route path="/analytics" component={Analytics} />
         <Route path="/productivity" component={Productivity} />
@@ -60,6 +66,9 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/verify-email" component={VerifyEmail} />
+      <Route path="/password-reset" component={PasswordReset} />
+      <Route path="/password-reset/confirm" component={PasswordResetConfirm} />
       <Route path="/(.*)">
         <PrivateRoute component={PrivateRoutes} />
       </Route>

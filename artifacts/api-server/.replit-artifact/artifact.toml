@@ -1,6 +1,6 @@
 kind = "api"
 previewPath = "/api"
-title = "BrainPilot AI - Django Backend"
+title = "BrainPilot AI - API Server"
 version = "1.0.0"
 id = "3B4_FFSkEVBkAeYMFRJ2e"
 
@@ -10,20 +10,9 @@ name = "API Server"
 paths = ["/api"]
 
 [services.development]
-run = "PYTHONPATH=/home/runner/workspace/backend DJANGO_SETTINGS_MODULE=config.settings.development python /home/runner/workspace/backend/manage.py runserver 0.0.0.0:8000"
+run = "pnpm --filter @workspace/api-server run dev"
 
 [services.production]
 
-[services.production.build]
-args = ["bash", "-c", "pip install -r /home/runner/workspace/backend/requirements/production.txt && PYTHONPATH=/home/runner/workspace/backend DJANGO_SETTINGS_MODULE=config.settings.production python /home/runner/workspace/backend/manage.py migrate --noinput && PYTHONPATH=/home/runner/workspace/backend DJANGO_SETTINGS_MODULE=config.settings.production python /home/runner/workspace/backend/manage.py collectstatic --noinput"]
-
-[services.production.run]
-args = ["bash", "/home/runner/workspace/backend/scripts/start.sh"]
-
-[services.production.run.env]
-PORT = "8000"
-DJANGO_SETTINGS_MODULE = "config.settings.production"
-PYTHONPATH = "/home/runner/workspace/backend"
-
 [services.production.health.startup]
-path = "/api/v1/health/"
+path = "/api/v1/healthz"

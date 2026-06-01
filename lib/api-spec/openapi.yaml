@@ -1,22 +1,41 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: BrainPilot AI - Intelligent Study Companion API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: dashboard
+    description: Dashboard and analytics
+  - name: sessions
+    description: Study sessions
+  - name: goals
+    description: Learning goals
+  - name: flashcards
+    description: Flashcard decks and cards
+  - name: quizzes
+    description: Quiz system
+  - name: planner
+    description: Study planner and tasks
+  - name: chat
+    description: AI chat messages
+  - name: pdfs
+    description: PDF documents
+  - name: revisions
+    description: Revision topics
+  - name: notifications
+    description: Notifications
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +43,841 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Dashboard ──────────────────────────────────────────────────────────
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary stats
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/activity:
+    get:
+      operationId: getActivityTimeline
+      tags: [dashboard]
+      summary: Get recent activity timeline
+      responses:
+        "200":
+          description: Activity list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /dashboard/recommendations:
+    get:
+      operationId: getRecommendations
+      tags: [dashboard]
+      summary: Get AI study recommendations
+      responses:
+        "200":
+          description: Recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Recommendation"
+
+  # ── Study Sessions ──────────────────────────────────────────────────────
+  /sessions:
+    get:
+      operationId: listSessions
+      tags: [sessions]
+      summary: List study sessions
+      responses:
+        "200":
+          description: Sessions list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StudySession"
+    post:
+      operationId: createSession
+      tags: [sessions]
+      summary: Start a new study session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudySessionInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudySession"
+
+  /sessions/{id}:
+    get:
+      operationId: getSession
+      tags: [sessions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudySession"
+    patch:
+      operationId: updateSession
+      tags: [sessions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudySessionUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudySession"
+    delete:
+      operationId: deleteSession
+      tags: [sessions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Goals ──────────────────────────────────────────────────────────────
+  /goals:
+    get:
+      operationId: listGoals
+      tags: [goals]
+      summary: List learning goals
+      responses:
+        "200":
+          description: Goals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Goal"
+    post:
+      operationId: createGoal
+      tags: [goals]
+      summary: Create a learning goal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+
+  /goals/{id}:
+    patch:
+      operationId: updateGoal
+      tags: [goals]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+    delete:
+      operationId: deleteGoal
+      tags: [goals]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Flashcard Decks ────────────────────────────────────────────────────
+  /flashcard-decks:
+    get:
+      operationId: listFlashcardDecks
+      tags: [flashcards]
+      summary: List flashcard decks
+      responses:
+        "200":
+          description: Decks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FlashcardDeck"
+    post:
+      operationId: createFlashcardDeck
+      tags: [flashcards]
+      summary: Create a flashcard deck
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlashcardDeckInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlashcardDeck"
+
+  /flashcard-decks/{id}:
+    get:
+      operationId: getFlashcardDeck
+      tags: [flashcards]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deck with cards
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlashcardDeckWithCards"
+    patch:
+      operationId: updateFlashcardDeck
+      tags: [flashcards]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlashcardDeckUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlashcardDeck"
+    delete:
+      operationId: deleteFlashcardDeck
+      tags: [flashcards]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /flashcard-decks/{deckId}/cards:
+    get:
+      operationId: listFlashcards
+      tags: [flashcards]
+      parameters:
+        - name: deckId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Cards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Flashcard"
+    post:
+      operationId: createFlashcard
+      tags: [flashcards]
+      parameters:
+        - name: deckId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlashcardInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Flashcard"
+
+  /flashcard-decks/{deckId}/cards/{cardId}:
+    patch:
+      operationId: updateFlashcard
+      tags: [flashcards]
+      parameters:
+        - name: deckId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlashcardUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Flashcard"
+    delete:
+      operationId: deleteFlashcard
+      tags: [flashcards]
+      parameters:
+        - name: deckId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Quizzes ────────────────────────────────────────────────────────────
+  /quizzes:
+    get:
+      operationId: listQuizzes
+      tags: [quizzes]
+      summary: List quizzes
+      responses:
+        "200":
+          description: Quizzes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Quiz"
+    post:
+      operationId: createQuiz
+      tags: [quizzes]
+      summary: Create a quiz
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuizInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quiz"
+
+  /quizzes/{id}:
+    get:
+      operationId: getQuiz
+      tags: [quizzes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Quiz with questions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizWithQuestions"
+    delete:
+      operationId: deleteQuiz
+      tags: [quizzes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /quizzes/{id}/submit:
+    post:
+      operationId: submitQuiz
+      tags: [quizzes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuizSubmission"
+      responses:
+        "200":
+          description: Quiz result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizResult"
+
+  # ── Planner Tasks ─────────────────────────────────────────────────────
+  /tasks:
+    get:
+      operationId: listTasks
+      tags: [planner]
+      summary: List planner tasks
+      responses:
+        "200":
+          description: Tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlannerTask"
+    post:
+      operationId: createTask
+      tags: [planner]
+      summary: Create a planner task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlannerTaskInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlannerTask"
+
+  /tasks/{id}:
+    patch:
+      operationId: updateTask
+      tags: [planner]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlannerTaskUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlannerTask"
+    delete:
+      operationId: deleteTask
+      tags: [planner]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /tasks/{id}/complete:
+    patch:
+      operationId: completeTask
+      tags: [planner]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlannerTask"
+
+  # ── AI Chat ───────────────────────────────────────────────────────────
+  /chats:
+    get:
+      operationId: listChats
+      tags: [chat]
+      summary: List chat conversations
+      responses:
+        "200":
+          description: Chats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Chat"
+    post:
+      operationId: createChat
+      tags: [chat]
+      summary: Create a new chat conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chat"
+
+  /chats/{id}:
+    get:
+      operationId: getChat
+      tags: [chat]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Chat with messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatWithMessages"
+    delete:
+      operationId: deleteChat
+      tags: [chat]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /chats/{id}/messages:
+    post:
+      operationId: sendMessage
+      tags: [chat]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "201":
+          description: Message sent with AI reply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessagePair"
+
+  # ── PDFs ──────────────────────────────────────────────────────────────
+  /pdfs:
+    get:
+      operationId: listPdfs
+      tags: [pdfs]
+      summary: List uploaded PDFs
+      responses:
+        "200":
+          description: PDFs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PdfDocument"
+    post:
+      operationId: createPdf
+      tags: [pdfs]
+      summary: Upload a PDF document record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PdfDocumentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PdfDocument"
+
+  /pdfs/{id}:
+    get:
+      operationId: getPdf
+      tags: [pdfs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: PDF document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PdfDocument"
+    delete:
+      operationId: deletePdf
+      tags: [pdfs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Revision Topics ───────────────────────────────────────────────────
+  /revisions:
+    get:
+      operationId: listRevisions
+      tags: [revisions]
+      summary: List revision topics
+      responses:
+        "200":
+          description: Revision topics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevisionTopic"
+    post:
+      operationId: createRevision
+      tags: [revisions]
+      summary: Add a revision topic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevisionTopicInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevisionTopic"
+
+  /revisions/{id}:
+    patch:
+      operationId: updateRevision
+      tags: [revisions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevisionTopicUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevisionTopic"
+    delete:
+      operationId: deleteRevision
+      tags: [revisions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /revisions/{id}/review:
+    post:
+      operationId: markRevisionReviewed
+      tags: [revisions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevisionReview"
+      responses:
+        "200":
+          description: Reviewed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevisionTopic"
+
+  # ── Notifications ─────────────────────────────────────────────────────
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/{id}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [notifications]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Marked read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+  /notifications/read-all:
+    patch:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      responses:
+        "200":
+          description: All marked read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +885,467 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    # ── Dashboard ──────────────────────────────────────────────────────
+    DashboardSummary:
+      type: object
+      required: [totalStudyMinutes, studyStreak, goalsCompleted, goalsTotal, flashcardsReviewed, quizzesTaken, averageScore, weeklyMinutes]
+      properties:
+        totalStudyMinutes: { type: integer }
+        studyStreak: { type: integer }
+        goalsCompleted: { type: integer }
+        goalsTotal: { type: integer }
+        flashcardsReviewed: { type: integer }
+        quizzesTaken: { type: integer }
+        averageScore: { type: number }
+        weeklyMinutes:
+          type: array
+          items:
+            type: integer
+        upcomingTasks: { type: integer }
+        revisionsDue: { type: integer }
+
+    ActivityItem:
+      type: object
+      required: [id, type, title, description, createdAt]
+      properties:
+        id: { type: integer }
+        type: { type: string }
+        title: { type: string }
+        description: { type: string }
+        createdAt: { type: string }
+
+    Recommendation:
+      type: object
+      required: [id, title, reason, type, priority]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        reason: { type: string }
+        type: { type: string }
+        priority: { type: string }
+
+    # ── Study Sessions ─────────────────────────────────────────────────
+    StudySession:
+      type: object
+      required: [id, subject, durationMinutes, status, createdAt]
+      properties:
+        id: { type: integer }
+        subject: { type: string }
+        topic: { type: ["string", "null"] }
+        durationMinutes: { type: integer }
+        status: { type: string }
+        notes: { type: ["string", "null"] }
+        createdAt: { type: string }
+        endedAt: { type: ["string", "null"] }
+
+    StudySessionInput:
+      type: object
+      required: [subject, durationMinutes]
+      properties:
+        subject: { type: string, minLength: 1 }
+        topic: { type: string }
+        durationMinutes: { type: integer, minimum: 1 }
+        notes: { type: string }
+
+    StudySessionUpdate:
+      type: object
+      properties:
+        subject: { type: string, minLength: 1 }
+        topic: { type: string }
+        durationMinutes: { type: integer }
+        status: { type: string }
+        notes: { type: string }
+        endedAt: { type: string }
+
+    # ── Goals ──────────────────────────────────────────────────────────
+    Goal:
+      type: object
+      required: [id, title, subject, targetDate, progressPercent, status, createdAt]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        subject: { type: string }
+        description: { type: ["string", "null"] }
+        targetDate: { type: string }
+        progressPercent: { type: integer }
+        status: { type: string }
+        createdAt: { type: string }
+
+    GoalInput:
+      type: object
+      required: [title, subject, targetDate]
+      properties:
+        title: { type: string, minLength: 1 }
+        subject: { type: string, minLength: 1 }
+        description: { type: string }
+        targetDate: { type: string }
+
+    GoalUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        subject: { type: string }
+        description: { type: string }
+        targetDate: { type: string }
+        progressPercent: { type: integer, minimum: 0, maximum: 100 }
+        status: { type: string }
+
+    # ── Flashcards ─────────────────────────────────────────────────────
+    FlashcardDeck:
+      type: object
+      required: [id, title, subject, cardCount, masteredCount, createdAt]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        subject: { type: string }
+        description: { type: ["string", "null"] }
+        cardCount: { type: integer }
+        masteredCount: { type: integer }
+        color: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    FlashcardDeckWithCards:
+      type: object
+      required: [id, title, subject, cardCount, masteredCount, createdAt, cards]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        subject: { type: string }
+        description: { type: ["string", "null"] }
+        cardCount: { type: integer }
+        masteredCount: { type: integer }
+        color: { type: ["string", "null"] }
+        createdAt: { type: string }
+        cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/Flashcard"
+
+    FlashcardDeckInput:
+      type: object
+      required: [title, subject]
+      properties:
+        title: { type: string, minLength: 1 }
+        subject: { type: string, minLength: 1 }
+        description: { type: string }
+        color: { type: string }
+
+    FlashcardDeckUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        subject: { type: string }
+        description: { type: string }
+        color: { type: string }
+
+    Flashcard:
+      type: object
+      required: [id, deckId, front, back, difficulty, reviewCount, createdAt]
+      properties:
+        id: { type: integer }
+        deckId: { type: integer }
+        front: { type: string }
+        back: { type: string }
+        difficulty: { type: string }
+        reviewCount: { type: integer }
+        lastReviewedAt: { type: ["string", "null"] }
+        nextReviewAt: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    FlashcardInput:
+      type: object
+      required: [front, back]
+      properties:
+        front: { type: string, minLength: 1 }
+        back: { type: string, minLength: 1 }
+        difficulty: { type: string }
+
+    FlashcardUpdate:
+      type: object
+      properties:
+        front: { type: string }
+        back: { type: string }
+        difficulty: { type: string }
+        reviewCount: { type: integer }
+        lastReviewedAt: { type: string }
+        nextReviewAt: { type: string }
+
+    # ── Quizzes ────────────────────────────────────────────────────────
+    Quiz:
+      type: object
+      required: [id, title, subject, questionCount, bestScore, attemptCount, createdAt]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        subject: { type: string }
+        description: { type: ["string", "null"] }
+        questionCount: { type: integer }
+        bestScore: { type: ["number", "null"] }
+        attemptCount: { type: integer }
+        timeLimitMinutes: { type: ["integer", "null"] }
+        createdAt: { type: string }
+
+    QuizWithQuestions:
+      type: object
+      required: [id, title, subject, questionCount, bestScore, attemptCount, createdAt, questions]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        subject: { type: string }
+        description: { type: ["string", "null"] }
+        questionCount: { type: integer }
+        bestScore: { type: ["number", "null"] }
+        attemptCount: { type: integer }
+        timeLimitMinutes: { type: ["integer", "null"] }
+        createdAt: { type: string }
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuizQuestion"
+
+    QuizQuestion:
+      type: object
+      required: [id, quizId, question, options, correctIndex, explanation]
+      properties:
+        id: { type: integer }
+        quizId: { type: integer }
+        question: { type: string }
+        options:
+          type: array
+          items:
+            type: string
+        correctIndex: { type: integer }
+        explanation: { type: ["string", "null"] }
+
+    QuizInput:
+      type: object
+      required: [title, subject, questions]
+      properties:
+        title: { type: string, minLength: 1 }
+        subject: { type: string, minLength: 1 }
+        description: { type: string }
+        timeLimitMinutes: { type: integer }
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuizQuestionInput"
+
+    QuizQuestionInput:
+      type: object
+      required: [question, options, correctIndex]
+      properties:
+        question: { type: string, minLength: 1 }
+        options:
+          type: array
+          items:
+            type: string
+        correctIndex: { type: integer }
+        explanation: { type: string }
+
+    QuizSubmission:
+      type: object
+      required: [answers]
+      properties:
+        answers:
+          type: array
+          items:
+            type: integer
+        timeTakenSeconds: { type: integer }
+
+    QuizResult:
+      type: object
+      required: [quizId, score, correctCount, totalCount, passed]
+      properties:
+        quizId: { type: integer }
+        score: { type: number }
+        correctCount: { type: integer }
+        totalCount: { type: integer }
+        passed: { type: boolean }
+        timeTakenSeconds: { type: ["integer", "null"] }
+        feedback:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuestionFeedback"
+
+    QuestionFeedback:
+      type: object
+      required: [questionId, correct, selectedIndex, correctIndex]
+      properties:
+        questionId: { type: integer }
+        correct: { type: boolean }
+        selectedIndex: { type: integer }
+        correctIndex: { type: integer }
+        explanation: { type: ["string", "null"] }
+
+    # ── Planner Tasks ──────────────────────────────────────────────────
+    PlannerTask:
+      type: object
+      required: [id, title, subject, dueDate, priority, status, createdAt]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        subject: { type: string }
+        description: { type: ["string", "null"] }
+        dueDate: { type: string }
+        priority: { type: string }
+        status: { type: string }
+        estimatedMinutes: { type: ["integer", "null"] }
+        createdAt: { type: string }
+        completedAt: { type: ["string", "null"] }
+
+    PlannerTaskInput:
+      type: object
+      required: [title, subject, dueDate, priority]
+      properties:
+        title: { type: string, minLength: 1 }
+        subject: { type: string, minLength: 1 }
+        description: { type: string }
+        dueDate: { type: string }
+        priority: { type: string }
+        estimatedMinutes: { type: integer }
+
+    PlannerTaskUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        subject: { type: string }
+        description: { type: string }
+        dueDate: { type: string }
+        priority: { type: string }
+        status: { type: string }
+        estimatedMinutes: { type: integer }
+
+    # ── Chat ───────────────────────────────────────────────────────────
+    Chat:
+      type: object
+      required: [id, title, mode, messageCount, createdAt]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        mode: { type: string }
+        messageCount: { type: integer }
+        lastMessageAt: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    ChatWithMessages:
+      type: object
+      required: [id, title, mode, messageCount, createdAt, messages]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        mode: { type: string }
+        messageCount: { type: integer }
+        lastMessageAt: { type: ["string", "null"] }
+        createdAt: { type: string }
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessage"
+
+    ChatMessage:
+      type: object
+      required: [id, chatId, role, content, createdAt]
+      properties:
+        id: { type: integer }
+        chatId: { type: integer }
+        role: { type: string }
+        content: { type: string }
+        createdAt: { type: string }
+
+    ChatInput:
+      type: object
+      required: [title, mode]
+      properties:
+        title: { type: string, minLength: 1 }
+        mode: { type: string }
+
+    MessageInput:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string, minLength: 1 }
+
+    MessagePair:
+      type: object
+      required: [userMessage, assistantMessage]
+      properties:
+        userMessage:
+          $ref: "#/components/schemas/ChatMessage"
+        assistantMessage:
+          $ref: "#/components/schemas/ChatMessage"
+
+    # ── PDF Documents ──────────────────────────────────────────────────
+    PdfDocument:
+      type: object
+      required: [id, title, filename, pageCount, uploadedAt]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        filename: { type: string }
+        pageCount: { type: integer }
+        subject: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        uploadedAt: { type: string }
+
+    PdfDocumentInput:
+      type: object
+      required: [title, filename, pageCount]
+      properties:
+        title: { type: string, minLength: 1 }
+        filename: { type: string, minLength: 1 }
+        pageCount: { type: integer, minimum: 1 }
+        subject: { type: string }
+        notes: { type: string }
+
+    # ── Revision Topics ────────────────────────────────────────────────
+    RevisionTopic:
+      type: object
+      required: [id, title, subject, confidenceLevel, reviewCount, nextReviewAt, createdAt]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        subject: { type: string }
+        notes: { type: ["string", "null"] }
+        confidenceLevel: { type: integer }
+        reviewCount: { type: integer }
+        lastReviewedAt: { type: ["string", "null"] }
+        nextReviewAt: { type: string }
+        createdAt: { type: string }
+
+    RevisionTopicInput:
+      type: object
+      required: [title, subject]
+      properties:
+        title: { type: string, minLength: 1 }
+        subject: { type: string, minLength: 1 }
+        notes: { type: string }
+        confidenceLevel: { type: integer, minimum: 1, maximum: 5 }
+
+    RevisionTopicUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        subject: { type: string }
+        notes: { type: string }
+        confidenceLevel: { type: integer, minimum: 1, maximum: 5 }
+        nextReviewAt: { type: string }
+
+    RevisionReview:
+      type: object
+      required: [confidenceLevel]
+      properties:
+        confidenceLevel: { type: integer, minimum: 1, maximum: 5 }
+
+    # ── Notifications ──────────────────────────────────────────────────
+    Notification:
+      type: object
+      required: [id, title, message, type, read, createdAt]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        message: { type: string }
+        type: { type: string }
+        read: { type: boolean }
+        createdAt: { type: string }

@@ -1,0 +1,284 @@
+You are a Principal Product Designer, Senior UX Designer, Senior UI Designer, Design Systems Architect, SaaS Design Lead, Human-Computer Interaction Expert, and Frontend Experience Architect.
+Your mission is to design the COMPLETE UI/UX for:
+BrainPilot AI
+Tagline
+"Your Intelligent AI Study Companion"
+BrainPilot AI is an AI-powered academic productivity platform that combines:
+AI Study Assistant
+AI Tutor
+AI Planner
+AI Revision Coach
+AI Quiz Generator
+Flashcards
+PDF Learning
+Goal Tracking
+Productivity Analytics
+Smart Recommendations
+Learning Insights
+The final design must feel like a premium SaaS product used by millions of students worldwide.
+DESIGN INSPIRATION
+Use design quality comparable to:
+Notion
+Linear
+Vercel
+Stripe
+GitHub
+Slack
+Duolingo
+Figma
+The experience should feel:
+Premium
+Modern
+Intelligent
+Minimal
+Clean
+Academic
+Focused
+Fast
+Delightful
+DESIGN PHILOSOPHY
+Design for:
+Students
+School
+College
+University
+Competitive Exam Learners
+Lifelong Learners
+Professionals Upskilling
+Every screen must reduce cognitive load.
+Users should always know:
+What to study
+When to study
+What to revise
+What to improve next
+VISUAL IDENTITY
+Create a visual language around:
+Intelligence
+Learning
+Growth
+Productivity
+Focus
+Achievement
+Avoid generic AI aesthetics.
+Avoid:
+Neon cyberpunk
+Overly futuristic themes
+Excessive gradients
+Visual clutter
+COLOR SYSTEM
+Create a professional SaaS palette.
+Primary:
+Intelligent Blue
+Secondary:
+Academic Indigo
+Accent:
+Success Green
+Warning Amber
+Error Red
+Neutral:
+Sophisticated Gray Scale
+Requirements:
+WCAG Accessibility
+High Contrast
+Dark Mode
+Light Mode
+TYPOGRAPHY
+Use modern SaaS typography hierarchy.
+Create:
+Display
+H1
+H2
+H3
+H4
+Body
+Caption
+Label
+Typography should resemble:
+Notion
+Linear
+Stripe
+Characteristics:
+Clean
+Professional
+Readable
+Academic
+DESIGN SYSTEM
+Generate:
+Buttons
+Primary
+Secondary
+Ghost
+Outline
+Destructive
+Inputs
+Textareas
+Selects
+Checkboxes
+Radios
+Switches
+Cards
+Dialogs
+Tooltips
+Popovers
+Drawers
+Dropdowns
+Tabs
+Accordions
+Tables
+Badges
+Toasts
+Loading States
+Empty States
+Skeleton States
+LAYOUT SYSTEM
+Create:
+Desktop
+Tablet
+Mobile
+Responsive-first design.
+Use:
+8px spacing system
+Consistent grid
+Balanced white space
+APPLICATION STRUCTURE
+Design complete UI for:
+Landing Page
+Sections:
+Hero
+Features
+AI Capabilities
+Testimonials
+Pricing
+FAQ
+CTA
+Hero should immediately communicate:
+"AI that helps you study smarter."
+Authentication
+Design:
+Login
+Register
+Forgot Password
+Verify Email
+2FA Screens
+Premium SaaS feel.
+Main Dashboard
+The dashboard should feel like a mission control center.
+Include:
+Daily Progress
+AI Insights
+Study Streak
+Learning Time
+Goals
+Upcoming Tasks
+Revision Queue
+AI Recommendations
+Activity Timeline
+AI Chat Interface
+Design comparable to:
+ChatGPT
+Claude
+Notion AI
+Features:
+Streaming messages
+Citations
+Attachments
+PDF interaction
+Code blocks
+Study mode
+Study Planner
+Views:
+Calendar
+Agenda
+Timeline
+Kanban
+Revision Center
+Show:
+Topics needing revision
+Spaced repetition schedule
+Memory retention analytics
+Flashcards
+Design modern flashcard experience.
+Include:
+Card flip
+Progress
+Difficulty rating
+Quiz System
+Include:
+Question navigation
+Timer
+Analytics
+Results
+PDF Learning Workspace
+Split layout:
+PDF Viewer
+AI Chat
+Notes Panel
+Analytics
+Create beautiful analytics comparable to Stripe.
+Metrics:
+Study Hours
+Performance
+Consistency
+Goals
+Revision Success
+Notifications
+Design:
+Notification Center
+Real-time Updates
+Preference Management
+Settings
+Sections:
+Profile
+Security
+Notifications
+Appearance
+Subscription
+Admin Dashboard
+Enterprise-grade admin UI.
+Include:
+User Management
+Analytics
+Revenue
+AI Monitoring
+Moderation
+MICRO INTERACTIONS
+Design:
+Smooth hover states
+Smart transitions
+Page transitions
+Loading animations
+Success feedback
+Animations should be subtle and professional.
+ACCESSIBILITY
+Must support:
+Keyboard navigation
+Screen readers
+High contrast
+Reduced motion
+DESIGN OUTPUT REQUIREMENTS
+Generate:
+Complete Design System
+Color Tokens
+Typography Tokens
+Spacing Tokens
+Component Library
+Layout Specifications
+Dashboard Designs
+Mobile Designs
+Tablet Designs
+Dark Mode
+Light Mode
+User Flows
+Interaction Specifications
+Empty States
+Loading States
+Error States
+FINAL GOAL
+Design BrainPilot AI so that it looks like a premium product from a top Silicon Valley company.
+A student should immediately feel:
+Organized
+Motivated
+Productive
+Guided
+Intelligent
+The UI must be elegant enough to compete visually with Notion, Linear, Stripe, GitHub, Slack, and Duolingo while remaining focused on learning and academic excellence.

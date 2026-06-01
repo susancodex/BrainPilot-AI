@@ -5,5 +5,11 @@ WORKSPACE_DIR="$(dirname "$SCRIPT_DIR")"
 export PYTHONPATH="$SCRIPT_DIR:$PYTHONPATH"
 export DJANGO_SETTINGS_MODULE="config.settings.development"
 cd "$WORKSPACE_DIR"
-uv run python "$SCRIPT_DIR/manage.py" migrate --noinput 2>&1 || true
-exec uv run python "$SCRIPT_DIR/manage.py" runserver "0.0.0.0:8000"
+
+PYTHON312="$HOME/.pythonlibs/bin/python3.12"
+if [ ! -x "$PYTHON312" ]; then
+  PYTHON312=$(which python3.12 2>/dev/null || which python3 2>/dev/null)
+fi
+
+uv run --python "$PYTHON312" python "$SCRIPT_DIR/manage.py" migrate --noinput 2>&1 || true
+exec uv run --python "$PYTHON312" python "$SCRIPT_DIR/manage.py" runserver "0.0.0.0:8000"

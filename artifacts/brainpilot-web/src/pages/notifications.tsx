@@ -29,7 +29,9 @@ export default function Notifications() {
     }
   };
 
-  const hasUnread = notifications?.some((n: any) => !n.is_read);
+  const notifData = notifications as { unread_count?: number; notifications?: any[] } | undefined;
+  const notifList = notifData?.notifications ?? [];
+  const hasUnread = notifList.some((n: any) => !n.is_read);
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -48,8 +50,8 @@ export default function Notifications() {
       <div className="space-y-3">
         {isLoading ? (
           <div className="text-muted-foreground">Loading notifications...</div>
-        ) : notifications?.length ? (
-          notifications.map((notif: any) => (
+        ) : notifList.length ? (
+          notifList.map((notif: any) => (
             <Card 
               key={notif.id} 
               className={cn(

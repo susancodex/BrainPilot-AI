@@ -17,6 +17,18 @@ class ConversationListView(APIView):
         conversations = ChatService.get_user_conversations(request.user)
         return success_response(data=ConversationSerializer(conversations, many=True).data)
 
+    def post(self, request):
+        title = request.data.get("title", "")
+        subject_context = request.data.get("subject_context", "")
+        conversation = ChatService.get_or_create_conversation(
+            request.user,
+            subject_context=subject_context,
+        )
+        if title:
+            conversation.title = title
+            conversation.save(update_fields=["title"])
+        return created_response(data=ConversationSerializer(conversation).data)
+
 
 class ConversationDetailView(APIView):
     permission_classes = [IsAuthenticated]

@@ -50,8 +50,9 @@ function Layout({ children }: LayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const notifList = (notifications as Notification[] | undefined) ?? [];
-  const unreadCount = notifList.filter((n) => !n.is_read).length;
+  const notifData = notifications as { unread_count?: number; notifications?: Notification[] } | undefined;
+  const notifList = notifData?.notifications ?? [];
+  const unreadCount = notifData?.unread_count ?? notifList.filter((n) => !n.is_read).length;
 
   const isActive = (href: string) =>
     href === "/" ? location === "/" : location.startsWith(href);

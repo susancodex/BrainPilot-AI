@@ -96,6 +96,10 @@ class NoteService:
         return created
 
     @staticmethod
+    def get_all_flashcards(user):
+        return Flashcard.objects.filter(user=user).select_related("note").order_by("-created_at")
+
+    @staticmethod
     def get_due_flashcards(user):
         return Flashcard.objects.filter(
             user=user,

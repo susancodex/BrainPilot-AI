@@ -74,6 +74,14 @@ class GenerateFlashcardsView(APIView):
         )
 
 
+class FlashcardListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        flashcards = NoteService.get_all_flashcards(request.user)
+        return success_response(data=FlashcardSerializer(flashcards, many=True).data)
+
+
 class FlashcardDueView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -86,6 +94,13 @@ class FlashcardReviewView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
-        correct = bool(request.data.get("correct", False))
+        result = request.data.get("result", "")
+        correct_flag = request.data.get("correct", None)
+        if result:
+            correct = result == "correct"
+        elif correct_flag is not None:
+            correct = bool(correct_flag)
+        else:
+            correct = False
         flashcard = NoteService.review_flashcard(request.user, pk, correct)
         return success_response(data=FlashcardSerializer(flashcard).data)

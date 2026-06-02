@@ -66,15 +66,15 @@ export default function Analytics() {
           },
           {
             label: "Quiz Avg",
-            value: quizLoading ? "—" : `${Math.round((quizPerf as any)?.avg_percentage ?? 0)}%`,
-            sub: quizLoading ? "" : `${(quizPerf as any)?.quiz_count ?? 0} quizzes taken`,
+            value: quizLoading ? "—" : `${Math.round((quizPerf as any)?.summary?.avg_percentage ?? 0)}%`,
+            sub: quizLoading ? "" : `${(quizPerf as any)?.summary?.total_attempts ?? 0} quizzes taken`,
             icon: <BrainCircuit className="w-4 h-4 text-purple-500" />,
             accent: "bg-purple-500/10",
           },
           {
             label: "Due Revisions",
             value: revLoading ? "—" : ((revStats as any)?.due_count ?? 0),
-            sub: revLoading ? "" : `${(revStats as any)?.weak_topic_count ?? 0} weak topics`,
+            sub: revLoading ? "" : `${(revStats as any)?.weak_topics ?? 0} weak topics`,
             icon: <BookOpen className="w-4 h-4 text-green-500" />,
             accent: "bg-green-500/10",
           },
@@ -195,15 +195,15 @@ export default function Analytics() {
           <CardContent className="h-[260px]">
             {quizLoading ? <Skeleton className="h-full w-full rounded" /> : (
               <>
-                {(quizPerf as any)?.trend?.length ? (
+                {(quizPerf as any)?.by_subject?.length ? (
                   <ResponsiveContainer width="100%" height={180}>
-                    <LineChart data={(quizPerf as any).trend}>
+                    <BarChart data={(quizPerf as any).by_subject} barSize={28}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                      <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" />
+                      <XAxis dataKey="subject" fontSize={10} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" />
                       <YAxis domain={[0, 100]} fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip {...tooltipStyle} formatter={(v: number) => [`${v}%`, "Score"]} />
-                      <Line type="monotone" dataKey="score" stroke="hsl(var(--chart-4))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--chart-4))" }} />
-                    </LineChart>
+                      <Tooltip {...tooltipStyle} formatter={(v: number) => [`${v}%`, "Accuracy"]} />
+                      <Bar dataKey="accuracy" fill="hsl(var(--chart-4))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="h-40 flex items-center justify-center text-muted-foreground text-sm">
@@ -212,9 +212,9 @@ export default function Analytics() {
                 )}
                 <div className="grid grid-cols-3 gap-3 mt-2">
                   {[
-                    { label: "Avg Score", value: `${Math.round((quizPerf as any)?.avg_percentage ?? 0)}%` },
-                    { label: "Pass Rate", value: `${Math.round((quizPerf as any)?.pass_rate ?? 0)}%` },
-                    { label: "Total Quizzes", value: (quizPerf as any)?.quiz_count ?? 0 },
+                    { label: "Avg Score", value: `${Math.round((quizPerf as any)?.summary?.avg_percentage ?? 0)}%` },
+                    { label: "Total Attempts", value: (quizPerf as any)?.summary?.total_attempts ?? 0 },
+                    { label: "Subjects Covered", value: (quizPerf as any)?.by_subject?.length ?? 0 },
                   ].map(({ label, value }) => (
                     <div key={label} className="text-center p-2 bg-muted/40 rounded-lg">
                       <div className="font-bold text-sm text-foreground">{value}</div>
@@ -241,8 +241,8 @@ export default function Analytics() {
             <div className="grid grid-cols-3 gap-4">
               {[
                 { label: "Due Today", value: (revStats as any)?.due_count ?? 0, accent: "text-orange-500 bg-orange-500/10" },
-                { label: "Weak Topics", value: (revStats as any)?.weak_topic_count ?? 0, accent: "text-red-500 bg-red-500/10" },
-                { label: "Mastered", value: (revStats as any)?.mastered_count ?? 0, accent: "text-green-500 bg-green-500/10" },
+                { label: "Weak Topics", value: (revStats as any)?.weak_topics ?? 0, accent: "text-red-500 bg-red-500/10" },
+                { label: "Mastered", value: (revStats as any)?.mastered ?? 0, accent: "text-green-500 bg-green-500/10" },
               ].map(({ label, value, accent }) => (
                 <div key={label} className="p-4 rounded-xl bg-muted/40 text-center">
                   <div className={`text-3xl font-bold ${accent.split(" ")[0]}`}>{value}</div>

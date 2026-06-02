@@ -73,10 +73,13 @@ class AnalyticsService:
     @staticmethod
     def get_revision_stats(user):
         from apps.revision.models import RevisionTopic
+        from django.utils import timezone
         topics = RevisionTopic.objects.filter(user=user)
         weak = topics.filter(is_weak=True).count()
+        due = topics.filter(next_revision_at__lte=timezone.now()).count()
         return {
             "total_topics": topics.count(),
+            "due_count": due,
             "weak_topics": weak,
             "avg_confidence": topics.aggregate(avg=Avg("confidence_level"))["avg"] or 0,
             "mastered": topics.filter(confidence_level__gte=4).count(),

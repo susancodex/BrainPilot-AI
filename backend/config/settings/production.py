@@ -13,6 +13,18 @@ CORS_ALLOWED_ORIGINS = [
     o.strip() for o in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()
 ]
 
+_replit_dev = os.environ.get("REPLIT_DEV_DOMAIN", "")
+if _replit_dev:
+    CORS_ALLOWED_ORIGINS += [
+        f"https://{_replit_dev}",
+        f"http://{_replit_dev}",
+    ]
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.replit\.dev$",
+    r"^https://.*\.repl\.co$",
+]
+
 # Security headers
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "false").lower() == "true"

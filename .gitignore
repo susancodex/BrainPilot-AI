@@ -56,6 +56,11 @@ pip-log.txt
 .DS_Store
 Thumbs.db
 
+# ── Build outputs ────────────────────────────────────────────────────────────
+frontend/dist/
+backend/staticfiles/
+backend/media/
+
 # ── Replit (internal — never ignore) ─────────────────────────────────────────
 .cache/
 .local/

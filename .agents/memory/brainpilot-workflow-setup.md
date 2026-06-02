@@ -1,25 +1,47 @@
 ---
 name: BrainPilot workflow setup
-description: How to start both the Django backend and brainpilot-web frontend; env var requirements and artifact path conflict resolution.
+description: How to start both services, env var requirements, and path/port details after reorganization.
 ---
 
 ## Services
 
-| Service | Workflow name | Port | Command |
-|---|---|---|---|
-| Django backend | `BrainPilot Backend` | 8000 | `bash backend/run_dev.sh` |
-| React frontend | `artifacts/brainpilot-web: web` | 23630 (ext 3000) | managed by artifact system |
+| Service | Workflow name | Command | Port |
+|---------|--------------|---------|------|
+| Backend | BrainPilot Backend | `bash backend/run_dev.sh` | 8000 |
+| Frontend | BrainPilot Frontend | `pnpm --filter @workspace/brainpilot-web run dev` | 5000 |
 
-## Key facts
+Both start in parallel via the **Project** workflow (run button). Frontend serves at port 5000 (webview).
 
-- Backend runs via `uv run python backend/manage.py ...` — plain `python` does NOT have Django installed; always use `uv run` or let `run_dev.sh` handle it.
-- `run_dev.sh` auto-runs `migrate --noinput` before starting the dev server, so new migrations are applied on restart.
-- Frontend Vite config requires `PORT` and `BASE_PATH` env vars. The artifact.toml's `[services.env]` block sets these. If configuring a manual workflow, pass them inline: `PORT=23630 BASE_PATH=/ pnpm ...`.
-- Vite proxy: `/api` and `/media` are proxied to `http://localhost:8000` in `vite.config.ts`. Do not hard-code API URLs in the frontend.
-- The legacy `artifacts/brainpilot` artifact was moved to previewPath `/v0` to avoid DUPLICATE_PREVIEW_PATH conflict with `artifacts/brainpilot-web` at `/`.
+## Python setup
 
-## API import path
+- Python 3.12 module (`python-3.12`) must be installed via `installProgrammingLanguage`.
+- Binary is at `/home/runner/workspace/.pythonlibs/bin/python3.12`.
+- `backend/run_dev.sh` uses `uv sync --python python3.12` then `uv run --no-sync` to avoid venv teardown between commands.
 
-All frontend hooks import the axios client as `import api from "@/lib/api"` (NOT `@/lib/axios`).
+## Env vars (set in `.replit` userenv.shared)
 
-**Why:** The api client file is `src/lib/api.ts` — this was discovered when new hooks errored with "Failed to resolve import @/lib/axios".
+- `DJANGO_SETTINGS_MODULE=config.settings.development`
+- `DJANGO_SECRET_KEY` — value set in userenv
+- `PORT=5000`, `BASE_PATH=/`
+- `GEMINI_API_KEY` — Replit Secret
+
+## Directory layout (after reorganization)
+
+```
+frontend/    ← React/Vite app (package: @workspace/brainpilot-web)
+backend/     ← Django 6 API
+lib/         ← Shared TS packages (api-client-react etc.)
+docs/        ← Reference docs (renamed from attached_assets/)
+scripts/     ← Workspace tooling
+artifacts/   ← Replit artifact stubs ONLY — not active source code
+```
+
+Frontend was moved from `artifacts/brainpilot-web/` → `frontend/`. The workflow filter (`@workspace/brainpilot-web`) resolves by package name so no workflow command change was needed.
+
+## API import path in frontend
+
+All hooks import the axios client as `import api from "@/lib/api"` (NOT `@/lib/axios`).
+
+## Port conflict note
+
+The `artifacts/api-server` workflow also targets port 8000. It finishes quickly. If Django fails "port in use", wait a few seconds and restart `BrainPilot Backend`.

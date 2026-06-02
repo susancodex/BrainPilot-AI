@@ -29,23 +29,24 @@ name = "BrainPilot Backend"
 author = "agent"
 
 [workflows.workflow.metadata]
-outputType = "webview"
+outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "bash backend/run_dev.sh"
-waitForPort = 5000
+waitForPort = 8000
 
 [[workflows.workflow]]
 name = "BrainPilot Frontend"
 author = "agent"
 
 [workflows.workflow.metadata]
-outputType = "console"
+outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm --filter @workspace/brainpilot-web run build:watch"
+args = "pnpm --filter @workspace/brainpilot-web run dev"
+waitForPort = 5000
 
 [agent]
 stack = "BEST_EFFORT_FALLBACK"
@@ -62,14 +63,6 @@ externalPort = 3002
 
 [[ports]]
 localPort = 5000
-externalPort = 80
-
-[[ports]]
-localPort = 8000
-externalPort = 8000
-
-[[ports]]
-localPort = 8080
 externalPort = 80
 
 [[ports]]
@@ -93,5 +86,5 @@ packages = ["freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp
 [userenv.shared]
 DJANGO_SECRET_KEY = "&abu#o%9p*o7l-ib@=22yv^!m6u1+s=gk828zi5d0qgw+mh*gb"
 DJANGO_SETTINGS_MODULE = "config.settings.development"
-PORT = "3001"
+PORT = "5000"
 BASE_PATH = "/"

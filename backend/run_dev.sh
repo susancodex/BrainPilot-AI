@@ -12,4 +12,4 @@ if [ ! -x "$PYTHON312" ]; then
 fi
 
 uv run --python "$PYTHON312" python "$SCRIPT_DIR/manage.py" migrate --noinput 2>&1 || true
-exec uv run --python "$PYTHON312" python "$SCRIPT_DIR/manage.py" runserver "0.0.0.0:5000"
+exec uv run --python "$PYTHON312" python "$SCRIPT_DIR/manage.py" runserver "0.0.0.0:8000"

@@ -18,14 +18,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
+import type { QuizQuestion } from "@/types";
+
 type AppView = "list" | "taking" | "results";
 
-function getQuestionText(q: any): string {
-  return q?.question ?? q?.text ?? "";
+function getQuestionText(q: QuizQuestion): string {
+  return q.question ?? q.text ?? "";
 }
 
-function getQuestionIndex(q: any, fallback: number): number {
-  return typeof q?.index === "number" ? q.index : fallback;
+function getQuestionIndex(q: QuizQuestion, fallback: number): number {
+  return typeof q.index === "number" ? q.index : fallback;
 }
 
 export default function Quizzes() {
@@ -117,8 +119,8 @@ export default function Quizzes() {
 
   if (view === "taking" && activeQuiz && q) {
     const selectedAnswer = answers[qIndex];
-    const qType = (q as any).question_type ?? (q as any).type;
-    const options: string[] = (q as any).options ?? [];
+    const qType = q.question_type ?? q.type;
+    const options: string[] = q.options ?? [];
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
@@ -275,9 +277,9 @@ export default function Quizzes() {
                             Correct: {ans?.correct_answer ?? q.correct_answer}
                           </div>
                         )}
-                        {(q as any).explanation && (
+                        {q.explanation && (
                           <div className="px-2 py-1 rounded bg-muted text-muted-foreground mt-1 italic">
-                            {(q as any).explanation}
+                            {q.explanation}
                           </div>
                         )}
                       </div>

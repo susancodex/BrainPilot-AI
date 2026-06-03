@@ -23,7 +23,18 @@ class ChatService:
 
     @staticmethod
     def get_user_conversations(user):
-        return Conversation.objects.filter(user=user, is_active=True)
+        from django.db.models import Prefetch
+        return (
+            Conversation.objects.filter(user=user, is_active=True)
+            .prefetch_related(
+                Prefetch(
+                    "messages",
+                    queryset=Message.objects.filter(role="assistant").order_by("-created_at"),
+                    to_attr="_last_assistant_msgs",
+                )
+            )
+            .order_by("-last_message_at")
+        )
 
     @staticmethod
     def get_conversation(user, conversation_id) -> Conversation:

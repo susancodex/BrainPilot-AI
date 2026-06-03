@@ -18,7 +18,10 @@ class ConversationSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "message_count", "last_message_at", "created_at"]
 
     def get_last_message(self, obj):
-        msg = obj.messages.filter(role="assistant").last()
+        prefetched = getattr(obj, "_last_assistant_msgs", None)
+        if prefetched is not None:
+            return prefetched[0].content[:200] if prefetched else None
+        msg = obj.messages.filter(role="assistant").order_by("-created_at").first()
         return msg.content[:200] if msg else None
 
 

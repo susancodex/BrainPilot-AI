@@ -3,3 +3,4 @@
 - [BrainPilot frontend coverage](brainpilot-frontend-coverage.md) — complete list of hooks, pages, and field fixes applied in coverage pass
 - [BrainPilot workflow setup](brainpilot-workflow-setup.md) — how to start both services; env var quirks and path conflict resolution
 - [BrainPilot production fixes](brainpilot-production-fixes.md) — auth redirect pattern, analytics API shapes, legacy artifact removal
+- [BrainPilot enterprise audit](brainpilot-enterprise-audit.md) — all security/N+1/type fixes applied; what was found and why

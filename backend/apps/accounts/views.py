@@ -73,12 +73,10 @@ class LivenessCheckView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        import sys
         return success_response(
             data={
                 "status": "alive",
                 "timestamp": timezone.now().isoformat(),
-                "python": sys.version.split()[0],
             },
         )
 
@@ -136,6 +134,7 @@ class LogoutView(APIView):
 
 class VerifyEmailView(APIView):
     permission_classes = [AllowAny]
+    throttle_scope = "auth"
 
     def post(self, request):
         token = request.data.get("token")
@@ -158,6 +157,7 @@ class PasswordResetRequestView(APIView):
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
+    throttle_scope = "auth"
 
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)

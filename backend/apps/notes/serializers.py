@@ -15,6 +15,8 @@ class FlashcardSerializer(serializers.ModelSerializer):
 class NoteSerializer(serializers.ModelSerializer):
     flashcards = FlashcardSerializer(many=True, read_only=True)
     flashcard_count = serializers.SerializerMethodField()
+    title = serializers.CharField(max_length=500)
+    content = serializers.CharField(max_length=500_000, allow_blank=True, required=False)
 
     class Meta:
         model = Note
@@ -26,11 +28,15 @@ class NoteSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "ai_summary", "summary_generated_at", "created_at", "updated_at"]
 
     def get_flashcard_count(self, obj):
+        prefetched = getattr(obj, "_prefetched_objects_cache", {}).get("flashcards")
+        if prefetched is not None:
+            return len(prefetched)
         return obj.flashcards.count()
 
 
 class NoteListSerializer(serializers.ModelSerializer):
     flashcard_count = serializers.SerializerMethodField()
+    title = serializers.CharField(max_length=500)
 
     class Meta:
         model = Note
@@ -41,6 +47,9 @@ class NoteListSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "ai_summary", "created_at", "updated_at"]
 
     def get_flashcard_count(self, obj):
+        prefetched = getattr(obj, "_prefetched_objects_cache", {}).get("flashcards")
+        if prefetched is not None:
+            return len(prefetched)
         return obj.flashcards.count()
 
 

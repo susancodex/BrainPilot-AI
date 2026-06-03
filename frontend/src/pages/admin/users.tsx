@@ -176,8 +176,8 @@ export default function AdminUsers() {
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {u.date_joined
-                          ? new Date(u.date_joined).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+                        {u.created_at
+                          ? new Date(u.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
                           : "—"}
                       </TableCell>
                     </TableRow>

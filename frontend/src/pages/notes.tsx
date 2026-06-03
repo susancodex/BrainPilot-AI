@@ -63,7 +63,8 @@ export default function Notes() {
     if (hasChanges) {
       updateNote.mutate({ id: selectedId, title: debouncedTitle, content: debouncedContent });
     }
-  }, [debouncedContent, debouncedTitle]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedContent, debouncedTitle, selectedId]);
 
   const filteredNotes = notesList
     .filter((n) =>

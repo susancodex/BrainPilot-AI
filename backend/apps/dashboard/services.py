@@ -26,9 +26,15 @@ class DashboardService:
             scheduled_date=today,
         ).select_related("plan")
 
-        active_goals = Goal.objects.filter(user=user, status="in_progress").count()
-        completed_goals = Goal.objects.filter(user=user, status="completed").count()
-        total_goals = Goal.objects.filter(user=user).count()
+        from django.db.models import Count, Case, When, IntegerField
+        goal_counts = Goal.objects.filter(user=user).aggregate(
+            total=Count("id"),
+            active=Count(Case(When(status="in_progress", then=1), output_field=IntegerField())),
+            completed=Count(Case(When(status="completed", then=1), output_field=IntegerField())),
+        )
+        active_goals = goal_counts["active"]
+        completed_goals = goal_counts["completed"]
+        total_goals = goal_counts["total"]
 
         due_revisions = RevisionTopic.objects.filter(
             user=user, next_revision_at__lte=timezone.now()

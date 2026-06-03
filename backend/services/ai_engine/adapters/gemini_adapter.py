@@ -35,7 +35,7 @@ class GeminiAdapter:
                 logger.info("Gemini: using direct API key")
                 self._client = genai.Client(api_key=api_key)
 
-        self.model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.5-flash")
+        self.model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash")
 
     @property
     def client(self):

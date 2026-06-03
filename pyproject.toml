@@ -2,11 +2,11 @@
 name = "brainpilot-ai"
 version = "1.0.0"
 description = "BrainPilot AI — Gemini-powered study companion SaaS backend"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "celery>=5.6.3",
     "dj-database-url>=3.1.2",
-    "django>=6.0.5",
+    "django>=5.2,<6.0",
     "django-cors-headers>=4.9.0",
     "django-debug-toolbar>=6.3.0",
     "django-filter>=25.2",
@@ -14,7 +14,7 @@ dependencies = [
     "django-redis>=6.0.0",
     "djangorestframework>=3.17.1",
     "djangorestframework-simplejwt>=5.5.1",
-    "drf-spectacular>=0.29.0",
+    "drf-spectacular>=0.27.0",
     "factory-boy>=3.3.3",
     "google-genai>=2.7.0",
     "gunicorn>=26.0.0",
@@ -28,12 +28,11 @@ dependencies = [
     "redis>=8.0.0",
     "tenacity>=9.1.4",
     "whitenoise>=6.12.0",
-    "drf-spectacular>=0.28.0",
 ]
 
 [tool.ruff]
 line-length = 120
-target-version = "py312"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "S"]
@@ -44,7 +43,7 @@ ignore = ["E501", "S101", "S311"]
 "*/tests/*" = ["S101", "S106"]
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.11"
 ignore_missing_imports = true
 disallow_untyped_defs = true
 no_implicit_optional = true

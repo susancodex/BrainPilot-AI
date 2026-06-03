@@ -6,8 +6,8 @@ export PYTHONPATH="$SCRIPT_DIR:$PYTHONPATH"
 export DJANGO_SETTINGS_MODULE="config.settings.development"
 cd "$WORKSPACE_DIR"
 
-# Sync dependencies once using Python 3.12
-uv sync --python python3.12
+# Sync dependencies once using Python 3.11
+uv sync --python python3.11
 
 # Run migrations using the synced environment
 uv run --no-sync python "$SCRIPT_DIR/manage.py" migrate --noinput 2>&1 || true

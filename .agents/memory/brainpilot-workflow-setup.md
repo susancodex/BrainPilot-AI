@@ -14,22 +14,34 @@ Both start in parallel via the **Project** workflow (run button). Frontend serve
 
 ## Python setup
 
-- Python 3.12 module (`python-3.12`) must be installed via `installProgrammingLanguage`.
-- Binary is at `/home/runner/workspace/.pythonlibs/bin/python3.12`.
-- `backend/run_dev.sh` uses `uv sync --python python3.12` then `uv run --no-sync` to avoid venv teardown between commands.
+- Only **Python 3.11.14** is available in this Replit (`.replit` module: `python-3.11`).
+- `python-3.12` is NOT available — uv Python downloads are set to 'never'.
+- `backend/run_dev.sh` uses `uv sync --python python3.11` then `uv run --no-sync`.
+- `pyproject.toml` must use `requires-python = ">=3.11"` and `django>=5.2,<6.0` (Django 6 requires Python 3.12).
+
+## Django version
+
+- **Django 5.2 LTS** (not 6.x) — Django 6 requires Python >=3.12 which is unavailable.
+- `pyproject.toml` is the source of truth for `uv sync` — `requirements/*.txt` files are legacy and NOT used by the dev runner.
 
 ## Env vars (set in `.replit` userenv.shared)
 
 - `DJANGO_SETTINGS_MODULE=config.settings.development`
 - `DJANGO_SECRET_KEY` — value set in userenv
 - `PORT=5000`, `BASE_PATH=/`
-- `GEMINI_API_KEY` — Replit Secret
+- `GEMINI_API_KEY` — Replit Secret (must be a valid AI Studio key starting with "AIza", 39 chars)
+
+## Gemini AI adapter
+
+- Adapter (`backend/services/ai_engine/adapters/gemini_adapter.py`) checks for `AI_INTEGRATIONS_GEMINI_API_KEY` + `AI_INTEGRATIONS_GEMINI_BASE_URL` first (Replit AI Integrations proxy), then falls back to `GEMINI_API_KEY` (stripped of whitespace).
+- Model default: `gemini-2.0-flash` (set in `backend/config/settings/base.py` via `GEMINI_MODEL` env var).
+- Free-tier quota: `gemini-2.5-flash` = 20 req/day; `gemini-2.0-flash` varies by project. Exhausted quotas reset at midnight Pacific.
 
 ## Directory layout (after reorganization)
 
 ```
 frontend/    ← React/Vite app (package: @workspace/brainpilot-web)
-backend/     ← Django 6 API
+backend/     ← Django 5.2 API
 lib/         ← Shared TS packages (api-client-react etc.)
 docs/        ← Reference docs (renamed from attached_assets/)
 scripts/     ← Workspace tooling

@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from typing import Any
 
 from google import genai
@@ -14,13 +15,27 @@ logger = logging.getLogger(__name__)
 
 class GeminiAdapter:
     def __init__(self):
-        api_key = settings.GEMINI_API_KEY
-        if not api_key:
-            logger.warning("GEMINI_API_KEY not set — AI features will be disabled.")
-            self._client = None
+        # Prefer Replit AI Integrations (no user key required) when env vars are present
+        ai_key = os.environ.get("AI_INTEGRATIONS_GEMINI_API_KEY", "").strip()
+        ai_base_url = os.environ.get("AI_INTEGRATIONS_GEMINI_BASE_URL", "").strip()
+
+        if ai_key and ai_base_url:
+            logger.info("Gemini: using Replit AI Integrations proxy")
+            self._client = genai.Client(
+                api_key=ai_key,
+                http_options={"api_version": "", "base_url": ai_base_url},
+            )
         else:
-            self._client = genai.Client(api_key=api_key)
-        self.model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash")
+            # Fall back to user-supplied API key (strip whitespace to handle copy-paste issues)
+            api_key = getattr(settings, "GEMINI_API_KEY", "").strip()
+            if not api_key:
+                logger.warning("GEMINI_API_KEY not set — AI features will be disabled.")
+                self._client = None
+            else:
+                logger.info("Gemini: using direct API key")
+                self._client = genai.Client(api_key=api_key)
+
+        self.model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.5-flash")
 
     @property
     def client(self):

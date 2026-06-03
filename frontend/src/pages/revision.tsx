@@ -77,7 +77,7 @@ export default function Revision() {
             <div className="text-xs text-muted-foreground mb-1">Next Review</div>
             <div className="font-semibold text-foreground flex items-center gap-1">
               <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-              {topic.next_review_date ? new Date(topic.next_review_date).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—"}
+              {topic.next_revision_at ? new Date(topic.next_revision_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—"}
             </div>
           </div>
         </div>
@@ -87,7 +87,7 @@ export default function Revision() {
           <DialogTrigger asChild>
             <Button 
               className="w-full gap-2" 
-              variant={topic.is_due ? "default" : "outline"}
+              variant={topic.is_weak ? "default" : "outline"}
               onClick={() => setActiveReviewId(topic.id)}
             >
               <Check className="w-4 h-4" /> Review Now

@@ -160,6 +160,19 @@ export interface RevisionTopic {
   id: string;
   subject: string;
   topic: string;
+  confidence_level: number;
+  revision_count: number;
+  last_revised_at: string | null;
+  next_revision_at: string | null;
+  is_weak: boolean;
+  notes: string;
+  created_at: string;
+}
+
+export interface _RevisionTopicOld {
+  id: string;
+  subject: string;
+  topic: string;
   confidence_level: 1 | 2 | 3 | 4 | 5;
   revision_count: number;
   next_review_date: string;

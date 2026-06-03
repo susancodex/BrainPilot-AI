@@ -1,0 +1,136 @@
+You are a Senior AI Engineer, Senior Backend Engineer, and Production SaaS Architect.
+Implement a production-grade Multi-Provider AI Gateway for BrainPilot AI.
+
+OBJECTIVE
+
+Do not rely on a single AI provider.
+
+Create a provider-agnostic AI architecture with automatic failover and fallback support.
+
+SUPPORTED PROVIDERS
+
+Gemini
+OpenRouter
+Groq
+Cloudflare Workers AI
+Hugging Face Inference Providers
+ARCHITECTURE REQUIREMENTS
+Create a dedicated AI module.
+
+Example structure:
+
+backend/
+├── ai/
+│ ├── providers/
+│ │ ├── gemini_provider.py
+│ │ ├── openrouter_provider.py
+│ │ ├── groq_provider.py
+│ │ ├── cloudflare_provider.py
+│ │ └── huggingface_provider.py
+│ ├── gateway.py
+│ ├── factory.py
+│ ├── exceptions.py
+│ ├── types.py
+│ └── services.py
+
+ENVIRONMENT VARIABLES
+
+Read all API keys from environment variables.
+
+GEMINI_API_KEY=
+OPENROUTER_API_KEY=
+GROQ_API_KEY=
+CLOUDFLARE_API_KEY=
+CLOUDFLARE_ACCOUNT_ID=
+HUGGINGFACE_API_KEY=
+
+Never hardcode API keys.
+
+Never expose secrets to frontend.
+
+FAILOVER SYSTEM
+
+Provider priority:
+
+Gemini
+Groq
+OpenRouter
+Cloudflare Workers AI
+Hugging Face
+When a provider fails due to:
+Quota exhaustion
+Rate limit
+Timeout
+Network issue
+Service outage
+Invalid response
+Automatically switch to the next provider.
+Do not crash the application.
+
+Do not expose provider errors to users.
+
+LOGGING
+
+Log:
+
+Provider selected
+Response time
+Failover events
+Error details
+Do not log API keys.
+HEALTH CHECKS
+
+Implement provider health monitoring.
+
+Track:
+
+Availability
+Success rate
+Latency
+Failure rate
+Prefer healthy providers automatically.
+COST OPTIMIZATION
+
+Prioritize free or lower-cost providers when possible.
+
+Avoid unnecessary API calls.
+
+Implement retry logic with exponential backoff.
+
+SECURITY
+
+Validate all inputs.
+
+Sanitize prompts.
+
+Prevent prompt injection where possible.
+
+Protect secrets.
+
+Use server-side API calls only.
+
+FRONTEND REQUIREMENTS
+
+No frontend changes should be required when switching providers.
+
+The frontend should communicate with a single backend AI endpoint.
+
+The backend decides which provider to use.
+
+TESTING
+
+Test:
+
+Gemini quota exhausted
+Groq unavailable
+OpenRouter unavailable
+Cloudflare unavailable
+Hugging Face unavailable
+Multiple simultaneous failures
+Verify that BrainPilot AI continues functioning through automatic failover.
+FINAL RESULT
+
+BrainPilot AI should continue generating AI responses even if one or more providers become unavailable.
+
+The AI system must be scalable, secure, maintainable, provider-independent, and production-ready.
+One recommendation: for a student project, use Gemini + Groq + OpenRouter first. Those three usually provide the best free-tier experience. Cloudflare Workers AI and Hugging Face can be added later as additional fallbacks.

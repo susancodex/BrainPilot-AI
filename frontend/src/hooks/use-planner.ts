@@ -35,12 +35,27 @@ export const useGeneratePlan = () => {
       exam_date?: string;
       weak_topics?: string[];
       goals?: string;
+      syllabus_text?: string;
     }) => {
       const { data } = await api.post("/planner/plans/generate/", payload);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["planner", "plans"] });
+    },
+  });
+};
+
+export const useExtractSyllabus = () => {
+  return useMutation({
+    mutationFn: async (payload: { file?: File; text?: string }) => {
+      const form = new FormData();
+      if (payload.file) form.append("file", payload.file);
+      if (payload.text) form.append("text", payload.text);
+      const { data } = await api.post("/planner/extract-syllabus/", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return data as { text: string; pages: number | null; source: "pdf" | "text" };
     },
   });
 };

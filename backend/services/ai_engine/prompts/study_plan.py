@@ -10,10 +10,16 @@ def build_study_plan_prompt(
     weak_topics: list[str] = None,
     exam_date: date = None,
     goals: str = "",
+    syllabus_text: str = "",
 ) -> str:
     weak_str = ", ".join(weak_topics) if weak_topics else "None identified"
     exam_str = str(exam_date) if exam_date else "Not specified"
     total_days = (end_date - start_date).days + 1
+    syllabus_section = (
+        f"\nSYLLABUS / COURSE CONTENT (use this to structure topics):\n{syllabus_text[:6000]}\n"
+        if syllabus_text and syllabus_text.strip()
+        else ""
+    )
 
     return f"""You are BrainPilot AI, an expert academic study planner. Create a detailed, adaptive study plan.
 
@@ -24,7 +30,7 @@ STUDENT CONTEXT:
 - Daily study hours: {daily_hours}
 - Exam date: {exam_str}
 - Weak topics: {weak_str}
-- Goals: {goals or 'General preparation'}
+- Goals: {goals or 'General preparation'}{syllabus_section}
 
 REQUIREMENTS:
 1. Distribute topics evenly across available days

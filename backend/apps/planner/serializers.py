@@ -43,6 +43,7 @@ class GeneratePlanSerializer(serializers.Serializer):
     exam_date = serializers.DateField(required=False, allow_null=True)
     weak_topics = serializers.ListField(child=serializers.CharField(), required=False, default=list)
     goals = serializers.CharField(required=False, allow_blank=True)
+    syllabus_text = serializers.CharField(required=False, allow_blank=True, default="")
 
     def validate(self, attrs):
         if attrs["start_date"] >= attrs["end_date"]:

@@ -1,7 +1,9 @@
+import io
 import logging
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from .models import StudyPlan, StudySession
 from .serializers import StudyPlanSerializer, StudySessionSerializer, GeneratePlanSerializer
@@ -58,6 +60,43 @@ class GenerateAIPlanView(APIView):
         ai_response = workflow.generate(request.user, serializer.validated_data)
         plan = PlannerService.create_ai_plan(request.user, ai_response, serializer.validated_data)
         return created_response(data=StudyPlanSerializer(plan).data, message="AI study plan generated.")
+
+
+class ExtractSyllabusView(APIView):
+    """Accept a PDF upload or raw text and return extracted syllabus text."""
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        pdf_file = request.FILES.get("file")
+        raw_text = request.data.get("text", "").strip()
+
+        if pdf_file:
+            try:
+                import pypdf
+                content = pdf_file.read()
+                reader = pypdf.PdfReader(io.BytesIO(content))
+                pages = [page.extract_text() or "" for page in reader.pages]
+                extracted = "\n\n".join(pages).strip()
+                if not extracted:
+                    return error_response("Could not extract text from this PDF. Try pasting the syllabus instead.", status=422)
+                return success_response(
+                    data={"text": extracted, "pages": len(reader.pages), "source": "pdf"},
+                    message="Syllabus extracted from PDF.",
+                )
+            except ImportError:
+                return error_response("PDF processing is not available. Please paste your syllabus as text.", status=503)
+            except Exception as exc:
+                logger.warning("Syllabus PDF extraction error: %s", exc)
+                return error_response("Failed to read PDF. Try pasting the syllabus as text.", status=422)
+
+        if raw_text:
+            return success_response(
+                data={"text": raw_text, "pages": None, "source": "text"},
+                message="Syllabus text received.",
+            )
+
+        return error_response("Provide either a PDF file or syllabus text.", status=400)
 
 
 class StudySessionListView(APIView):

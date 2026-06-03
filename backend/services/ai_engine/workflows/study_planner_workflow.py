@@ -21,6 +21,7 @@ class StudyPlannerWorkflow:
         exam_date = request_data.get("exam_date")
         weak_topics = request_data.get("weak_topics", [])
         goals = request_data.get("goals", "")
+        syllabus_text = request_data.get("syllabus_text", "")
 
         logger.info("Generating %s study plan for user %s", plan_type, user.email)
 
@@ -36,6 +37,7 @@ class StudyPlannerWorkflow:
                 weak_topics=weak_topics,
                 exam_date=exam_date,
                 goals=goals,
+                syllabus_text=syllabus_text,
             )
 
         result = self.adapter.generate_json(prompt)

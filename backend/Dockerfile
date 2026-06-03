@@ -1,24 +1,62 @@
-FROM python:3.12-slim
+# ── Stage 1: Dependencies ─────────────────────────────────────────────────────
+FROM python:3.12-slim AS dependencies
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+COPY requirements/ requirements/
+RUN uv pip install --system --no-cache -r requirements/production.txt
+
+# ── Stage 2: Production image ─────────────────────────────────────────────────
+FROM python:3.12-slim AS production
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=config.settings.production
+ENV PYTHONPATH=/app
 
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements/ requirements/
-RUN pip install --no-cache-dir -r requirements/production.txt
+COPY --from=dependencies /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=dependencies /usr/local/bin/gunicorn /usr/local/bin/gunicorn
+COPY --from=dependencies /usr/local/bin/celery /usr/local/bin/celery
+
+RUN groupadd -r brainpilot && useradd -r -g brainpilot brainpilot
 
 COPY . .
 
-RUN mkdir -p logs staticfiles media
+RUN mkdir -p logs staticfiles media && \
+    chown -R brainpilot:brainpilot /app
 
-RUN python manage.py collectstatic --noinput || true
+RUN python manage.py collectstatic --noinput 2>&1 || true
+
+USER brainpilot
 
 EXPOSE 8000
 
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "120"]
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/live/ || exit 1
+
+CMD ["gunicorn", "config.wsgi:application", \
+     "--bind", "0.0.0.0:8000", \
+     "--workers", "4", \
+     "--timeout", "120", \
+     "--keepalive", "5", \
+     "--max-requests", "1000", \
+     "--max-requests-jitter", "100", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-", \
+     "--log-level", "info"]

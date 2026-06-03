@@ -8,7 +8,7 @@ from django.http import FileResponse, Http404
 from rest_framework_simplejwt.views import TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
-from apps.accounts.views import HealthCheckView
+from apps.accounts.views import HealthCheckView, ReadinessCheckView, LivenessCheckView
 
 FRONTEND_BUILD_DIR = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist" / "public"
 
@@ -43,6 +43,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
 
     path("api/v1/health/", HealthCheckView.as_view(), name="health-check"),
+    path("api/v1/ready/", ReadinessCheckView.as_view(), name="readiness-check"),
+    path("api/v1/live/", LivenessCheckView.as_view(), name="liveness-check"),
 
     path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="api-schema"), name="api-swagger-ui"),

@@ -1,0 +1,148 @@
+################################################################
+# BrainPilot AI — Production Docker Compose
+#
+# Usage:
+#   cp backend/.env.example backend/.env   # fill in all values
+#   docker-compose -f docker-compose.prod.yml up --build -d
+#
+# Services:
+#   nginx      — Reverse proxy + static file server (port 80/443)
+#   api        — Django/Gunicorn backend (internal port 8000)
+#   celery     — Async task worker
+#   beat       — Periodic task scheduler
+#   db         — PostgreSQL 16
+#   redis      — Redis 7
+################################################################
+
+version: "3.9"
+
+x-api-common: &api-common
+  build:
+    context: backend
+    dockerfile: Dockerfile
+    target: production
+  env_file: backend/.env
+  environment:
+    DATABASE_URL: postgresql://brainpilot:${POSTGRES_PASSWORD:-changeme}@db:5432/brainpilot_db
+    REDIS_URL: redis://redis:6379/0
+    DJANGO_SETTINGS_MODULE: config.settings.production
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+
+  # ── Database ─────────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: brainpilot_db
+      POSTGRES_USER: brainpilot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brainpilot -d brainpilot_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # ── Redis ─────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── Django API ────────────────────────────────────────────────────────────────
+  api:
+    <<: *api-common
+    command: >
+      gunicorn config.wsgi:application
+        --bind 0.0.0.0:8000
+        --workers 4
+        --timeout 120
+        --keepalive 5
+        --max-requests 1000
+        --max-requests-jitter 100
+        --access-logfile -
+        --error-logfile -
+        --log-level info
+    volumes:
+      - media_files:/app/media
+      - static_files:/app/staticfiles
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/live/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    expose:
+      - "8000"
+
+  # ── Database migrations (run-once job) ────────────────────────────────────────
+  migrate:
+    <<: *api-common
+    command: python manage.py migrate --noinput
+    restart: "no"
+
+  # ── Celery Worker ─────────────────────────────────────────────────────────────
+  celery:
+    <<: *api-common
+    command: >
+      celery -A config.celery worker
+        --loglevel=info
+        --concurrency=2
+        --max-tasks-per-child=1000
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A config.celery inspect ping || exit 1"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+
+  # ── Celery Beat ───────────────────────────────────────────────────────────────
+  beat:
+    <<: *api-common
+    command: >
+      celery -A config.celery beat
+        --loglevel=info
+        --schedule /tmp/celerybeat-schedule
+
+  # ── Nginx (reverse proxy + frontend) ─────────────────────────────────────────
+  nginx:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      target: production
+    ports:
+      - "80:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - static_files:/usr/share/nginx/html/static:ro
+      - media_files:/usr/share/nginx/html/media:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/nginx-health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  media_files:
+  static_files:

@@ -19,12 +19,67 @@ logger = logging.getLogger(__name__)
 
 
 class HealthCheckView(APIView):
+    """Basic liveness probe — returns 200 if the process is running."""
     permission_classes = [AllowAny]
 
     def get(self, request):
         return success_response(
             data={"status": "ok", "timestamp": timezone.now().isoformat()},
             message="BrainPilot AI is operational",
+        )
+
+
+class ReadinessCheckView(APIView):
+    """Readiness probe — returns 200 only when DB and cache are reachable."""
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from django.db import connection, OperationalError as DBError
+        from django.core.cache import cache
+
+        checks = {}
+
+        # Database
+        try:
+            connection.ensure_connection()
+            checks["database"] = "ok"
+        except DBError as exc:
+            logger.error("Readiness: database unreachable — %s", exc)
+            checks["database"] = "error"
+
+        # Cache (Redis)
+        try:
+            cache.set("_readiness_probe", "1", timeout=5)
+            assert cache.get("_readiness_probe") == "1"
+            checks["cache"] = "ok"
+        except Exception as exc:
+            logger.warning("Readiness: cache unreachable — %s", exc)
+            checks["cache"] = "degraded"
+
+        all_ok = checks["database"] == "ok"
+        return success_response(
+            data={
+                "status": "ready" if all_ok else "not_ready",
+                "checks": checks,
+                "timestamp": timezone.now().isoformat(),
+            },
+            message="Service is ready" if all_ok else "Service is not ready",
+            status_code=200 if all_ok else 503,
+        )
+
+
+class LivenessCheckView(APIView):
+    """Liveness probe — lightweight alive signal, never touches DB or cache."""
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        import sys
+        return success_response(
+            data={
+                "status": "alive",
+                "timestamp": timezone.now().isoformat(),
+                "python": sys.version.split()[0],
+            },
         )
 
 

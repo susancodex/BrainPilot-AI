@@ -169,17 +169,6 @@ export interface RevisionTopic {
   created_at: string;
 }
 
-export interface _RevisionTopicOld {
-  id: string;
-  subject: string;
-  topic: string;
-  confidence_level: 1 | 2 | 3 | 4 | 5;
-  revision_count: number;
-  next_review_date: string;
-  last_reviewed?: string;
-  is_due: boolean;
-  is_weak: boolean;
-}
 
 export interface PomodoroSession {
   id: string;

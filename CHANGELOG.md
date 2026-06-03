@@ -2,16 +2,17 @@
 
 All notable changes to BrainPilot AI are documented here.
 
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
 
 ## [Unreleased]
 
 ### Planned
-- Subscription and billing integration
-- Mobile-responsive layout improvements
-- Collaborative study groups
-- Calendar sync (Google Calendar / Apple Calendar)
-- Offline flashcard review mode
+- Subscription and billing management
+- Team/cohort study rooms
+- Mobile application (React Native)
+- Export study plans to calendar formats (iCal, Google Calendar)
 
 ---
 
@@ -19,66 +20,46 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and
 
 ### Added
 
-**AI Features**
-- Multi-provider AI gateway with automatic failover: Gemini → Groq → OpenRouter
-- Provider health monitoring with 5-minute cooldown after 3 consecutive failures
-- Prompt injection detection blocking adversarial inputs before any API call
-- Live provider health endpoint: `GET /api/v1/ai/health/`
+**Core Platform**
+- Django 6 + Django REST Framework backend with 13 feature applications
+- React 19 + Vite 7 + Tailwind CSS 4 frontend
+- JWT authentication with access/refresh token rotation and token blacklisting
+- Account lockout after 5 consecutive failed login attempts
+- Rate limiting: 30 req/min (anonymous), 120 req/min (authenticated), 10 req/min (auth endpoints)
 
-**Study Planner**
-- AI-generated daily/weekly study plans from subject list, dates, and optional syllabus
-- PDF syllabus upload with server-side text extraction
-- Per-session status tracking (pending / in-progress / completed / skipped)
+**AI Gateway**
+- Multi-provider failover: Gemini (primary) → Groq → OpenRouter
+- Provider health monitoring with automatic 5-minute cooldown on repeated failures
+- Prompt injection detection blocking common jailbreak patterns
+- `/api/v1/ai/health/` endpoint for live provider status and latency metrics
 
-**Notes & Flashcards**
-- Rich-text note editor (Tiptap) with heading, bold, italic, code blocks, lists, and links
-- AI note summarisation
-- One-click AI flashcard generation from note content
-- Spaced-repetition review scheduling (SM-2 inspired difficulty scoring)
-- Flashcard due-date queue endpoint
-
-**Quizzes**
-- AI-generated MCQ, true/false, and short-answer quizzes
-- Per-attempt AI coaching feedback with subject-specific guidance
-- Quiz attempt history
-
-**AI Chatbot**
-- Persistent conversation history
-- Full JSON response mode
-- Server-Sent Events (SSE) streaming mode (word-by-word)
-
-**Revision Tracker**
-- Revision topic logging with proficiency scoring
-- Weak-topic detection endpoint
-- Due-topic queue
+**Study Features**
+- AI-generated study plans with spaced-repetition scheduling
+- Rich-text notes with AI summarisation and flashcard generation
+- AI quiz generation (MCQ, True/False, short-answer) with personalised coaching feedback
+- Spaced-repetition flashcard review system with difficulty tracking
+- Revision topic management surfacing weak areas
+- Learning goals with progress tracking
 
 **Productivity**
-- Pomodoro session management
-- Focus log entries
-- Study streak tracking
+- Pomodoro timer with configurable work/break durations
+- Focus log tracking and study streak calculation
+- Dashboard summary aggregating all active study data
 
-**Analytics**
-- Study trend analysis over configurable time ranges
-- Per-subject breakdown
-- Full performance report
-
-**Authentication & Accounts**
-- Email + password registration with email verification
-- JWT access tokens (60-minute lifetime) with refresh token rotation
-- Token blacklisting on logout
-- Account lockout after 5 failed login attempts
-- Password reset via email link
-- User profile with avatar, academic level, institution, and study preferences
+**Communication**
+- Real-time AI chatbot with SSE word-by-word streaming
+- Conversation history and multi-turn memory
+- In-app notification system
 
 **Infrastructure**
-- Django 6 + Django REST Framework backend
-- React 19 + Vite 7 + Tailwind CSS 4 frontend
-- PostgreSQL database with connection pooling
-- Celery task queue (synchronous in development, Redis-backed in production)
-- drf-spectacular OpenAPI 3.1 docs with Swagger UI and ReDoc
-- Docker + Docker Compose for local and production deployments
-- Render deployment blueprint
-- WhiteNoise for production static file serving
+- Docker and Docker Compose configuration for self-hosted deployment
+- Render.com deployment configuration (`render.yaml`)
+- Celery task queue with Redis broker (synchronous fallback in development)
+- WhiteNoise static file serving for production
+- OpenAPI 3.1 schema with Swagger UI and ReDoc
+- Structured JSON logging with rotating file handlers in production
+
+---
 
 [Unreleased]: https://github.com/your-org/brainpilot/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/your-org/brainpilot/releases/tag/v1.0.0

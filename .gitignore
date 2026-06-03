@@ -1,11 +1,11 @@
 # ── Node / TypeScript ─────────────────────────────────────────────────────────
-dist
-tmp
-out-tsc
+dist/
+tmp/
+out-tsc/
 *.tsbuildinfo
-node_modules
-.expo
-.expo-shared
+node_modules/
+.expo/
+.expo-shared/
 
 # ── Python / Django ───────────────────────────────────────────────────────────
 __pycache__/
@@ -18,22 +18,22 @@ __pycache__/
 venv/
 env/
 
-# Django runtime
+# Django runtime artefacts
 backend/staticfiles/
 backend/media/
-backend/logs/*.log
+backend/logs/
 db.sqlite3
 db.sqlite3-journal
 
-# uv / pip cache
-uv.lock
-.cache/
+# uv / pip
 pip-log.txt
 
-# Environment files
+# ── Environment & secrets ────────────────────────────────────────────────────
 .env
 .env.local
 .env.*.local
+*.pem
+*.key
 
 # ── IDEs ──────────────────────────────────────────────────────────────────────
 .idea/
@@ -49,18 +49,22 @@ pip-log.txt
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# ── Misc ──────────────────────────────────────────────────────────────────────
-/.sass-cache
-/connect.lock
-/coverage
+# ── Build outputs ────────────────────────────────────────────────────────────
+frontend/dist/
+
+# ── Test & coverage ──────────────────────────────────────────────────────────
+/coverage/
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+*.lcov
+
+# ── OS ────────────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 
-# ── Build outputs ────────────────────────────────────────────────────────────
-frontend/dist/
-backend/staticfiles/
-backend/media/
-
-# ── Replit (internal — never ignore) ─────────────────────────────────────────
-.cache/
-.local/
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.log
+*.pid
+*.bak
+uv.lock

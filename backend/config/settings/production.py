@@ -3,27 +3,29 @@ from .base import *
 
 DEBUG = False
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
+# Comma-separated list of allowed hostnames, e.g. "api.example.com,www.example.com"
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h.strip()]
 
-_replit_domains = os.environ.get("REPLIT_DOMAINS", "")
-if _replit_domains:
-    ALLOWED_HOSTS += [d.strip() for d in _replit_domains.split(",") if d.strip()]
+# Support additional hosts injected by the hosting platform at runtime
+_platform_domains = os.environ.get("PLATFORM_DOMAINS", "") or os.environ.get("REPLIT_DOMAINS", "")
+if _platform_domains:
+    ALLOWED_HOSTS += [d.strip() for d in _platform_domains.split(",") if d.strip()]
 
+# Comma-separated list of allowed CORS origins, e.g. "https://app.example.com"
 CORS_ALLOWED_ORIGINS = [
     o.strip() for o in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()
 ]
 
-_replit_dev = os.environ.get("REPLIT_DEV_DOMAIN", "")
-if _replit_dev:
+# Support additional CORS origins injected by the hosting platform at runtime
+_platform_dev_domain = os.environ.get("PLATFORM_DEV_DOMAIN", "") or os.environ.get("REPLIT_DEV_DOMAIN", "")
+if _platform_dev_domain:
     CORS_ALLOWED_ORIGINS += [
-        f"https://{_replit_dev}",
-        f"http://{_replit_dev}",
+        f"https://{_platform_dev_domain}",
+        f"http://{_platform_dev_domain}",
     ]
 
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://.*\.replit\.dev$",
-    r"^https://.*\.repl\.co$",
-]
+# Allow any subdomain of your production domains (add regexes as needed)
+CORS_ALLOWED_ORIGIN_REGEXES = []
 
 # Security headers
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

@@ -1,0 +1,126 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v*.*.*"
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Pre-deploy validation
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: brainpilot_test
+          POSTGRES_USER: brainpilot
+          POSTGRES_PASSWORD: testpassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.development
+      DATABASE_URL: postgresql://brainpilot:testpassword@localhost:5432/brainpilot_test
+      DJANGO_SECRET_KEY: ci-test-secret-key-not-used-in-production
+      PYTHONPATH: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync
+
+      - name: Run migrations check
+        working-directory: backend
+        run: python manage.py migrate --noinput
+
+      - name: Run tests
+        working-directory: backend
+        run: pytest tests/ -q --tb=short
+
+      - name: Django production deploy check
+        working-directory: backend
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.production
+          DJANGO_SECRET_KEY: ci-deploy-check-key
+          DATABASE_URL: postgresql://brainpilot:testpassword@localhost:5432/brainpilot_test
+        run: python manage.py check --deploy 2>&1 | grep -v "WARNINGS"
+
+  build-frontend:
+    name: Build frontend
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm --filter @workspace/brainpilot-web run build
+        env:
+          NODE_ENV: production
+
+      - name: Upload build artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 7
+
+  # Uncomment and configure the deployment target that matches your infrastructure:
+  #
+  # deploy-render:
+  #   name: Deploy to Render
+  #   runs-on: ubuntu-latest
+  #   needs: [validate, build-frontend]
+  #   environment: production
+  #   steps:
+  #     - name: Trigger Render deploy hook
+  #       run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+  #
+  # deploy-docker:
+  #   name: Push Docker image
+  #   runs-on: ubuntu-latest
+  #   needs: [validate, build-frontend]
+  #   environment: production
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Build and push
+  #       uses: docker/build-push-action@v5
+  #       with:
+  #         context: backend
+  #         push: true
+  #         tags: ghcr.io/${{ github.repository }}:${{ github.sha }}

@@ -1,85 +1,78 @@
 # Contributing to BrainPilot AI
 
-Thank you for your interest in contributing. This document covers the contribution workflow, coding standards, and review process.
+Thank you for taking the time to contribute. This document covers everything you need to get a change from idea to merged pull request.
 
 ## Table of Contents
 
 - [Code of Conduct](#code-of-conduct)
 - [Getting Started](#getting-started)
 - [Development Workflow](#development-workflow)
-- [Coding Standards](#coding-standards)
-- [Commit Messages](#commit-messages)
+- [Commit Conventions](#commit-conventions)
 - [Pull Request Process](#pull-request-process)
+- [Coding Standards](#coding-standards)
+- [Testing Requirements](#testing-requirements)
 - [Reporting Bugs](#reporting-bugs)
 - [Requesting Features](#requesting-features)
 
+---
+
 ## Code of Conduct
 
-This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md). By participating you agree to uphold its standards.
+This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md). All contributors are expected to uphold it.
+
+---
 
 ## Getting Started
 
-1. Fork the repository
-2. Clone your fork: `git clone https://github.com/your-username/brainpilot.git`
-3. Follow the [Local Development](README.md#local-development) setup in the README
-4. Create a feature branch from `main`: `git checkout -b feat/your-feature-name`
+1. **Fork** the repository and clone your fork locally
+2. Follow the [Local Development Setup](README.md#local-development-setup) in the README
+3. Create a new branch from `main` for your change:
+
+```bash
+git checkout -b feat/your-feature-name
+# or
+git checkout -b fix/issue-description
+```
+
+---
 
 ## Development Workflow
 
-```
-main ← pull requests only (protected)
-  └─ feat/<name>   feature branches
-  └─ fix/<name>    bug fix branches
-  └─ chore/<name>  tooling, deps, docs
-  └─ docs/<name>   documentation-only changes
-```
+### Branch naming
 
-- Keep branches focused — one logical change per PR
-- Rebase on `main` before opening a PR to avoid merge conflicts
-- All CI checks must pass before a PR can be merged
+| Type | Pattern | Example |
+|------|---------|---------|
+| Feature | `feat/<description>` | `feat/pdf-search` |
+| Bug fix | `fix/<description>` | `fix/quiz-submit-error` |
+| Docs | `docs/<description>` | `docs/api-reference` |
+| Refactor | `refactor/<description>` | `refactor/auth-service` |
+| Chore | `chore/<description>` | `chore/update-deps` |
 
-## Coding Standards
+### Running the project locally
 
-### Backend (Python)
+See [README.md — Local Development Setup](README.md#local-development-setup).
 
-- Follow [PEP 8](https://peps.python.org/pep-0008/) — enforced by `ruff`
-- All business logic belongs in `services.py` per app — views stay thin
-- All AI logic belongs in `services/ai_engine/` or `ai/`
-- No database queries in views or serializers — use the service layer
-- Every new model must have a migration
-- Every new endpoint must have at least one integration test
+### Before pushing
 
 ```bash
+# Backend
 cd backend
-make lint      # ruff check
-make format    # ruff format
-make test      # pytest
+make lint       # ruff check
+make format     # ruff format
+make test       # pytest
+
+# Frontend
+pnpm typecheck  # TypeScript check across workspace
 ```
 
-### Frontend (TypeScript / React)
+---
 
-- Strict TypeScript — no `any` unless unavoidable
-- All API calls go through hooks in `frontend/src/hooks/`
-- No business logic in page components — extract to hooks
-- Components stay presentational; data-fetching lives in hooks
-- Use the existing shadcn/ui component library before adding new dependencies
+## Commit Conventions
 
-```bash
-pnpm --filter @workspace/brainpilot-web run typecheck
-```
-
-### General
-
-- No commented-out code in committed files
-- No `console.log` / `print` debug statements in committed code
-- Prefer explicit over implicit — name things clearly
-
-## Commit Messages
-
-This project uses [Conventional Commits](https://www.conventionalcommits.org/):
+This project follows [Conventional Commits](https://www.conventionalcommits.org/).
 
 ```
-<type>(<scope>): <short summary>
+<type>(<scope>): <short description>
 
 [optional body]
 
@@ -91,39 +84,90 @@ This project uses [Conventional Commits](https://www.conventionalcommits.org/):
 **Examples:**
 
 ```
-feat(quizzes): add short-answer question type
-fix(auth): correct token expiry on concurrent refresh
-docs(api): update flashcard review endpoint docs
-chore(deps): bump google-genai to 2.8.0
+feat(quizzes): add short-answer question type to AI generation
+fix(auth): prevent account lockout on case-insensitive email mismatch
+docs(api): add missing pagination parameters to notes endpoint
+chore(deps): upgrade django to 6.0.1
 ```
 
-- Use imperative mood in the summary ("add" not "adds" or "added")
-- Keep the summary under 72 characters
-- Reference issues in the footer: `Closes #42`
+Breaking changes must include `BREAKING CHANGE:` in the commit footer.
+
+---
 
 ## Pull Request Process
 
-1. Ensure all CI checks pass (lint, tests, type-check)
-2. Update `CHANGELOG.md` under `[Unreleased]` with a summary of your changes
-3. Update relevant documentation in `docs/` if your change affects architecture or APIs
-4. Request a review from at least one maintainer
-5. Address review comments promptly — mark conversations as resolved when done
-6. Squash commits before merging if the history is noisy
+1. **Open a draft PR early** — this signals active work and allows early feedback
+2. **Fill in the PR template** completely — incomplete PRs will be returned
+3. **Keep PRs focused** — one logical change per PR. Split large changes
+4. **Ensure CI passes** — all GitHub Actions checks must be green
+5. **Request a review** — at least one approval is required to merge
+6. **Squash on merge** — PRs are squash-merged to keep a clean history
+
+### PR checklist
+
+- [ ] Tests added or updated for all changed behaviour
+- [ ] No new linting errors (`make lint` passes)
+- [ ] TypeScript compiles without errors (`pnpm typecheck`)
+- [ ] `CHANGELOG.md` updated under `[Unreleased]`
+- [ ] Documentation updated if public API changed
+- [ ] No secrets or credentials committed
+
+---
+
+## Coding Standards
+
+### Backend (Python / Django)
+
+- **Style**: [ruff](https://docs.astral.sh/ruff/) for linting and formatting (see `pyproject.toml`)
+- **Architecture**: thin views — all business logic in `services.py`, all AI logic in `services/ai_engine/`
+- **No direct AI calls in views** — always route through the gateway via the `GeminiAdapter`
+- **Serializers validate; services execute** — keep serializer `validate()` methods free of side effects
+- **Migrations**: always run `make makemigrations` after model changes; never hand-edit migration files
+- **Type hints**: use them on all new functions and method signatures
+
+### Frontend (TypeScript / React)
+
+- **API calls** live exclusively in `src/hooks/` — never directly in page or component files
+- **No business logic in components** — components render, hooks fetch and transform
+- **Zustand for global state** — TanStack Query for server state; don't mix them
+- **shadcn/ui conventions** — extend existing components before creating new ones
+- **Imports**: use the `@/` alias for `src/` imports
+
+---
+
+## Testing Requirements
+
+### Backend
+
+- All new service-layer functions must have unit tests
+- New API endpoints must have integration tests using `APIClient`
+- Use the shared fixtures in `tests/conftest.py` — do not create one-off `User` objects in test files
+- Minimum coverage for new code: 80%
+
+### Frontend
+
+- New hooks must be tested for loading, success, and error states
+- Component tests for non-trivial UI logic
+
+---
 
 ## Reporting Bugs
 
 Use the [Bug Report](.github/ISSUE_TEMPLATE/bug_report.md) issue template. Include:
 
 - Steps to reproduce
-- Expected vs actual behaviour
-- Environment (OS, browser, Python/Node versions)
-- Relevant logs or error messages
+- Expected vs. actual behaviour
+- Environment details (OS, browser, Python/Node versions)
+- Relevant logs or screenshots
+
+---
 
 ## Requesting Features
 
-Use the [Feature Request](.github/ISSUE_TEMPLATE/feature_request.md) issue template. Describe:
+Use the [Feature Request](.github/ISSUE_TEMPLATE/feature_request.md) issue template. Describe the problem you want solved, not just the solution — this helps us find the best approach together.
 
-- The problem you are trying to solve
-- The proposed solution
-- Alternatives you have considered
-- Any relevant context or mockups
+---
+
+## Questions
+
+Open a [GitHub Discussion](https://github.com/your-org/brainpilot/discussions) for questions that aren't bugs or feature requests.

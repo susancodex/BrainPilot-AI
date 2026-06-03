@@ -26,7 +26,7 @@ type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function Register() {
   const [, setLocation] = useLocation();
-  const { register } = useAuth();
+  const { register, login } = useAuth();
   const { toast } = useToast();
 
   const form = useForm<RegisterForm>({
@@ -43,11 +43,19 @@ export default function Register() {
   const onSubmit = (data: RegisterForm) => {
     register.mutate(data, {
       onSuccess: () => {
-        toast({
-          title: "Account created!",
-          description: "Please check your email to verify your account, then sign in.",
-        });
-        setLocation("/login");
+        login.mutate(
+          { email: data.email, password: data.password },
+          {
+            onSuccess: () => setLocation("/"),
+            onError: () => {
+              toast({
+                title: "Account created!",
+                description: "Please sign in to continue.",
+              });
+              setLocation("/login");
+            },
+          }
+        );
       },
       onError: (error: any) => {
         const detail =

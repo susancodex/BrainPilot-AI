@@ -28,7 +28,14 @@ class AuthService:
             password=password,
         )
         UserProfile.objects.create(user=user)
-        AuthService._send_verification_email(user)
+
+        if settings.DEBUG:
+            user.is_email_verified = True
+            user.save(update_fields=["is_email_verified"])
+            logger.info("Dev mode: auto-verified email for %s", email)
+        else:
+            AuthService._send_verification_email(user)
+
         logger.info("New user registered: %s", email)
         return user
 

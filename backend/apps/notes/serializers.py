@@ -14,21 +14,34 @@ class FlashcardSerializer(serializers.ModelSerializer):
 
 class NoteSerializer(serializers.ModelSerializer):
     flashcards = FlashcardSerializer(many=True, read_only=True)
+    flashcard_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Note
         fields = [
             "id", "title", "content", "subject", "tags", "is_pinned",
-            "ai_summary", "summary_generated_at", "flashcards", "created_at",
+            "ai_summary", "summary_generated_at", "flashcards", "flashcard_count",
+            "created_at", "updated_at",
         ]
-        read_only_fields = ["id", "ai_summary", "summary_generated_at", "created_at"]
+        read_only_fields = ["id", "ai_summary", "summary_generated_at", "created_at", "updated_at"]
+
+    def get_flashcard_count(self, obj):
+        return obj.flashcards.count()
 
 
 class NoteListSerializer(serializers.ModelSerializer):
+    flashcard_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Note
-        fields = ["id", "title", "subject", "tags", "is_pinned", "ai_summary", "created_at"]
-        read_only_fields = ["id", "ai_summary", "created_at"]
+        fields = [
+            "id", "title", "subject", "tags", "is_pinned", "ai_summary",
+            "content", "flashcard_count", "created_at", "updated_at",
+        ]
+        read_only_fields = ["id", "ai_summary", "created_at", "updated_at"]
+
+    def get_flashcard_count(self, obj):
+        return obj.flashcards.count()
 
 
 class GenerateFlashcardsSerializer(serializers.Serializer):

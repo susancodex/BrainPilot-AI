@@ -6,7 +6,7 @@ from common.base_models import BaseModel
 class Note(BaseModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notes")
     title = models.CharField(max_length=500)
-    content = models.TextField()
+    content = models.TextField(blank=True)
     subject = models.CharField(max_length=255, blank=True)
     tags = models.JSONField(default=list)
     is_pinned = models.BooleanField(default=False)

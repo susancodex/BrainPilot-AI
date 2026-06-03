@@ -61,6 +61,7 @@ urlpatterns = [
     path("api/v1/productivity/", include("apps.productivity.urls")),
     path("api/v1/dashboard/", include("apps.dashboard.urls")),
     path("api/v1/notifications/", include("apps.notifications.urls")),
+    path("api/v1/ai/", include("ai.urls")),
     path("api/v1/pdfs/", include("apps.pdfs.urls")),
     path("api/v1/subscriptions/", include("apps.subscriptions.urls")),
 

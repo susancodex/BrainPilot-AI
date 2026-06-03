@@ -1,3 +1,4 @@
+- [BrainPilot AI Gateway](brainpilot-ai-gateway.md) — multi-provider gateway (Gemini→Groq→OpenRouter); architecture, quirks, and model choices
 - [BrainPilot API routing](brainpilot-api-routing.md) — Django backend at /api/v1/ (NOT Express); full URL map inside
 - [BrainPilot frontend coverage](brainpilot-frontend-coverage.md) — complete list of hooks, pages, and field fixes applied in coverage pass
 - [BrainPilot workflow setup](brainpilot-workflow-setup.md) — how to start both services; env var quirks and path conflict resolution

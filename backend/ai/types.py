@@ -10,19 +10,20 @@ class ProviderName(str, Enum):
     OPENROUTER = "openrouter"
 
 
-@dataclass
 class ProviderHealth:
-    name: ProviderName
-    _lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
-
-    consecutive_failures: int = 0
-    last_failure_at: float = 0.0
-    total_requests: int = 0
-    total_successes: int = 0
-    total_latency_ms: float = 0.0
+    """Thread-safe health tracker for a single AI provider."""
 
     FAILURE_THRESHOLD: int = 3
     COOLDOWN_SECONDS: float = 300.0
+
+    def __init__(self, name: ProviderName):
+        self.name = name
+        self._lock = threading.Lock()
+        self.consecutive_failures: int = 0
+        self.last_failure_at: float = 0.0
+        self.total_requests: int = 0
+        self.total_successes: int = 0
+        self.total_latency_ms: float = 0.0
 
     def record_success(self, latency_ms: float) -> None:
         with self._lock:
@@ -61,11 +62,25 @@ class ProviderHealth:
 
     def as_dict(self) -> dict:
         with self._lock:
-            return {
-                "provider": self.name.value,
-                "healthy": self.is_healthy,
-                "consecutive_failures": self.consecutive_failures,
-                "total_requests": self.total_requests,
-                "success_rate": round(self.success_rate, 3),
-                "avg_latency_ms": round(self.avg_latency_ms, 1),
-            }
+            consecutive_failures = self.consecutive_failures
+            total_requests = self.total_requests
+            total_successes = self.total_successes
+            total_latency_ms = self.total_latency_ms
+            last_failure_at = self.last_failure_at
+
+        is_healthy = True
+        if consecutive_failures >= self.FAILURE_THRESHOLD:
+            elapsed = time.monotonic() - last_failure_at
+            is_healthy = elapsed >= self.COOLDOWN_SECONDS
+
+        avg_lat = (total_latency_ms / total_successes) if total_successes > 0 else 0.0
+        sr = (total_successes / total_requests) if total_requests > 0 else 1.0
+
+        return {
+            "provider": self.name.value,
+            "healthy": is_healthy,
+            "consecutive_failures": consecutive_failures,
+            "total_requests": total_requests,
+            "success_rate": round(sr, 3),
+            "avg_latency_ms": round(avg_lat, 1),
+        }

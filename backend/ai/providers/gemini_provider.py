@@ -22,7 +22,7 @@ class GeminiProvider(AIProvider):
 
     def __init__(self):
         self._client = None
-        self._model = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+        self._model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
         self._init_client()
 
     def _init_client(self) -> None:

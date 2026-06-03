@@ -1,3 +1,4 @@
 - [BrainPilot API routing](brainpilot-api-routing.md) — Django backend at /api/v1/ (NOT Express); full URL map inside
 - [BrainPilot frontend coverage](brainpilot-frontend-coverage.md) — complete list of hooks, pages, and field fixes applied in coverage pass
 - [BrainPilot workflow setup](brainpilot-workflow-setup.md) — how to start both services; env var quirks and path conflict resolution
+- [BrainPilot production fixes](brainpilot-production-fixes.md) — auth redirect pattern, analytics API shapes, legacy artifact removal

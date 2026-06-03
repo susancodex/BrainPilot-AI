@@ -61,16 +61,18 @@ class DashboardService:
         from apps.productivity.models import FocusLog
         from apps.quizzes.models import QuizAttempt
         from apps.notes.models import Note
-        from apps.planner.models import StudySession
+        from datetime import datetime, timezone as dt_timezone
 
         activities = []
 
         for log in FocusLog.objects.filter(user=user).order_by("-date")[:3]:
             subjects = ", ".join(log.subjects_studied) if log.subjects_studied else "study"
+            ts = datetime.combine(log.date, datetime.min.time(), tzinfo=dt_timezone.utc)
             activities.append({
                 "description": f"Studied {subjects} for {log.focus_minutes} minutes",
                 "time": log.date.strftime("%b %d"),
                 "type": "focus",
+                "_ts": ts,
             })
 
         for attempt in QuizAttempt.objects.filter(user=user, completed=True).select_related("quiz").order_by("-created_at")[:3]:
@@ -78,6 +80,7 @@ class DashboardService:
                 "description": f"Completed {attempt.quiz.subject} quiz — {attempt.percentage:.0f}%",
                 "time": attempt.created_at.strftime("%b %d"),
                 "type": "quiz",
+                "_ts": attempt.created_at,
             })
 
         for note in Note.objects.filter(user=user).order_by("-updated_at")[:2]:
@@ -85,9 +88,12 @@ class DashboardService:
                 "description": f"Updated note: {note.title}",
                 "time": note.updated_at.strftime("%b %d"),
                 "type": "note",
+                "_ts": note.updated_at,
             })
 
-        activities.sort(key=lambda x: x["time"], reverse=True)
+        activities.sort(key=lambda x: x["_ts"], reverse=True)
+        for item in activities:
+            del item["_ts"]
         return activities[:8]
 
     @staticmethod

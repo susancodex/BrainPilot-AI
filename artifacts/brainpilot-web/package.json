@@ -1,9 +1,0 @@
-{
-  "name": "@workspace/archived-brainpilot-web",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "echo 'This artifact has been moved to frontend/. Run pnpm --filter @workspace/brainpilot-web run dev from the workspace root.' && exit 0"
-  }
-}

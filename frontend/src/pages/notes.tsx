@@ -128,7 +128,7 @@ export default function Notes() {
         <div className="p-3 border-b border-border space-y-2">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-sm text-foreground">Notes</span>
-            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleCreate} disabled={createNote.isPending}>
+            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleCreate} disabled={createNote.isPending} aria-label="New note">
               <Plus className="w-4 h-4" />
             </Button>
           </div>
@@ -173,6 +173,7 @@ export default function Notes() {
                       <button
                         className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-muted"
                         onClick={(e) => e.stopPropagation()}
+                        aria-label="Note options"
                       >
                         <MoreHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
                       </button>

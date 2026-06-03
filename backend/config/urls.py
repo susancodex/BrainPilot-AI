@@ -10,7 +10,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 
 from apps.accounts.views import HealthCheckView
 
-FRONTEND_BUILD_DIR = Path(__file__).resolve().parent.parent.parent / "artifacts" / "brainpilot-web" / "dist" / "public"
+FRONTEND_BUILD_DIR = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist" / "public"
 
 
 def serve_react(request, *args, **kwargs):

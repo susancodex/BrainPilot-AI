@@ -2,11 +2,13 @@ import { useTrends, useSubjectBreakdown, useQuizPerformance, useRevisionStats } 
 import { useStreak, useFocusLogs } from "@/hooks/use-productivity";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import type { StudyTrend, SubjectBreakdown, StudyStreak, FocusLog } from "@/types";
+import type {
+  StudyTrend, SubjectBreakdown, StudyStreak, FocusLog,
+  QuizPerformanceResponse, RevisionStatsResponse,
+} from "@/types";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  PieChart, Pie, Cell, LineChart, Line, Legend, AreaChart, Area,
+  PieChart, Pie, Cell, AreaChart, Area,
 } from "recharts";
 import { TrendingUp, BookOpen, BrainCircuit, BarChart2, Target, Star } from "lucide-react";
 
@@ -36,6 +38,8 @@ export default function Analytics() {
   const trendData = (trends as StudyTrend[] | undefined) ?? [];
   const subjectData = (subjects as SubjectBreakdown[] | undefined) ?? [];
   const logs = (focusLogs as FocusLog[] | undefined) ?? [];
+  const quiz = quizPerf as QuizPerformanceResponse | undefined;
+  const rev = revStats as RevisionStatsResponse | undefined;
 
   const totalHoursThisWeek = trendData.reduce((sum, d) => sum + (d.hours ?? 0), 0);
   const avgHoursPerDay = trendData.length ? (totalHoursThisWeek / trendData.length).toFixed(1) : "0";
@@ -66,15 +70,15 @@ export default function Analytics() {
           },
           {
             label: "Quiz Avg",
-            value: quizLoading ? "—" : `${Math.round((quizPerf as any)?.summary?.avg_percentage ?? 0)}%`,
-            sub: quizLoading ? "" : `${(quizPerf as any)?.summary?.total_attempts ?? 0} quizzes taken`,
+            value: quizLoading ? "—" : `${Math.round(quiz?.summary?.avg_percentage ?? 0)}%`,
+            sub: quizLoading ? "" : `${quiz?.summary?.total_attempts ?? 0} quizzes taken`,
             icon: <BrainCircuit className="w-4 h-4 text-purple-500" />,
             accent: "bg-purple-500/10",
           },
           {
             label: "Due Revisions",
-            value: revLoading ? "—" : ((revStats as any)?.due_count ?? 0),
-            sub: revLoading ? "" : `${(revStats as any)?.weak_topics ?? 0} weak topics`,
+            value: revLoading ? "—" : (rev?.due_count ?? 0),
+            sub: revLoading ? "" : `${rev?.weak_topics ?? 0} weak topics`,
             icon: <BookOpen className="w-4 h-4 text-green-500" />,
             accent: "bg-green-500/10",
           },
@@ -109,7 +113,7 @@ export default function Analytics() {
                 <BarChart data={trendData} barSize={32}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis dataKey="name" fontSize={11} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis fontSize={11} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${v}h`} />
+                  <YAxis fontSize={11} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" tickFormatter={(v: number) => `${v}h`} />
                   <Tooltip {...tooltipStyle} formatter={(v: number) => [`${v}h`, "Hours"]} />
                   <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
                 </BarChart>
@@ -137,7 +141,7 @@ export default function Analytics() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" interval={4} />
-                  <YAxis fontSize={10} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${v}m`} />
+                  <YAxis fontSize={10} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" tickFormatter={(v: number) => `${v}m`} />
                   <Tooltip {...tooltipStyle} formatter={(v: number) => [`${v} min`, "Focus"]} />
                   <Area type="monotone" dataKey="minutes" stroke="hsl(var(--chart-2))" fill="url(#focusGrad)" strokeWidth={2} dot={false} />
                 </AreaChart>
@@ -195,12 +199,12 @@ export default function Analytics() {
           <CardContent className="h-[260px]">
             {quizLoading ? <Skeleton className="h-full w-full rounded" /> : (
               <>
-                {(quizPerf as any)?.by_subject?.length ? (
+                {quiz?.by_subject?.length ? (
                   <ResponsiveContainer width="100%" height={180}>
-                    <BarChart data={(quizPerf as any).by_subject} barSize={28}>
+                    <BarChart data={quiz.by_subject} barSize={28}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                       <XAxis dataKey="subject" fontSize={10} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" />
-                      <YAxis domain={[0, 100]} fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis domain={[0, 100]} fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${v}%`} stroke="hsl(var(--muted-foreground))" />
                       <Tooltip {...tooltipStyle} formatter={(v: number) => [`${v}%`, "Accuracy"]} />
                       <Bar dataKey="accuracy" fill="hsl(var(--chart-4))" radius={[4, 4, 0, 0]} />
                     </BarChart>
@@ -212,9 +216,9 @@ export default function Analytics() {
                 )}
                 <div className="grid grid-cols-3 gap-3 mt-2">
                   {[
-                    { label: "Avg Score", value: `${Math.round((quizPerf as any)?.summary?.avg_percentage ?? 0)}%` },
-                    { label: "Total Attempts", value: (quizPerf as any)?.summary?.total_attempts ?? 0 },
-                    { label: "Subjects Covered", value: (quizPerf as any)?.by_subject?.length ?? 0 },
+                    { label: "Avg Score", value: `${Math.round(quiz?.summary?.avg_percentage ?? 0)}%` },
+                    { label: "Total Attempts", value: quiz?.summary?.total_attempts ?? 0 },
+                    { label: "Subjects Covered", value: quiz?.by_subject?.length ?? 0 },
                   ].map(({ label, value }) => (
                     <div key={label} className="text-center p-2 bg-muted/40 rounded-lg">
                       <div className="font-bold text-sm text-foreground">{value}</div>
@@ -240,12 +244,12 @@ export default function Analytics() {
           {revLoading ? <Skeleton className="h-20 w-full rounded" /> : (
             <div className="grid grid-cols-3 gap-4">
               {[
-                { label: "Due Today", value: (revStats as any)?.due_count ?? 0, accent: "text-orange-500 bg-orange-500/10" },
-                { label: "Weak Topics", value: (revStats as any)?.weak_topics ?? 0, accent: "text-red-500 bg-red-500/10" },
-                { label: "Mastered", value: (revStats as any)?.mastered ?? 0, accent: "text-green-500 bg-green-500/10" },
-              ].map(({ label, value, accent }) => (
+                { label: "Due Today", value: rev?.due_count ?? 0, color: "text-orange-500" },
+                { label: "Weak Topics", value: rev?.weak_topics ?? 0, color: "text-red-500" },
+                { label: "Mastered", value: rev?.mastered ?? 0, color: "text-green-500" },
+              ].map(({ label, value, color }) => (
                 <div key={label} className="p-4 rounded-xl bg-muted/40 text-center">
-                  <div className={`text-3xl font-bold ${accent.split(" ")[0]}`}>{value}</div>
+                  <div className={`text-3xl font-bold ${color}`}>{value}</div>
                   <div className="text-xs text-muted-foreground mt-1 font-medium">{label}</div>
                 </div>
               ))}

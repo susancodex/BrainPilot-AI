@@ -233,10 +233,31 @@ export interface QuizPerformanceData {
   trend: Array<{ date: string; score: number }>;
 }
 
+export interface QuizPerformanceSummary {
+  avg_percentage: number;
+  total_attempts: number;
+}
+
+export interface QuizPerformanceBySubject {
+  subject: string;
+  accuracy: number;
+}
+
+export interface QuizPerformanceResponse {
+  summary: QuizPerformanceSummary;
+  by_subject: QuizPerformanceBySubject[];
+}
+
 export interface RevisionStats {
   weak_topic_count: number;
   due_count: number;
   mastered_count: number;
+}
+
+export interface RevisionStatsResponse {
+  due_count: number;
+  weak_topics: number;
+  mastered: number;
 }
 
 export interface Notification {
@@ -302,6 +323,11 @@ export interface PlanInfo {
   ai_requests: number;
   pdf_uploads: number;
   features: string[];
+}
+
+export interface NotificationsResponse {
+  unread_count: number;
+  notifications: Notification[];
 }
 
 export interface ApiResponse<T> {

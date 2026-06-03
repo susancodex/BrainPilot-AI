@@ -57,18 +57,16 @@ class GeminiAdapter:
         reraise=True,
     )
     def generate_json(self, prompt: str) -> dict[str, Any]:
-        full_prompt = f"{prompt}\n\nRespond ONLY with valid JSON. No markdown, no code blocks."
         try:
             logger.debug("Gemini generate_json call")
             response = self.client.models.generate_content(
                 model=self.model_name,
-                contents=full_prompt,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                ),
             )
-            text = response.text.strip()
-            if text.startswith("```"):
-                lines = text.split("\n")
-                text = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
-            return json.loads(text)
+            return json.loads(response.text)
         except json.JSONDecodeError as exc:
             logger.error("Gemini JSON parse failed: %s", exc)
             raise AIServiceError("AI returned invalid JSON.")

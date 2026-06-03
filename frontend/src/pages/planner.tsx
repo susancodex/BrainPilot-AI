@@ -7,6 +7,7 @@ import { Calendar, Clock, BookOpen, Layers, Sparkles } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
+import type { StudyPlan, StudySession } from "@/types";
 
 export default function Planner() {
   const { data: plans, isLoading: plansLoading } = usePlans();
@@ -16,21 +17,20 @@ export default function Planner() {
 
   const [formData, setFormData] = useState({
     subjects: "",
-    start_date: new Date().toISOString().split('T')[0],
-    end_date: new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0],
+    start_date: new Date().toISOString().split("T")[0],
+    end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
     plan_type: "weekly",
-    daily_hours: [2]
+    daily_hours: [2],
   });
 
   const handleGenerate = () => {
     if (!formData.subjects) return;
-    
     generatePlan.mutate({
-      subjects: formData.subjects.split(',').map(s => s.trim()).filter(Boolean),
+      subjects: formData.subjects.split(",").map((s) => s.trim()).filter(Boolean),
       start_date: formData.start_date,
       end_date: formData.end_date,
       plan_type: formData.plan_type,
-      daily_hours: formData.daily_hours[0]
+      daily_hours: formData.daily_hours[0],
     });
   };
 
@@ -39,13 +39,16 @@ export default function Planner() {
   };
 
   const getStatusColor = (status: string) => {
-    switch(status) {
-      case 'completed': return 'bg-green-500/10 text-green-500';
-      case 'in_progress': return 'bg-amber-500/10 text-amber-500';
-      case 'skipped': return 'bg-destructive/10 text-destructive';
-      default: return 'bg-muted text-muted-foreground';
+    switch (status) {
+      case "completed": return "bg-green-500/10 text-green-500";
+      case "in_progress": return "bg-amber-500/10 text-amber-500";
+      case "skipped": return "bg-destructive/10 text-destructive";
+      default: return "bg-muted text-muted-foreground";
     }
   };
+
+  const planList = (plans as StudyPlan[] | undefined) ?? [];
+  const sessionList = (sessions as StudySession[] | undefined) ?? [];
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -59,7 +62,7 @@ export default function Planner() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-5 space-y-6">
           <Card className="border-border shadow-md border-primary/20 bg-card overflow-hidden">
-            <div className="h-1 w-full bg-gradient-to-r from-primary to-accent"></div>
+            <div className="h-1 w-full bg-gradient-to-r from-primary to-accent" />
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-primary" />
@@ -70,25 +73,25 @@ export default function Planner() {
             <CardContent className="space-y-5">
               <div className="space-y-2">
                 <Label>Subjects (comma separated)</Label>
-                <Input 
-                  placeholder="e.g. Biology, Chemistry" 
+                <Input
+                  placeholder="e.g. Biology, Chemistry"
                   value={formData.subjects}
-                  onChange={(e) => setFormData({...formData, subjects: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, subjects: e.target.value })}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Start Date</Label>
-                  <Input type="date" value={formData.start_date} onChange={(e) => setFormData({...formData, start_date: e.target.value})} />
+                  <Input type="date" value={formData.start_date} onChange={(e) => setFormData({ ...formData, start_date: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label>End Date</Label>
-                  <Input type="date" value={formData.end_date} onChange={(e) => setFormData({...formData, end_date: e.target.value})} />
+                  <Input type="date" value={formData.end_date} onChange={(e) => setFormData({ ...formData, end_date: e.target.value })} />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label>Plan Type</Label>
-                <Select value={formData.plan_type} onValueChange={(v) => setFormData({...formData, plan_type: v})}>
+                <Select value={formData.plan_type} onValueChange={(v) => setFormData({ ...formData, plan_type: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="daily">Daily Intensive</SelectItem>
@@ -99,8 +102,11 @@ export default function Planner() {
                 </Select>
               </div>
               <div className="space-y-4">
-                <div className="flex justify-between"><Label>Daily Hours</Label><span className="font-bold text-primary">{formData.daily_hours[0]}h</span></div>
-                <Slider min={0.5} max={16} step={0.5} value={formData.daily_hours} onValueChange={(v) => setFormData({...formData, daily_hours: v})} />
+                <div className="flex justify-between">
+                  <Label>Daily Hours</Label>
+                  <span className="font-bold text-primary">{formData.daily_hours[0]}h</span>
+                </div>
+                <Slider min={0.5} max={16} step={0.5} value={formData.daily_hours} onValueChange={(v) => setFormData({ ...formData, daily_hours: v })} />
               </div>
             </CardContent>
             <CardFooter>
@@ -112,26 +118,38 @@ export default function Planner() {
 
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">Your Plans</h2>
-            {plansLoading ? <div className="text-muted-foreground">Loading...</div> : plans?.length ? plans.map((plan: any) => (
-              <Card key={plan.id} className="border-border shadow-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Layers className="w-5 h-5 text-primary" />
-                    {plan.title || "Study Plan"}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pb-3">
-                  <div className="flex gap-4 text-sm text-muted-foreground mb-4">
-                    <span className="flex items-center gap-1"><Calendar className="w-4 h-4"/> {plan.duration_days || '-'} Days</span>
-                    <span className="flex items-center gap-1"><Clock className="w-4 h-4"/> {plan.daily_hours}h/day</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="bg-muted px-2 py-1 rounded">Type: <span className="font-semibold text-foreground uppercase">{plan.plan_type}</span></span>
-                    <span className="text-primary font-medium">{plan.completed_sessions || 0}/{plan.session_count || 0} Sessions</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )) : <div className="text-muted-foreground p-4 bg-muted/50 rounded-lg text-center text-sm">No plans generated yet.</div>}
+            {plansLoading ? (
+              <div className="text-muted-foreground">Loading...</div>
+            ) : planList.length ? (
+              planList.map((plan) => (
+                <Card key={plan.id} className="border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Layers className="w-5 h-5 text-primary" />
+                      {plan.title || "Study Plan"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pb-3">
+                    <div className="flex gap-4 text-sm text-muted-foreground mb-4">
+                      <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {plan.duration_days || "—"} Days</span>
+                      <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {plan.daily_hours}h/day</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="bg-muted px-2 py-1 rounded">
+                        Type: <span className="font-semibold text-foreground uppercase">{plan.plan_type}</span>
+                      </span>
+                      <span className="text-primary font-medium">
+                        {plan.completed_sessions || 0}/{plan.session_count || 0} Sessions
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="text-muted-foreground p-4 bg-muted/50 rounded-lg text-center text-sm">
+                No plans generated yet.
+              </div>
+            )}
           </div>
         </div>
 
@@ -139,25 +157,25 @@ export default function Planner() {
           <h2 className="text-xl font-semibold">Study Sessions</h2>
           {sessionsLoading ? (
             <div className="text-muted-foreground">Loading sessions...</div>
-          ) : sessions?.length ? (
+          ) : sessionList.length ? (
             <div className="space-y-3">
-              {sessions.map((session: any) => (
+              {sessionList.map((session) => (
                 <Card key={session.id} className="border-border shadow-sm overflow-hidden flex flex-row">
-                  <div className="w-2 bg-primary"></div>
+                  <div className="w-2 bg-primary" />
                   <div className="p-4 flex-1 flex flex-col md:flex-row justify-between md:items-center gap-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide ${getStatusColor(session.status)}`}>
-                          {session.status.replace('_', ' ')}
+                          {session.status.replace("_", " ")}
                         </span>
                         <span className="text-xs font-medium text-muted-foreground">{session.subject}</span>
                       </div>
                       <div className="font-semibold text-foreground">{session.topic}</div>
                       <div className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5" /> 
-                        {new Date(session.scheduled_date).toLocaleDateString()} 
-                        <span className="mx-1">•</span> 
-                        <Clock className="w-3.5 h-3.5" /> 
+                        <Calendar className="w-3.5 h-3.5" />
+                        {new Date(session.scheduled_date).toLocaleDateString()}
+                        <span className="mx-1">•</span>
+                        <Clock className="w-3.5 h-3.5" />
                         {session.start_time} - {session.end_time}
                       </div>
                     </div>

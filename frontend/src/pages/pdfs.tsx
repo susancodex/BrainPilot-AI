@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   usePDFs, useUploadPDF, useDeletePDF,
   usePDFChat, useSendPDFMessage, usePDFHighlights,
@@ -127,15 +127,18 @@ function PDFChatPanel({ doc, onBack }: { doc: PDFDocument; onBack: () => void })
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (!sendMessage.isPending) {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    }
+  }, [messages, sendMessage.isPending]);
+
   async function handleSend() {
     const text = input.trim();
     if (!text || sendMessage.isPending) return;
     setInput("");
     try {
       await sendMessage.mutateAsync(text);
-      setTimeout(() => {
-        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-      }, 100);
     } catch {
       toast({ title: "Failed to send message", variant: "destructive" });
     }

@@ -144,7 +144,7 @@ export default function Chat() {
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-muted" onClick={(e) => e.stopPropagation()}>
+                    <button className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-muted" onClick={(e) => e.stopPropagation()} aria-label="Conversation options">
                       <MoreHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
                   </DropdownMenuTrigger>

@@ -3,35 +3,49 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Bell, Check, BookOpen, Target, BrainCircuit, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
+import type { Notification, NotificationsResponse } from "@/types";
 
 export default function Notifications() {
   const { data: notifications, isLoading } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
+  const [, navigate] = useLocation();
 
-  const getIcon = (type: string) => {
-    switch(type) {
-      case 'revision_due': return <BookOpen className="w-4 h-4 text-blue-500" />;
-      case 'goal_reminder': return <Target className="w-4 h-4 text-green-500" />;
-      case 'ai_recommendation': return <BrainCircuit className="w-4 h-4 text-purple-500" />;
-      case 'exam_alert': return <AlertCircle className="w-4 h-4 text-red-500" />;
+  const getIcon = (type: Notification["type"]) => {
+    switch (type) {
+      case "revision_due": return <BookOpen className="w-4 h-4 text-blue-500" />;
+      case "goal_reminder": return <Target className="w-4 h-4 text-green-500" />;
+      case "ai_recommendation": return <BrainCircuit className="w-4 h-4 text-purple-500" />;
+      case "exam_alert": return <AlertCircle className="w-4 h-4 text-red-500" />;
       default: return <Bell className="w-4 h-4 text-primary" />;
     }
   };
 
-  const getBadgeClass = (type: string) => {
-    switch(type) {
-      case 'revision_due': return 'bg-blue-500/10 text-blue-500';
-      case 'goal_reminder': return 'bg-green-500/10 text-green-500';
-      case 'ai_recommendation': return 'bg-purple-500/10 text-purple-500';
-      case 'exam_alert': return 'bg-red-500/10 text-red-500';
-      default: return 'bg-primary/10 text-primary';
+  const getBadgeClass = (type: Notification["type"]) => {
+    switch (type) {
+      case "revision_due": return "bg-blue-500/10 text-blue-500";
+      case "goal_reminder": return "bg-green-500/10 text-green-500";
+      case "ai_recommendation": return "bg-purple-500/10 text-purple-500";
+      case "exam_alert": return "bg-red-500/10 text-red-500";
+      default: return "bg-primary/10 text-primary";
     }
   };
 
-  const notifData = notifications as { unread_count?: number; notifications?: any[] } | undefined;
+  const notifData = notifications as NotificationsResponse | undefined;
   const notifList = notifData?.notifications ?? [];
-  const hasUnread = notifList.some((n: any) => !n.is_read);
+  const hasUnread = notifList.some((n) => !n.is_read);
+
+  const handleNotificationClick = (notif: Notification) => {
+    if (!notif.is_read) markRead.mutate(notif.id);
+    if (notif.action_url) {
+      if (notif.action_url.startsWith("/")) {
+        navigate(notif.action_url);
+      } else {
+        window.location.href = notif.action_url;
+      }
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -51,17 +65,14 @@ export default function Notifications() {
         {isLoading ? (
           <div className="text-muted-foreground">Loading notifications...</div>
         ) : notifList.length ? (
-          notifList.map((notif: any) => (
-            <Card 
-              key={notif.id} 
+          notifList.map((notif) => (
+            <Card
+              key={notif.id}
               className={cn(
                 "border-border shadow-sm transition-colors cursor-pointer hover:border-primary/30",
                 !notif.is_read ? "bg-accent/5 border-accent/20" : "bg-card"
               )}
-              onClick={() => {
-                if (!notif.is_read) markRead.mutate(notif.id);
-                if (notif.action_url) window.location.href = notif.action_url;
-              }}
+              onClick={() => handleNotificationClick(notif)}
             >
               <CardContent className="p-4 flex gap-4">
                 <div className={cn("p-2 rounded-full h-fit shrink-0", getBadgeClass(notif.type))}>

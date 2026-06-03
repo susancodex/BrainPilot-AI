@@ -49,10 +49,7 @@ api.interceptors.response.use(
       const refresh = getRefreshToken();
       if (!refresh) {
         clearTokens();
-        const onAuthPage = ["/login", "/register"].some((p) =>
-          window.location.pathname.endsWith(p)
-        );
-        if (!onAuthPage) window.location.href = "/login";
+        redirectToLogin();
         return Promise.reject(error);
       }
 
@@ -66,7 +63,7 @@ api.interceptors.response.use(
       } catch (err) {
         processQueue(err, null);
         clearTokens();
-        window.location.href = "/login";
+        redirectToLogin();
         return Promise.reject(err);
       } finally {
         isRefreshing = false;
@@ -77,13 +74,22 @@ api.interceptors.response.use(
   }
 );
 
+function redirectToLogin() {
+  const onAuthPage = ["/login", "/register"].some((p) =>
+    window.location.pathname.endsWith(p)
+  );
+  if (!onAuthPage) {
+    window.dispatchEvent(new CustomEvent("brainpilot:auth-expired"));
+  }
+}
+
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (value?: unknown) => void;
-  reject: (reason?: any) => void;
+  reject: (reason?: unknown) => void;
 }> = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);

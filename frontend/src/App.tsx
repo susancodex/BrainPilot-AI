@@ -1,8 +1,10 @@
-import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
+import { useEffect } from "react";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
+import { ErrorBoundary } from "@/components/error-boundary";
 import NotFound from "@/pages/not-found";
 
 import Login from "@/pages/login";
@@ -39,6 +41,20 @@ const queryClient = new QueryClient({
   },
 });
 
+function AuthExpiredListener() {
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    const handleAuthExpired = () => navigate("/login");
+    window.addEventListener("brainpilot:auth-expired", handleAuthExpired);
+    return () => {
+      window.removeEventListener("brainpilot:auth-expired", handleAuthExpired);
+    };
+  }, [navigate]);
+
+  return null;
+}
+
 function PrivateRoutes() {
   return (
     <AppLayout>
@@ -68,31 +84,36 @@ function PrivateRoutes() {
 
 function Router() {
   return (
-    <Switch>
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-      <Route path="/verify-email" component={VerifyEmail} />
-      <Route path="/password-reset" component={PasswordReset} />
-      <Route path="/password-reset/confirm" component={PasswordResetConfirm} />
-      <Route path="/(.*)">
-        <PrivateRoute component={PrivateRoutes} />
-      </Route>
-    </Switch>
+    <>
+      <AuthExpiredListener />
+      <Switch>
+        <Route path="/login" component={Login} />
+        <Route path="/register" component={Register} />
+        <Route path="/verify-email" component={VerifyEmail} />
+        <Route path="/password-reset" component={PasswordReset} />
+        <Route path="/password-reset/confirm" component={PasswordResetConfirm} />
+        <Route path="/(.*)">
+          <PrivateRoute component={PrivateRoutes} />
+        </Route>
+      </Switch>
+    </>
   );
 }
 
 function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Router />
+            </WouterRouter>
+            <Toaster />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -2,6 +2,7 @@ import { useDashboardSummary } from "@/hooks/use-dashboard";
 import { useTrends, useSubjectBreakdown } from "@/hooks/use-analytics";
 import { useStreak } from "@/hooks/use-productivity";
 import { useAuth } from "@/hooks/use-auth";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,6 +23,14 @@ const CHART_COLORS = [
   "hsl(var(--chart-4))", "hsl(var(--chart-5))",
 ];
 
+const CHART_DOT_CLASSES = [
+  "bg-blue-500",
+  "bg-cyan-500",
+  "bg-emerald-500",
+  "bg-amber-500",
+  "bg-rose-500",
+];
+
 function getGreeting(name?: string) {
   const h = new Date().getHours();
   const greeting = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
@@ -39,12 +48,12 @@ interface StatCardProps {
 
 function StatCard({ title, value, sub, icon, accent, href }: StatCardProps) {
   const inner = (
-    <Card className="border-border hover:border-primary/40 transition-all hover:shadow-md cursor-pointer">
+    <Card className="border-border bg-card transition-colors hover:border-primary/40 cursor-pointer">
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
-            <p className="text-3xl font-bold text-foreground mt-1 tabular-nums">{value}</p>
+            <p className="text-2xl font-bold text-foreground mt-1 tabular-nums sm:text-3xl">{value}</p>
             {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
           </div>
           <div className={`p-2.5 rounded-xl ${accent}`}>{icon}</div>
@@ -66,7 +75,7 @@ export default function Dashboard() {
 
   if (summaryLoading) {
     return (
-      <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6 max-w-7xl mx-auto min-w-0">
         <Skeleton className="h-28 w-full rounded-2xl" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
@@ -83,12 +92,11 @@ export default function Dashboard() {
   const todayHours = (todayMinutes / 60).toFixed(1);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Hero banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-background border border-primary/20 p-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground flex items-center gap-2 flex-wrap">
+    <div className="space-y-6 max-w-7xl mx-auto min-w-0">
+      <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2 flex-wrap sm:text-2xl md:text-3xl">
               {getGreeting(user?.first_name ?? user?.full_name)}
               {(streak?.current_streak ?? 0) > 0 && (
                 <span className="inline-flex items-center gap-1 text-orange-500 text-xl font-semibold">
@@ -102,11 +110,11 @@ export default function Dashboard() {
                 : "You're all caught up — keep the streak going!"}
             </p>
           </div>
-          <div className="flex gap-3 shrink-0">
-            <Button asChild variant="outline" className="gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:gap-3 shrink-0">
+            <Button asChild variant="outline" className="gap-2 min-h-[44px] w-full sm:w-auto">
               <Link href="/chat"><MessageSquare className="w-4 h-4" />Ask AI</Link>
             </Button>
-            <Button asChild className="gap-2 shadow-sm">
+            <Button asChild className="gap-2 shadow-sm min-h-[44px] w-full sm:w-auto">
               <Link href="/productivity"><Play className="w-4 h-4 fill-current" />Focus Now</Link>
             </Button>
           </div>
@@ -114,7 +122,7 @@ export default function Dashboard() {
       </div>
 
       {/* KPI row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 lg:grid-cols-4 sm:gap-4">
         <StatCard
           title="Streak"
           value={`${s?.streak ?? 0}d`}
@@ -143,8 +151,8 @@ export default function Dashboard() {
           title="Notes"
           value={s?.notes_count ?? 0}
           sub={`${s?.due_revisions ?? 0} revisions due`}
-          icon={<FileText className="w-4 h-4 text-purple-500" />}
-          accent="bg-purple-500/10"
+          icon={<FileText className="w-4 h-4 text-slate-600" />}
+          accent="bg-slate-600/10"
           href="/notes"
         />
       </div>
@@ -152,15 +160,15 @@ export default function Dashboard() {
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 border-border">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardHeader className="flex flex-col gap-2 pb-2 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <BarChart2 className="w-4 h-4 text-primary" /> Weekly Study Hours
+              <BarChart2 className="w-4 h-4 text-primary shrink-0" /> Weekly Study Hours
             </CardTitle>
-            <Button variant="ghost" size="sm" asChild className="text-xs text-muted-foreground h-7">
+            <Button variant="ghost" size="sm" asChild className="text-xs text-muted-foreground h-9 min-h-[44px] w-fit self-start sm:h-7 sm:min-h-0">
               <Link href="/analytics">View all <ArrowRight className="w-3 h-3 ml-1" /></Link>
             </Button>
           </CardHeader>
-          <CardContent className="h-56">
+          <CardContent className="h-48 min-h-[12rem] sm:h-56">
             {trendsLoading ? (
               <Skeleton className="h-full w-full rounded" />
             ) : (
@@ -186,7 +194,7 @@ export default function Dashboard() {
               <BookOpen className="w-4 h-4 text-chart-3" /> Subject Breakdown
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-56 flex flex-col items-center justify-center">
+          <CardContent className="h-48 min-h-[12rem] sm:h-56 flex flex-col items-center justify-center">
             {subjectsLoading ? (
               <Skeleton className="h-full w-full rounded" />
             ) : (subjects as SubjectBreakdown[] | undefined)?.length ? (
@@ -204,7 +212,7 @@ export default function Dashboard() {
                 <div className="flex flex-wrap justify-center gap-x-3 gap-y-1">
                   {(subjects as SubjectBreakdown[]).slice(0, 4).map((sub, i) => (
                     <div key={i} className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <div className="w-2 h-2 rounded-full shrink-0" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
+                      <div className={cn("w-2 h-2 rounded-full shrink-0", CHART_DOT_CLASSES[i % CHART_DOT_CLASSES.length])} />
                       {sub.name}
                     </div>
                   ))}
@@ -232,10 +240,10 @@ export default function Dashboard() {
             {s?.recent_activity?.length ? (
               <div className="space-y-2.5">
                 {s.recent_activity.slice(0, 6).map((activity, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                    <span className="text-sm text-foreground flex-1">{activity.description}</span>
-                    <span className="text-xs text-muted-foreground shrink-0">{activity.time}</span>
+                  <div key={i} className="flex items-start gap-3 min-w-0">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-2" />
+                    <span className="text-sm text-foreground flex-1 min-w-0 break-words">{activity.description}</span>
+                    <span className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">{activity.time}</span>
                   </div>
                 ))}
               </div>
@@ -249,7 +257,7 @@ export default function Dashboard() {
         </Card>
 
         <div className="space-y-4">
-          <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
+          <Card className="border-border bg-muted/30">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2 text-primary">
                 <Sparkles className="w-4 h-4" /> AI Suggestion
@@ -269,14 +277,14 @@ export default function Dashboard() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-2">
+            <CardContent className="grid grid-cols-2 gap-2 sm:gap-3">
               {[
-                { label: "New Note", icon: FileText, href: "/notes", color: "text-purple-500" },
-                { label: "Flashcards", icon: Layers, href: "/flashcards", color: "text-amber-500" },
-                { label: "Revision", icon: BookOpen, href: "/revision", color: "text-blue-500" },
-                { label: "Analytics", icon: BarChart2, href: "/analytics", color: "text-green-500" },
+                { label: "New Note", icon: FileText, href: "/notes", color: "text-slate-700" },
+                { label: "Flashcards", icon: Layers, href: "/flashcards", color: "text-amber-600" },
+                { label: "Revision", icon: BookOpen, href: "/revision", color: "text-blue-600" },
+                { label: "Analytics", icon: BarChart2, href: "/analytics", color: "text-emerald-600" },
               ].map(({ label, icon: Icon, href, color }) => (
-                <Button key={label} variant="outline" size="sm" asChild className="h-auto py-3 flex-col gap-1.5 border-border hover:border-primary/40">
+                <Button key={label} variant="outline" size="sm" asChild className="h-auto min-h-[44px] py-3 flex-col gap-1.5 border-border hover:border-primary/40">
                   <Link href={href}>
                     <Icon className={`w-4 h-4 ${color}`} />
                     <span className="text-xs font-medium">{label}</span>

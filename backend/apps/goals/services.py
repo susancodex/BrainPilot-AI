@@ -48,8 +48,9 @@ class GoalService:
         milestone.completed = True
         milestone.completed_at = timezone.now()
         milestone.save(update_fields=["completed", "completed_at"])
-        total = goal.milestone_items.count()
-        completed = goal.milestone_items.filter(completed=True).count()
+        milestones = list(goal.milestone_items.all())
+        total = len(milestones)
+        completed = sum(1 for m in milestones if m.completed)
         if total > 0:
             GoalService.update_goal_progress(user, goal_id, int((completed / total) * 100))
         return milestone

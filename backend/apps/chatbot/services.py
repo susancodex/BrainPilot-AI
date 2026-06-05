@@ -64,7 +64,7 @@ class ChatService:
         from services.ai_engine.adapters.gemini_adapter import GeminiAdapter
         from services.ai_engine.memory.conversation_memory import ConversationMemory
 
-        adapter = GeminiAdapter()
+        adapter = GeminiAdapter(user=user)
         memory = ConversationMemory()
         system_prompt = memory.build_system_prompt(user)
 
@@ -90,6 +90,7 @@ class ChatService:
         if not conversation.title and content:
             conversation.title = content[:100]
         conversation.save(update_fields=["message_count", "last_message_at", "title"])
+        adapter.record_stream_usage()
 
         from .serializers import MessageSerializer
         yield f"data: {json.dumps({'type': 'done', 'conversation_id': str(conversation.id), 'message': MessageSerializer(assistant_message).data})}\n\n"
@@ -110,7 +111,7 @@ class ChatService:
         from services.ai_engine.adapters.gemini_adapter import GeminiAdapter
         from services.ai_engine.memory.conversation_memory import ConversationMemory
 
-        adapter = GeminiAdapter()
+        adapter = GeminiAdapter(user=user)
         memory = ConversationMemory()
         system_prompt = memory.build_system_prompt(user)
         ai_response = adapter.chat(system_prompt=system_prompt, messages=context)

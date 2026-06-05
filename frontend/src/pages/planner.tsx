@@ -1,26 +1,60 @@
-import { usePlans, useGeneratePlan, useSessions, useUpdateSession, useExtractSyllabus } from "@/hooks/use-planner";
+import {
+  usePlans,
+  useGeneratePlan,
+  useSessions,
+  useUpdateSession,
+  useDeleteSession,
+  useDeletePlan,
+  useExtractSyllabus,
+} from "@/hooks/use-planner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useRef } from "react";
-import { Calendar, Clock, BookOpen, Layers, Sparkles, Upload, FileText, X, ClipboardPaste, CheckCircle2 } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  BookOpen,
+  Layers,
+  Sparkles,
+  Upload,
+  FileText,
+  X,
+  ClipboardPaste,
+  CheckCircle2,
+  Trash2,
+} from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { getApiErrorMessage } from "@/lib/api-error";
 import type { StudyPlan, StudySession } from "@/types";
 
 type SyllabusMode = "none" | "paste" | "upload";
+type DeleteTarget = { kind: "session"; id: string; label: string } | { kind: "plan"; id: string; label: string };
 
 export default function Planner() {
   const { data: plans, isLoading: plansLoading } = usePlans();
   const { data: sessions, isLoading: sessionsLoading } = useSessions();
   const generatePlan = useGeneratePlan();
   const updateSession = useUpdateSession();
+  const deleteSession = useDeleteSession();
+  const deletePlan = useDeletePlan();
   const extractSyllabus = useExtractSyllabus();
   const { toast } = useToast();
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -108,8 +142,43 @@ export default function Planner() {
   };
 
   const handleStatusChange = (id: string, status: string) => {
-    updateSession.mutate({ id, status });
+    updateSession.mutate(
+      { id, status },
+      {
+        onError: (err) => {
+          toast({
+            title: "Update failed",
+            description: getApiErrorMessage(err, "Could not update session."),
+            variant: "destructive",
+          });
+        },
+      }
+    );
   };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    const onSuccess = () => {
+      toast({
+        title: deleteTarget.kind === "session" ? "Session removed" : "Plan deleted",
+      });
+      setDeleteTarget(null);
+    };
+    const onError = (err: unknown) => {
+      toast({
+        title: "Delete failed",
+        description: getApiErrorMessage(err, "Please try again."),
+        variant: "destructive",
+      });
+    };
+    if (deleteTarget.kind === "session") {
+      deleteSession.mutate(deleteTarget.id, { onSuccess, onError });
+    } else {
+      deletePlan.mutate(deleteTarget.id, { onSuccess, onError });
+    }
+  };
+
+  const isDeleting = deleteSession.isPending || deletePlan.isPending;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -329,10 +398,28 @@ export default function Planner() {
               planList.map((plan) => (
                 <Card key={plan.id} className="border-border shadow-sm">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Layers className="w-5 h-5 text-primary" />
-                      {plan.title || "Study Plan"}
-                    </CardTitle>
+                    <div className="flex items-start justify-between gap-2">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Layers className="w-5 h-5 text-primary shrink-0" />
+                        {plan.title || "Study Plan"}
+                      </CardTitle>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 text-muted-foreground hover:text-destructive"
+                        aria-label="Delete plan"
+                        onClick={() =>
+                          setDeleteTarget({
+                            kind: "plan",
+                            id: plan.id,
+                            label: plan.title || "this study plan",
+                          })
+                        }
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="pb-3">
                     <div className="flex gap-4 text-sm text-muted-foreground mb-4">
@@ -385,9 +472,9 @@ export default function Planner() {
                         {session.start_time} – {session.end_time}
                       </div>
                     </div>
-                    <div className="shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       <Select value={session.status} onValueChange={(v) => handleStatusChange(session.id, v)}>
-                        <SelectTrigger className="w-36 h-9"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="w-full min-w-[8.5rem] sm:w-36 h-9"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="scheduled">Scheduled</SelectItem>
                           <SelectItem value="in_progress">In Progress</SelectItem>
@@ -395,6 +482,22 @@ export default function Planner() {
                           <SelectItem value="skipped">Skipped</SelectItem>
                         </SelectContent>
                       </Select>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9 text-muted-foreground hover:text-destructive hover:border-destructive/50"
+                        aria-label="Delete session"
+                        onClick={() =>
+                          setDeleteTarget({
+                            kind: "session",
+                            id: session.id,
+                            label: `${session.subject}: ${session.topic}`,
+                          })
+                        }
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 </Card>
@@ -409,6 +512,34 @@ export default function Planner() {
           )}
         </div>
       </div>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {deleteTarget?.kind === "plan" ? "Delete study plan?" : "Remove study session?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget?.kind === "plan"
+                ? `“${deleteTarget.label}” and all of its scheduled sessions will be permanently deleted.`
+                : `“${deleteTarget?.label}” will be removed from your schedule. This cannot be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeleting}
+              onClick={(e) => {
+                e.preventDefault();
+                handleConfirmDelete();
+              }}
+            >
+              {isDeleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

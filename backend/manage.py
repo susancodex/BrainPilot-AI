@@ -5,9 +5,16 @@ from pathlib import Path
 
 
 def main():
-    backend_dir = str(Path(__file__).resolve().parent)
-    if backend_dir not in sys.path:
-        sys.path.insert(0, backend_dir)
+    backend_dir = Path(__file__).resolve().parent
+    if str(backend_dir) not in sys.path:
+        sys.path.insert(0, str(backend_dir))
+
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv(backend_dir / ".env")
+    except ImportError:
+        pass
 
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.development")
     try:

@@ -7,7 +7,7 @@ description: How Gemini is wired into the Django backend
 
 - **SDK**: `google-genai` (NOT `google-generativeai` — that old package was removed)
 - **Model**: `gemini-2.5-flash` (set in `GEMINI_MODEL` env var, default in `base.py`)
-- **Key**: `GEMINI_API_KEY` Replit secret
+- **Key**: `GEMINI_API_KEY` environment variable
 - **Adapter**: `backend/services/ai_engine/adapters/gemini_adapter.py`
   - `generate_text(prompt)` — single-turn text
   - `generate_json(prompt)` — structured JSON output

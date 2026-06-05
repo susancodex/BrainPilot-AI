@@ -18,7 +18,6 @@ export const useAuth = () => {
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
       const { data } = await api.post("/auth/login/", credentials);
-      // After unwrap interceptor, data = { access, refresh, user }
       setTokens(data.access, data.refresh);
       return data;
     },
@@ -36,7 +35,11 @@ export const useAuth = () => {
       password_confirm: string;
     }) => {
       const { data } = await api.post("/auth/register/", userData);
+      setTokens(data.access, data.refresh);
       return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
     },
   });
 
@@ -50,26 +53,35 @@ export const useAuth = () => {
     },
     onSettled: () => {
       queryClient.setQueryData(["auth", "me"], null);
-      window.location.href = "/login";
+      window.location.href = "/";
     },
   });
 
-  // Update user fields (first_name, last_name) via PATCH /auth/me/
-  const updateUserMutation = useMutation({
-    mutationFn: async (fields: { first_name?: string; last_name?: string }) => {
-      const { data } = await api.patch("/auth/me/", fields);
-      return data;
+  const uploadAvatarMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("avatar", file);
+      await api.post("/auth/me/profile/avatar/", formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
     },
   });
 
-  // Update extended profile fields via PATCH /auth/me/profile/
+  const removeAvatarMutation = useMutation({
+    mutationFn: async () => {
+      await api.delete("/auth/me/profile/avatar/");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+    },
+  });
+
   const updateProfileMutation = useMutation({
     mutationFn: async (profileData: {
       first_name?: string;
       last_name?: string;
+      avatar_preset?: string;
       bio?: string;
       phone?: string;
       timezone?: string;
@@ -80,16 +92,12 @@ export const useAuth = () => {
       preferred_study_time?: string;
     }) => {
       const { first_name, last_name, ...profileFields } = profileData;
-      const promises: Promise<any>[] = [];
-      // Update user name if provided
       if (first_name !== undefined || last_name !== undefined) {
-        promises.push(api.patch("/auth/me/", { first_name, last_name }));
+        await api.patch("/auth/me/", { first_name, last_name });
       }
-      // Update profile fields if any exist
       if (Object.keys(profileFields).length > 0) {
-        promises.push(api.patch("/auth/me/profile/", profileFields));
+        await api.patch("/auth/me/profile/", profileFields);
       }
-      await Promise.all(promises);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
@@ -103,8 +111,9 @@ export const useAuth = () => {
     login: loginMutation,
     register: registerMutation,
     logout: logoutMutation,
-    updateUser: updateUserMutation,
     updateProfile: updateProfileMutation,
+    uploadAvatar: uploadAvatarMutation,
+    removeAvatar: removeAvatarMutation,
   };
 };
 

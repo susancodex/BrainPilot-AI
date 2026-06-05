@@ -24,6 +24,14 @@ CACHES = {
     }
 }
 
+if not os.environ.get("DATABASE_URL"):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+
 # Development: console-only logging (no file handlers needed)
 LOGGING = {
     "version": 1,

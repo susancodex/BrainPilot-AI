@@ -215,6 +215,11 @@ GEMINI_REQUEST_TIMEOUT = 30
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
+# When true, login is blocked until the user verifies their email (production default).
+REQUIRE_EMAIL_VERIFICATION = (
+    os.environ.get("REQUIRE_EMAIL_VERIFICATION", "false").lower() == "true"
+)
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -240,7 +245,7 @@ LOGGING = {
     },
     "loggers": {
         "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
-        "apps": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
-        "services": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        "apps": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "services": {"handlers": ["console"], "level": "INFO", "propagate": False},
     },
 }

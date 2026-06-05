@@ -83,3 +83,29 @@ export const useUpdateSession = () => {
     },
   });
 };
+
+export const useDeleteSession = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/planner/sessions/${id}/`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["planner", "sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["planner", "plans"] });
+    },
+  });
+};
+
+export const useDeletePlan = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/planner/plans/${id}/`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["planner", "plans"] });
+      queryClient.invalidateQueries({ queryKey: ["planner", "sessions"] });
+    },
+  });
+};

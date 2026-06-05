@@ -19,12 +19,14 @@ class AIHealthView(APIView):
         try:
             from ai.factory import get_gateway
             report = get_gateway().health_report()
-            available = [p for p in report if p["healthy"]]
+            configured = [p for p in report if p.get("configured")]
+            operational = [p for p in configured if p.get("healthy")]
             return success_response(
                 data={
                     "providers": report,
-                    "available_count": len(available),
-                    "status": "operational" if available else "degraded",
+                    "configured_count": len(configured),
+                    "available_count": len(operational),
+                    "status": "operational" if operational else ("unconfigured" if not configured else "degraded"),
                 },
                 message="AI Gateway health report",
             )

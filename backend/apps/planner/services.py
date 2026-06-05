@@ -66,15 +66,24 @@ class PlannerService:
         return plan
 
     @staticmethod
-    def update_session(user, session_id, **data) -> StudySession:
+    def get_session(user, session_id) -> StudySession:
         try:
-            session = StudySession.objects.select_related("plan").get(id=session_id, plan__user=user)
+            return StudySession.objects.select_related("plan").get(id=session_id, plan__user=user)
         except StudySession.DoesNotExist:
             raise NotFoundError("Study session not found.")
+
+    @staticmethod
+    def update_session(user, session_id, **data) -> StudySession:
+        session = PlannerService.get_session(user, session_id)
         for key, value in data.items():
             setattr(session, key, value)
         session.save()
         return session
+
+    @staticmethod
+    def delete_session(user, session_id) -> None:
+        session = PlannerService.get_session(user, session_id)
+        session.delete()
 
     @staticmethod
     def get_user_sessions(user, date=None):

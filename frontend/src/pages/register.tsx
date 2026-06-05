@@ -3,18 +3,23 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/use-auth";
+import { AuthLayout } from "@/components/auth-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { BrainCircuit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getApiErrorMessage, isDuplicateEmailError } from "@/lib/api-error";
 
 const registerSchema = z
   .object({
     first_name: z.string().min(1, "First name is required"),
     last_name: z.string().min(1, "Last name is required"),
     email: z.string().email("Please enter a valid email"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/[A-Za-z]/, "Include at least one letter")
+      .regex(/\d/, "Include at least one number"),
     password_confirm: z.string().min(8, "Please confirm your password"),
   })
   .refine((data) => data.password === data.password_confirm, {
@@ -26,7 +31,7 @@ type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function Register() {
   const [, setLocation] = useLocation();
-  const { register, login } = useAuth();
+  const { register: registerAccount } = useAuth();
   const { toast } = useToast();
 
   const form = useForm<RegisterForm>({
@@ -41,31 +46,21 @@ export default function Register() {
   });
 
   const onSubmit = (data: RegisterForm) => {
-    register.mutate(data, {
+    registerAccount.mutate(data, {
       onSuccess: () => {
-        login.mutate(
-          { email: data.email, password: data.password },
-          {
-            onSuccess: () => setLocation("/"),
-            onError: () => {
-              toast({
-                title: "Account created!",
-                description: "Please sign in to continue.",
-              });
-              setLocation("/login");
-            },
-          }
-        );
-      },
-      onError: (error: any) => {
-        const detail =
-          error?.response?.data?.message ||
-          error?.response?.data?.errors?.email?.[0] ||
-          error?.response?.data?.errors?.password?.[0] ||
-          "Something went wrong. Please try again.";
         toast({
-          title: "Registration failed",
-          description: detail,
+          title: "Welcome to BrainPilot",
+          description: "Your account is ready.",
+        });
+        setLocation("/dashboard");
+      },
+      onError: (error) => {
+        const duplicate = isDuplicateEmailError(error);
+        toast({
+          title: duplicate ? "Account already registered" : "Could not create account",
+          description: duplicate
+            ? "An account with this email already exists. Sign in instead."
+            : getApiErrorMessage(error, "Check your details and try again."),
           variant: "destructive",
         });
       },
@@ -73,117 +68,95 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <div className="max-w-md w-full space-y-8 bg-card p-8 rounded-xl shadow-lg border border-border">
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center p-3 rounded-full bg-primary/10 text-primary mb-4">
-            <BrainCircuit className="w-8 h-8" />
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Create account</h1>
-          <p className="text-muted-foreground">Join BrainPilot AI to supercharge your studies.</p>
-        </div>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="first_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>First Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John" autoComplete="given-name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="last_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Last Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Doe" autoComplete="family-name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="name@example.com"
-                      autoComplete="email"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="At least 8 characters"
-                      autoComplete="new-password"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="password_confirm"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirm Password</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="Repeat your password"
-                      autoComplete="new-password"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button type="submit" className="w-full" disabled={register.isPending}>
-              {register.isPending ? "Creating account…" : "Sign up"}
-            </Button>
-          </form>
-        </Form>
-
-        <div className="text-center text-sm">
-          <span className="text-muted-foreground">Already have an account? </span>
-          <Link href="/login" className="text-primary hover:underline font-medium">
+    <AuthLayout
+      title="Create account"
+      description="Set up your workspace and open your dashboard."
+      footer={
+        <>
+          <span className="text-muted-foreground">Already registered? </span>
+          <Link href="/login" className="font-medium text-primary hover:underline">
             Sign in
           </Link>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="first_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>First name</FormLabel>
+                  <FormControl>
+                    <Input autoComplete="given-name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="last_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Last name</FormLabel>
+                  <FormControl>
+                    <Input autoComplete="family-name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input type="email" autoComplete="email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <Input type="password" autoComplete="new-password" {...field} />
+                </FormControl>
+                <p className="text-xs text-muted-foreground">
+                  At least 8 characters with letters and numbers. Avoid common passwords like &quot;password123&quot;.
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password_confirm"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirm password</FormLabel>
+                <FormControl>
+                  <Input type="password" autoComplete="new-password" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type="submit" className="w-full min-h-[44px]" disabled={registerAccount.isPending}>
+            {registerAccount.isPending ? "Creating account…" : "Create account"}
+          </Button>
+        </form>
+      </Form>
+    </AuthLayout>
   );
 }

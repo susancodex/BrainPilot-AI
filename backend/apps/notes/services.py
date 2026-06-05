@@ -34,7 +34,7 @@ class NoteService:
         from services.ai_engine.adapters.gemini_adapter import GeminiAdapter
         from services.ai_engine.prompts.summary_generation import build_summary_prompt
 
-        adapter = GeminiAdapter()
+        adapter = GeminiAdapter(user=user)
         summary = adapter.generate_text(build_summary_prompt(note.content))
         note.ai_summary = summary
         note.summary_generated_at = timezone.now()
@@ -48,7 +48,7 @@ class NoteService:
         from services.ai_engine.adapters.gemini_adapter import GeminiAdapter
         from services.ai_engine.prompts.summary_generation import build_flashcards_prompt
 
-        adapter = GeminiAdapter()
+        adapter = GeminiAdapter(user=user)
         result = adapter.generate_json(build_flashcards_prompt(note.content, count))
         raw_cards = result.get("flashcards", [])
 

@@ -104,5 +104,5 @@ class PDFHighlightDeleteView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, pk, highlight_id):
-        PDFService.delete_highlight(request.user, highlight_id)
+        PDFService.delete_highlight(request.user, pk, highlight_id)
         return success_response(message="Highlight deleted.")

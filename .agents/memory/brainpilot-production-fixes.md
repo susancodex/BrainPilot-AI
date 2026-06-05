@@ -40,7 +40,7 @@ interface RevisionStatsResponse {
 
 ## Legacy artifact directories — removed
 
-`artifacts/brainpilot-web/` and `artifacts/brainpilot/` were duplicate prototype directories. Both have been deleted. Only `artifacts/api-server/` and `artifacts/mockup-sandbox/` remain.
+Legacy prototype directories were removed. The active app now lives in `frontend/` and `backend/`.
 
 **Why:** The static file path in `backend/config/urls.py` was originally pointing to `artifacts/brainpilot-web/dist/public` (wrong). It now correctly points to `frontend/dist/public`.
 

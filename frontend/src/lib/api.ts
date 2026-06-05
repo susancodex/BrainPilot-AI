@@ -75,9 +75,10 @@ api.interceptors.response.use(
 );
 
 function redirectToLogin() {
-  const onAuthPage = ["/login", "/register"].some((p) =>
-    window.location.pathname.endsWith(p)
-  );
+  const onAuthPage = ["/", "/login", "/register"].some((p) => {
+    const path = window.location.pathname.replace(/\/$/, "") || "/";
+    return path === p || path.endsWith(p);
+  });
   if (!onAuthPage) {
     window.dispatchEvent(new CustomEvent("brainpilot:auth-expired"));
   }

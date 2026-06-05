@@ -28,10 +28,11 @@ class StudyPlanSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "ai_generated", "created_at"]
 
     def get_session_count(self, obj):
-        return obj.sessions.count()
+        sessions = list(obj.sessions.all())
+        return len(sessions)
 
     def get_completed_sessions(self, obj):
-        return obj.sessions.filter(status="completed").count()
+        return sum(1 for s in obj.sessions.all() if s.status == "completed")
 
 
 class GeneratePlanSerializer(serializers.Serializer):

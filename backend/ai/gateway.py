@@ -89,7 +89,12 @@ class AIGateway:
             raise
 
     def health_report(self) -> list[dict]:
-        return [h.as_dict() for h in self._health.values()]
+        report = []
+        for provider in self._providers:
+            entry = self._health[provider.name].as_dict()
+            entry["configured"] = provider.is_available()
+            report.append(entry)
+        return report
 
     def _execute(self, method: str, *args):
         last_exc: Exception | None = None

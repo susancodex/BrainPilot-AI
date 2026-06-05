@@ -22,7 +22,7 @@ class GenerateQuizView(APIView):
         serializer = GenerateQuizSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         workflow = QuizWorkflow()
-        ai_response = workflow.generate(serializer.validated_data)
+        ai_response = workflow.generate(request.user, serializer.validated_data)
         quiz = QuizService.create_ai_quiz(request.user, ai_response, serializer.validated_data)
         return created_response(data=QuizSerializer(quiz).data, message="Quiz generated.")
 

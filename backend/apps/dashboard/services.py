@@ -44,7 +44,9 @@ class DashboardService:
 
         recent_activity = DashboardService._build_recent_activity(user)
         upcoming_sessions = DashboardService._build_upcoming_sessions(user, today)
-        ai_suggestion = DashboardService._build_ai_suggestion(streak, active_goals, due_revisions)
+        ai_suggestion = DashboardService._build_ai_suggestion(
+            user, streak, active_goals, due_revisions
+        )
 
         return {
             "streak": streak.current_streak,
@@ -129,7 +131,32 @@ class DashboardService:
         ]
 
     @staticmethod
-    def _build_ai_suggestion(streak, active_goals, due_revisions) -> str:
+    def _build_ai_suggestion(user, streak, active_goals, due_revisions) -> str:
+        fallback = DashboardService._fallback_ai_suggestion(
+            streak, active_goals, due_revisions
+        )
+        try:
+            from ai.factory import get_gateway
+            from services.ai_engine.adapters.gemini_adapter import GeminiAdapter
+
+            gateway = get_gateway()
+            if not any(p.is_available() for p in gateway._providers):
+                return fallback
+
+            prompt = (
+                "You are a concise study coach. Write one encouraging sentence (max 28 words) "
+                f"for a student with: {streak.current_streak}-day streak, "
+                f"{active_goals} active goals, {due_revisions} revisions due. "
+                "Be specific and actionable. No quotes or labels."
+            )
+            suggestion = GeminiAdapter(user=user).generate_text(prompt).strip()
+            return suggestion[:280] if suggestion else fallback
+        except Exception as exc:
+            logger.debug("AI dashboard suggestion unavailable: %s", exc)
+            return fallback
+
+    @staticmethod
+    def _fallback_ai_suggestion(streak, active_goals, due_revisions) -> str:
         if due_revisions > 3:
             return f"You have {due_revisions} topics due for revision. Prioritise these to strengthen your memory."
         if streak.current_streak >= 7:

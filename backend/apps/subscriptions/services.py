@@ -1,5 +1,7 @@
 import logging
-from django.utils import timezone
+
+from django.conf import settings
+from common.exceptions import ConflictError
 from .models import Subscription, Plan, SubscriptionStatus, PLAN_LIMITS, PLAN_FEATURES
 
 logger = logging.getLogger(__name__)
@@ -27,14 +29,48 @@ class SubscriptionService:
         ]
 
     @staticmethod
-    def increment_ai_usage(user):
+    def _is_exempt(user) -> bool:
+        return bool(getattr(user, "is_staff", False) or getattr(user, "is_superuser", False))
+
+    @staticmethod
+    def assert_ai_allowed(user) -> None:
+        if SubscriptionService._is_exempt(user):
+            return
+        sub = SubscriptionService.get_or_create(user)
+        if sub.status != SubscriptionStatus.ACTIVE:
+            raise ConflictError("Your subscription is not active.")
+        if sub.ai_requests_used >= sub.ai_requests_limit:
+            raise ConflictError(
+                f"Monthly AI limit reached ({sub.ai_requests_limit} requests). "
+                "Upgrade your plan on the Subscription page."
+            )
+
+    @staticmethod
+    def assert_pdf_upload_allowed(user) -> None:
+        if SubscriptionService._is_exempt(user):
+            return
+        sub = SubscriptionService.get_or_create(user)
+        if sub.status != SubscriptionStatus.ACTIVE:
+            raise ConflictError("Your subscription is not active.")
+        if sub.pdfs_uploaded >= sub.pdfs_limit:
+            raise ConflictError(
+                f"PDF upload limit reached ({sub.pdfs_limit} files). "
+                "Upgrade your plan on the Subscription page."
+            )
+
+    @staticmethod
+    def increment_ai_usage(user) -> None:
+        if SubscriptionService._is_exempt(user):
+            return
         sub = SubscriptionService.get_or_create(user)
         Subscription.objects.filter(id=sub.id).update(
             ai_requests_used=sub.ai_requests_used + 1
         )
 
     @staticmethod
-    def increment_pdf_upload(user):
+    def increment_pdf_upload(user) -> None:
+        if SubscriptionService._is_exempt(user):
+            return
         sub = SubscriptionService.get_or_create(user)
         Subscription.objects.filter(id=sub.id).update(
             pdfs_uploaded=sub.pdfs_uploaded + 1

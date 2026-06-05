@@ -8,7 +8,7 @@ description: Full URL map for the Django/DRF backend, route prefix conventions, 
 The backend is **Django + DRF + PostgreSQL** (Python), NOT Express/TypeScript. Ignore any notes about an Express stack.
 
 - Backend: `backend/` Django project, runs on port 8000
-- API client: `artifacts/brainpilot-web/src/lib/api.ts` (axios, baseURL `/api/v1`)
+- API client: `frontend/src/lib/api.ts` (axios, baseURL `/api/v1`)
 - Vite proxy forwards `/api/*` → `http://localhost:8000`
 
 ## Route prefix convention
@@ -56,4 +56,4 @@ All endpoints are under `/api/v1/`. The axios baseURL is `/api/v1`, so hooks cal
 **Chatbot send/stream** — requires `content` field (not `message`).
 
 ## Frontend port
-- Frontend runs on port 5000 (required for Replit webview). `PORT=5000` env var set.
+- Frontend runs on port 5000. `PORT=5000` env var set.

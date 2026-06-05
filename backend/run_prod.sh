@@ -15,12 +15,17 @@ log "Starting BrainPilot AI production server"
 log "Settings: ${DJANGO_SETTINGS_MODULE}"
 
 # Validate required environment variables
-for var in DJANGO_SECRET_KEY DATABASE_URL GEMINI_API_KEY; do
+for var in DJANGO_SECRET_KEY DATABASE_URL; do
     if [ -z "${!var:-}" ]; then
         log "ERROR: Required environment variable '${var}' is not set."
         exit 1
     fi
 done
+
+if [ -z "${GEMINI_API_KEY:-}" ] && [ -z "${GROQ_API_KEY:-}" ] && [ -z "${OPENROUTER_API_KEY:-}" ]; then
+    log "ERROR: Set at least one of GEMINI_API_KEY, GROQ_API_KEY, or OPENROUTER_API_KEY."
+    exit 1
+fi
 
 cd "${SCRIPT_DIR}"
 

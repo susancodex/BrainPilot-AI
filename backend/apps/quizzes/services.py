@@ -9,7 +9,7 @@ def _generate_attempt_feedback(quiz: Quiz, evaluated_answers: list, percentage: 
     try:
         from services.ai_engine.adapters.gemini_adapter import GeminiAdapter
         from services.ai_engine.prompts.quiz_feedback import build_quiz_feedback_prompt
-        adapter = GeminiAdapter()
+        adapter = GeminiAdapter(user=user)
         prompt = build_quiz_feedback_prompt(quiz.title, quiz.subject, percentage, evaluated_answers)
         return adapter.generate_text(prompt)
     except Exception as exc:

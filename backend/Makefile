@@ -8,71 +8,71 @@ export DJANGO_SETTINGS_MODULE ?= $(SETTINGS_DEV)
 # ── Dev server ────────────────────────────────────────────────────────────────
 .PHONY: run
 run:
-        $(MANAGE) runserver 0.0.0.0:8000
+	bash run_dev.sh
 
 # ── Database ──────────────────────────────────────────────────────────────────
 .PHONY: migrate makemigrations
 migrate:
-        $(MANAGE) migrate
+	$(MANAGE) migrate
 
 makemigrations:
-        $(MANAGE) makemigrations
+	$(MANAGE) makemigrations
 
 # ── Static & shell ────────────────────────────────────────────────────────────
 .PHONY: collectstatic shell
 collectstatic:
-        $(MANAGE) collectstatic --noinput
+	$(MANAGE) collectstatic --noinput
 
 shell:
-        $(MANAGE) shell
+	$(MANAGE) shell
 
 # ── Superuser ────────────────────────────────────────────────────────────────
 .PHONY: createsuperuser
 createsuperuser:
-        $(MANAGE) createsuperuser
+	$(MANAGE) createsuperuser
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 .PHONY: test test-cov test-fast
 test:
-        pytest tests/ -v
+	uv run --no-sync pytest tests/ -v
 
 test-cov:
-        pytest tests/ --cov=. --cov-report=term-missing --cov-report=html:htmlcov
+	uv run --no-sync pytest tests/ --cov=. --cov-report=term-missing --cov-report=html:htmlcov
 
 test-fast:
-        pytest tests/ -x -q --no-header
+	uv run --no-sync pytest tests/ -x -q --no-header
 
 # ── Code quality ─────────────────────────────────────────────────────────────
 .PHONY: lint format check typecheck
 lint:
-        ruff check .
+	uv run --no-sync ruff check .
 
 format:
-        ruff format .
+	uv run --no-sync ruff format .
 
 typecheck:
-        mypy . --ignore-missing-imports
+	uv run --no-sync mypy . --ignore-missing-imports
 
 check:
-        $(MANAGE) check --deploy DJANGO_SETTINGS_MODULE=$(SETTINGS_PROD)
+	DJANGO_SETTINGS_MODULE=$(SETTINGS_PROD) uv run --no-sync python manage.py check --deploy
 
 # ── Clean ─────────────────────────────────────────────────────────────────────
 .PHONY: clean
 clean:
-        find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-        find . -name "*.pyc" -delete 2>/dev/null || true
-        rm -rf staticfiles/
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -name "*.pyc" -delete 2>/dev/null || true
+	rm -rf staticfiles/
 
 .PHONY: help
 help:
-        @echo "Available commands:"
-        @echo "  make run              Start dev server on :8000"
-        @echo "  make migrate          Apply DB migrations"
-        @echo "  make makemigrations   Create new migrations"
-        @echo "  make shell            Django interactive shell"
-        @echo "  make createsuperuser  Create admin user"
-        @echo "  make collectstatic    Collect static files"
-        @echo "  make lint             Run ruff linter"
-        @echo "  make format           Run ruff formatter"
-        @echo "  make check            Run deploy checks"
-        @echo "  make clean            Remove .pyc / __pycache__"
+	@echo "Available commands:"
+	@echo "  make run              Start dev server on :8000"
+	@echo "  make migrate          Apply DB migrations"
+	@echo "  make makemigrations   Create new migrations"
+	@echo "  make shell            Django interactive shell"
+	@echo "  make createsuperuser  Create admin user"
+	@echo "  make collectstatic    Collect static files"
+	@echo "  make lint             Run ruff linter"
+	@echo "  make format           Run ruff formatter"
+	@echo "  make check            Run deploy checks"
+	@echo "  make clean            Remove .pyc / __pycache__"

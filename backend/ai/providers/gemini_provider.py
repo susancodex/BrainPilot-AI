@@ -22,8 +22,19 @@ class GeminiProvider(AIProvider):
 
     def __init__(self):
         self._client = None
-        self._model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+        self._model = self._resolve_model()
         self._init_client()
+
+    @staticmethod
+    def _resolve_model() -> str:
+        try:
+            from django.conf import settings
+
+            return getattr(settings, "GEMINI_MODEL", None) or os.environ.get(
+                "GEMINI_MODEL", "gemini-2.5-flash"
+            )
+        except Exception:
+            return os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 
     def _init_client(self) -> None:
         try:
@@ -37,10 +48,17 @@ class GeminiProvider(AIProvider):
                     api_key=ai_key,
                     http_options={"api_version": "", "base_url": ai_base_url},
                 )
-                logger.info("Gemini provider: using Replit AI Integrations proxy")
+                logger.info("Gemini provider: using provider proxy")
                 return
 
             direct_key = os.environ.get("GEMINI_API_KEY", "").strip()
+            if not direct_key:
+                try:
+                    from django.conf import settings
+
+                    direct_key = (getattr(settings, "GEMINI_API_KEY", None) or "").strip()
+                except Exception:
+                    pass
             if direct_key:
                 self._client = genai.Client(api_key=direct_key)
                 logger.info("Gemini provider: using direct API key")

@@ -10,7 +10,7 @@ class QuizWorkflow:
     def __init__(self):
         self.adapter = GeminiAdapter()
 
-    def generate(self, request_data: dict) -> dict:
+    def generate(self, user, request_data: dict) -> dict:
         subject = request_data["subject"]
         topic = request_data.get("topic", "")
         difficulty = request_data.get("difficulty", "medium")
@@ -23,7 +23,8 @@ class QuizWorkflow:
 
         logger.info("Generating quiz: subject=%s, difficulty=%s, count=%d", subject, difficulty, count)
         prompt = build_quiz_prompt(subject, topic, difficulty, count, context)
-        result = self.adapter.generate_json(prompt)
+        adapter = GeminiAdapter(user=user)
+        result = adapter.generate_json(prompt)
 
         if "questions" not in result or not isinstance(result["questions"], list):
             raise AIServiceError("AI returned an invalid quiz structure.")

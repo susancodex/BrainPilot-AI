@@ -1,10 +1,7 @@
 import logging
 from django.utils import timezone
-from rest_framework import status
-from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
-from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .serializers import (
@@ -12,7 +9,9 @@ from .serializers import (
     UserProfileSerializer, ChangePasswordSerializer,
     PasswordResetRequestSerializer, PasswordResetConfirmSerializer,
 )
+from .avatar_presets import AVATAR_PRESET_CHOICES
 from .services import AuthService, UserProfileService
+from common.exceptions import AppError
 from common.responses import success_response, created_response, error_response
 
 logger = logging.getLogger(__name__)
@@ -91,9 +90,16 @@ class RegisterView(APIView):
         data = serializer.validated_data.copy()
         data.pop("password_confirm", None)
         user = AuthService.register_user(**data)
+        tokens = AuthService.login_user(user, request=request)
         return created_response(
-            data=UserSerializer(user).data,
-            message="Account created. Please verify your email.",
+            data={
+                "access": tokens["access"],
+                "refresh": tokens["refresh"],
+                "user": UserSerializer(tokens["user"], context={"request": request}).data,
+            },
+            message="Account created. Please verify your email."
+            if not user.is_email_verified
+            else "Account created.",
         )
 
 
@@ -105,14 +111,18 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         if not serializer.is_valid():
             AuthService.record_failed_login(request.data.get("email", ""))
-            return error_response("Invalid credentials.", errors=serializer.errors)
+            message = "Invalid credentials."
+            non_field = serializer.errors.get("non_field_errors")
+            if non_field:
+                message = str(non_field[0])
+            return error_response(message, errors=serializer.errors)
 
         tokens = AuthService.login_user(serializer.validated_data["user"], request=request)
         return success_response(
             data={
                 "access": tokens["access"],
                 "refresh": tokens["refresh"],
-                "user": UserSerializer(tokens["user"]).data,
+                "user": UserSerializer(tokens["user"], context={"request": request}).data,
             },
             message="Login successful.",
         )
@@ -172,11 +182,22 @@ class PasswordResetConfirmView(APIView):
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
+    def _user_with_profile(self, user):
+        from .models import User
+
+        return User.objects.select_related("profile").get(pk=user.pk)
+
     def get(self, request):
-        return success_response(data=UserSerializer(request.user).data)
+        user = self._user_with_profile(request.user)
+        return success_response(
+            data=UserSerializer(user, context={"request": request}).data
+        )
 
     def patch(self, request):
-        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        user = self._user_with_profile(request.user)
+        serializer = UserSerializer(
+            user, data=request.data, partial=True, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return success_response(data=serializer.data, message="Profile updated.")
@@ -198,11 +219,54 @@ class ProfileView(APIView):
 
     def get(self, request):
         profile = UserProfileService.get_or_create_profile(request.user)
-        return success_response(data=UserProfileSerializer(profile).data)
+        return success_response(
+            data=UserProfileSerializer(profile, context={"request": request}).data
+        )
 
     def patch(self, request):
         profile = UserProfileService.get_or_create_profile(request.user)
-        serializer = UserProfileSerializer(profile, data=request.data, partial=True)
+        serializer = UserProfileSerializer(
+            profile, data=request.data, partial=True, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return success_response(data=serializer.data, message="Profile updated.")
+
+
+class AvatarPresetsView(APIView):
+    """List built-in profile picture presets."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        presets = [
+            {"id": slug, "label": label}
+            for slug, label in AVATAR_PRESET_CHOICES
+        ]
+        return success_response(data={"presets": presets})
+
+
+class ProfileAvatarView(APIView):
+    """Upload or remove a custom profile photo."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        uploaded = request.FILES.get("avatar")
+        if not uploaded:
+            return error_response("No image file provided. Use the 'avatar' field.")
+        try:
+            profile = UserProfileService.set_avatar_upload(request.user, uploaded)
+        except AppError as exc:
+            return error_response(str(exc.message), status_code=exc.status_code)
+        return success_response(
+            data=UserProfileSerializer(profile, context={"request": request}).data,
+            message="Profile photo updated.",
+        )
+
+    def delete(self, request):
+        profile = UserProfileService.clear_avatar(request.user)
+        return success_response(
+            data=UserProfileSerializer(profile, context={"request": request}).data,
+            message="Profile photo removed.",
+        )

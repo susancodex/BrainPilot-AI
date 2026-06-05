@@ -1,12 +1,14 @@
 import logging
+import mimetypes
 from datetime import timedelta
+from pathlib import Path
 
 from django.utils import timezone
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User, UserProfile, EmailVerificationToken
-from common.exceptions import NotFoundError, ConflictError, AppError
+from common.exceptions import AppError
 from utils.helpers import generate_token
 
 logger = logging.getLogger(__name__)
@@ -18,16 +20,15 @@ LOCKOUT_DURATION_MINUTES = 15
 class AuthService:
     @staticmethod
     def register_user(email: str, first_name: str, last_name: str, password: str) -> User:
-        if User.objects.filter(email=email).exists():
-            raise ConflictError("An account with this email already exists.")
-
         user = User.objects.create_user(
             email=email,
             first_name=first_name,
             last_name=last_name,
             password=password,
         )
-        UserProfile.objects.create(user=user)
+        from .avatar_presets import DEFAULT_AVATAR_PRESET
+
+        UserProfile.objects.create(user=user, avatar_preset=DEFAULT_AVATAR_PRESET)
 
         if settings.DEBUG:
             user.is_email_verified = True
@@ -135,21 +136,72 @@ class AuthService:
         )
         try:
             from apps.accounts.tasks import send_verification_email
-            send_verification_email.delay(user.id, token)
-        except Exception:
-            logger.warning("Could not queue verification email for %s (broker unavailable)", user.email)
+            send_verification_email.delay(str(user.id), token)
+        except Exception as exc:
+            logger.warning(
+                "Could not send verification email for %s: %s",
+                user.email,
+                exc,
+            )
 
 
 class UserProfileService:
+    MAX_AVATAR_BYTES = 2 * 1024 * 1024
+    ALLOWED_AVATAR_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
+    ALLOWED_AVATAR_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+
+    @staticmethod
+    def _avatar_content_type(uploaded_file) -> str:
+        content_type = (getattr(uploaded_file, "content_type", "") or "").lower()
+        if content_type == "image/jpg":
+            return "image/jpeg"
+        if content_type in UserProfileService.ALLOWED_AVATAR_TYPES:
+            return content_type
+        guessed, _ = mimetypes.guess_type(getattr(uploaded_file, "name", "") or "")
+        if guessed == "image/jpg":
+            return "image/jpeg"
+        return (guessed or "").lower()
+
+    @staticmethod
+    def _avatar_is_allowed(uploaded_file) -> bool:
+        if UserProfileService._avatar_content_type(uploaded_file) in {
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+        }:
+            return True
+        ext = Path(getattr(uploaded_file, "name", "") or "").suffix.lower()
+        return ext in UserProfileService.ALLOWED_AVATAR_EXTENSIONS
+
     @staticmethod
     def get_or_create_profile(user: User) -> UserProfile:
         profile, _ = UserProfile.objects.get_or_create(user=user)
         return profile
 
     @staticmethod
-    def update_profile(user: User, **data) -> UserProfile:
+    def set_avatar_upload(user: User, uploaded_file) -> UserProfile:
+        if not UserProfileService._avatar_is_allowed(uploaded_file):
+            raise AppError("Avatar must be a JPEG, PNG, or WebP image.")
+
+        if uploaded_file.size > UserProfileService.MAX_AVATAR_BYTES:
+            raise AppError("Avatar must be 2 MB or smaller.")
+
         profile = UserProfileService.get_or_create_profile(user)
-        for key, value in data.items():
-            setattr(profile, key, value)
-        profile.save()
+        if profile.avatar:
+            profile.avatar.delete(save=False)
+        profile.avatar = uploaded_file
+        profile.avatar_preset = ""
+        profile.save(update_fields=["avatar", "avatar_preset", "updated_at"])
+        return profile
+
+    @staticmethod
+    def clear_avatar(user: User) -> UserProfile:
+        from .avatar_presets import DEFAULT_AVATAR_PRESET
+
+        profile = UserProfileService.get_or_create_profile(user)
+        if profile.avatar:
+            profile.avatar.delete(save=False)
+            profile.avatar = None
+        profile.avatar_preset = DEFAULT_AVATAR_PRESET
+        profile.save(update_fields=["avatar", "avatar_preset", "updated_at"])
         return profile

@@ -43,7 +43,7 @@ export default function AdminUsers() {
   const [search, setSearch] = useState("");
 
   if (!user?.is_staff) {
-    return <Redirect to="/" />;
+    return <Redirect to="/dashboard" />;
   }
 
   const userList = (users as User[] | undefined) ?? [];

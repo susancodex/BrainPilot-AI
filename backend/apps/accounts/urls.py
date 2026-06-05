@@ -11,4 +11,6 @@ urlpatterns = [
     path("me/", views.MeView.as_view(), name="auth-me"),
     path("me/change-password/", views.ChangePasswordView.as_view(), name="auth-change-password"),
     path("me/profile/", views.ProfileView.as_view(), name="auth-profile"),
+    path("me/profile/avatar/", views.ProfileAvatarView.as_view(), name="auth-profile-avatar"),
+    path("me/profile/avatar-presets/", views.AvatarPresetsView.as_view(), name="auth-avatar-presets"),
 ]

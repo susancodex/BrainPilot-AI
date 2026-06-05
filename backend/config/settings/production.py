@@ -3,26 +3,21 @@ from .base import *
 
 DEBUG = False
 
+REQUIRE_EMAIL_VERIFICATION = (
+    os.environ.get("REQUIRE_EMAIL_VERIFICATION", "true").lower() == "true"
+)
+
 # Comma-separated list of allowed hostnames, e.g. "api.example.com,www.example.com"
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h.strip()]
 
-# Support additional hosts injected by the hosting platform at runtime
-_platform_domains = os.environ.get("PLATFORM_DOMAINS", "") or os.environ.get("REPLIT_DOMAINS", "")
-if _platform_domains:
-    ALLOWED_HOSTS += [d.strip() for d in _platform_domains.split(",") if d.strip()]
+_render_host = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
+if _render_host and _render_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_render_host)
 
 # Comma-separated list of allowed CORS origins, e.g. "https://app.example.com"
 CORS_ALLOWED_ORIGINS = [
     o.strip() for o in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()
 ]
-
-# Support additional CORS origins injected by the hosting platform at runtime
-_platform_dev_domain = os.environ.get("PLATFORM_DEV_DOMAIN", "") or os.environ.get("REPLIT_DEV_DOMAIN", "")
-if _platform_dev_domain:
-    CORS_ALLOWED_ORIGINS += [
-        f"https://{_platform_dev_domain}",
-        f"http://{_platform_dev_domain}",
-    ]
 
 # Allow any subdomain of your production domains (add regexes as needed)
 CORS_ALLOWED_ORIGIN_REGEXES = []
@@ -39,9 +34,9 @@ SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
-# Limit upload body size to 10 MB to prevent large-payload DoS
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
-FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+# Match PDF upload limit in apps/pdfs/serializers.py (20 MB)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
 
 # Static files via WhiteNoise
 MIDDLEWARE = ["whitenoise.middleware.WhiteNoiseMiddleware"] + MIDDLEWARE
@@ -53,11 +48,11 @@ LOGGING = {
     "disable_existing_loggers": False,
     "formatters": {
         "verbose": {
-            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "format": "level={levelname} time={asctime} logger={name} module={module} process={process:d} thread={thread:d} message={message}",
             "style": "{",
         },
         "simple": {
-            "format": "{levelname} {asctime} {message}",
+            "format": "level={levelname} time={asctime} logger={name} message={message}",
             "style": "{",
         },
     },

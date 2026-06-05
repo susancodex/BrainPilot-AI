@@ -8,6 +8,14 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+
+@pytest.fixture(autouse=True)
+def _disable_debug_toolbar_in_tests(settings):
+    """Debug toolbar breaks API tests when DEBUG is toggled via override_settings."""
+    settings.MIDDLEWARE = [
+        m for m in settings.MIDDLEWARE if m != "debug_toolbar.middleware.DebugToolbarMiddleware"
+    ]
+
 # ── User fixtures ─────────────────────────────────────────────────────────────
 
 @pytest.fixture
@@ -18,6 +26,7 @@ def user(db) -> User:
         password="Str0ngP@ssword!",
         first_name="Alice",
         last_name="Study",
+        is_email_verified=True,
     )
 
 

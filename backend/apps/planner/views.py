@@ -108,7 +108,7 @@ class StudySessionListView(APIView):
         return success_response(data=StudySessionSerializer(sessions, many=True).data)
 
 
-class StudySessionUpdateView(APIView):
+class StudySessionDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, pk):
@@ -116,3 +116,7 @@ class StudySessionUpdateView(APIView):
         serializer.is_valid(raise_exception=True)
         updated = PlannerService.update_session(request.user, pk, **serializer.validated_data)
         return success_response(data=StudySessionSerializer(updated).data, message="Session updated.")
+
+    def delete(self, request, pk):
+        PlannerService.delete_session(request.user, pk)
+        return success_response(message="Session deleted.")

@@ -23,6 +23,9 @@ class PDFService:
 
     @staticmethod
     def upload_pdf(user, file, title=None, subject="", tags=None) -> PDFDocument:
+        from apps.subscriptions.services import SubscriptionService
+
+        SubscriptionService.assert_pdf_upload_allowed(user)
         doc = PDFDocument.objects.create(
             user=user,
             title=title or file.name,
@@ -32,6 +35,7 @@ class PDFService:
             tags=tags or [],
         )
         PDFService._extract_text(doc)
+        SubscriptionService.increment_pdf_upload(user)
         return doc
 
     @staticmethod
@@ -87,7 +91,7 @@ class PDFService:
 
         try:
             from services.ai_engine.adapters.gemini_adapter import GeminiAdapter
-            adapter = GeminiAdapter()
+            adapter = GeminiAdapter(user=user)
             context = doc.extracted_text[:8000] if doc.extracted_text else "(no text extracted)"
             prompt = (
                 f"You are a study assistant helping a student understand a PDF document.\n\n"
@@ -126,9 +130,10 @@ class PDFService:
         )
 
     @staticmethod
-    def delete_highlight(user, highlight_id):
+    def delete_highlight(user, pdf_id, highlight_id):
+        doc = PDFService.get_pdf(user, pdf_id)
         try:
-            h = PDFHighlight.objects.get(id=highlight_id, user=user)
+            h = PDFHighlight.objects.get(id=highlight_id, document=doc, user=user)
             h.delete()
         except PDFHighlight.DoesNotExist:
             raise NotFoundError("Highlight not found.")

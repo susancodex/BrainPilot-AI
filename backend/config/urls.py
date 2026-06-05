@@ -3,7 +3,7 @@ from pathlib import Path
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
-from django.conf.urls.static import static
+from django.views.static import serve as media_serve
 from django.http import FileResponse, Http404
 from rest_framework_simplejwt.views import TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
@@ -68,7 +68,19 @@ urlpatterns = [
     path("api/v1/subscriptions/", include("apps.subscriptions.urls")),
 
     re_path(r"^assets/(?P<path>.+)$", serve_asset, name="frontend-asset"),
+]
 
+# Uploaded media must be registered before the SPA catch-all.
+urlpatterns += [
+    re_path(
+        r"^media/(?P<path>.*)$",
+        media_serve,
+        {"document_root": settings.MEDIA_ROOT},
+        name="media",
+    ),
+]
+
+urlpatterns += [
     re_path(r"^.*$", serve_react, name="frontend"),
 ]
 
@@ -78,4 +90,3 @@ if settings.DEBUG:
         urlpatterns = [path("__debug__/", include(debug_toolbar.urls))] + urlpatterns
     except ImportError:
         pass
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

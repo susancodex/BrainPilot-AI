@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 REQUIRED_IN_PRODUCTION = [
     "DJANGO_SECRET_KEY",
     "DATABASE_URL",
-    "GEMINI_API_KEY",
 ]
 
 INSECURE_SECRET_KEY_PREFIXES = [
@@ -43,6 +42,14 @@ def _check_required_vars() -> None:
         _abort(
             f"Missing required environment variable(s): {', '.join(missing)}. "
             "Set them before starting the server."
+        )
+
+    if not any(
+        os.environ.get(var, "").strip()
+        for var in ("GEMINI_API_KEY", "GROQ_API_KEY", "OPENROUTER_API_KEY")
+    ):
+        _abort(
+            "No AI provider key is configured. Set GEMINI_API_KEY, GROQ_API_KEY, or OPENROUTER_API_KEY."
         )
 
 

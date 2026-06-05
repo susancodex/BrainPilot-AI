@@ -83,7 +83,7 @@ services:
       - key: OPENROUTER_API_KEY
         sync: false
       - key: ALLOWED_HOSTS
-        value: ""   # Render injects the service hostname automatically
+        value: ""   # Optional; RENDER_EXTERNAL_HOSTNAME is added automatically in production settings
       - key: CORS_ALLOWED_ORIGINS
         value: ""   # Set to your frontend URL if hosting frontend separately
       - key: SECURE_SSL_REDIRECT

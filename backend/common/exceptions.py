@@ -36,6 +36,34 @@ class ConflictError(AppError):
         super().__init__(message=message, status_code=status.HTTP_409_CONFLICT)
 
 
+def _normalize_api_message(message: str) -> str:
+    lower = message.lower()
+    if "already exists" in lower or "already registered" in lower:
+        if "email" in lower or "account" in lower or "user with this" in lower:
+            return "This account is already registered."
+    return message
+
+
+def _first_validation_message(errors) -> str | None:
+    """Pick a human-readable message from DRF validation error payloads."""
+    if not isinstance(errors, dict):
+        return None
+    for key in ("non_field_errors", "detail", "email", "password", "password_confirm"):
+        if key not in errors:
+            continue
+        value = errors[key]
+        if isinstance(value, list) and value:
+            return str(value[0])
+        if isinstance(value, str):
+            return value
+    for value in errors.values():
+        if isinstance(value, list) and value:
+            return str(value[0])
+        if isinstance(value, str):
+            return value
+    return None
+
+
 def custom_exception_handler(exc, context):
     if isinstance(exc, AppError):
         payload = {"success": False, "message": exc.message}
@@ -62,13 +90,20 @@ def custom_exception_handler(exc, context):
         message = "An error occurred"
 
         if isinstance(errors, dict):
-            if "detail" in errors:
-                message = str(errors.pop("detail"))
+            extracted = _first_validation_message(errors)
+            if extracted:
+                message = extracted
+            elif "detail" in errors:
+                message = str(errors.get("detail"))
             elif "non_field_errors" in errors:
-                message = str(errors.pop("non_field_errors")[0])
+                nf = errors.get("non_field_errors")
+                if isinstance(nf, list) and nf:
+                    message = str(nf[0])
+
+        message = _normalize_api_message(message)
 
         payload = {"success": False, "message": message}
-        if errors and errors != {}:
+        if isinstance(errors, dict) and errors:
             payload["errors"] = errors
 
         response.data = payload

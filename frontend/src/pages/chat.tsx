@@ -6,6 +6,7 @@ import {
   useSendMessage,
   useDeleteConversation,
 } from "@/hooks/use-chat";
+import { useAiHealth } from "@/hooks/use-ai-health";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,8 @@ export default function Chat() {
   const sendMessage = useSendMessage();
   const deleteConversation = useDeleteConversation();
   const { toast } = useToast();
+  const { data: aiHealth } = useAiHealth();
+  const aiReady = aiHealth?.status === "operational";
 
   const [input, setInput] = useState("");
   const [localMessages, setLocalMessages] = useState<LocalMessage[]>([]);
@@ -101,9 +104,13 @@ export default function Chat() {
           });
           inputRef.current?.focus();
         },
-        onError: () => {
+        onError: (error: unknown) => {
           setLocalMessages((prev) => prev.filter((m) => !m.pending));
-          toast({ title: "Failed to send", description: "Please try again.", variant: "destructive" });
+          const apiError = error as { response?: { data?: { message?: string } } };
+          const description =
+            apiError?.response?.data?.message ||
+            "AI may be unavailable. Check your API keys and try again.";
+          toast({ title: "Failed to send", description, variant: "destructive" });
         },
       }
     );
@@ -176,14 +183,28 @@ export default function Chat() {
       {selectedId ? (
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="px-5 py-3 border-b border-border bg-muted/20 flex items-center gap-3">
-            <BrainCircuit className="w-5 h-5 text-primary" />
-            <div>
-              <p className="font-semibold text-sm text-foreground">{selectedConv?.title || "AI Tutor"}</p>
-              {selectedConv?.subject_context && (
-                <p className="text-xs text-muted-foreground">{selectedConv.subject_context}</p>
-              )}
+          <div className="px-5 py-3 border-b border-border bg-muted/20 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <BrainCircuit className="w-5 h-5 text-primary shrink-0" />
+              <div className="min-w-0">
+                <p className="font-semibold text-sm text-foreground truncate">
+                  {selectedConv?.title || "AI Tutor"}
+                </p>
+                {selectedConv?.subject_context && (
+                  <p className="text-xs text-muted-foreground truncate">{selectedConv.subject_context}</p>
+                )}
+              </div>
             </div>
+            <Badge
+              variant="secondary"
+              className={
+                aiReady
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0"
+                  : "bg-amber-500/10 text-amber-700 dark:text-amber-400 shrink-0"
+              }
+            >
+              {aiReady ? "AI online" : aiHealth?.status === "unconfigured" ? "AI not configured" : "AI limited"}
+            </Badge>
           </div>
 
           {/* Messages */}
@@ -191,9 +212,10 @@ export default function Chat() {
             {allMessages.length === 0 && (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                 <BrainCircuit className="w-14 h-14 mb-4 text-muted" />
-                <h3 className="text-lg font-medium text-foreground">Ask me anything</h3>
+                <h1 className="text-lg font-semibold text-foreground">Ask me anything</h1>
                 <p className="text-sm text-center max-w-sm mt-1">
-                  I'm your AI tutor powered by Gemini. Ask about concepts, get explanations, or quiz yourself.
+                  Ask about concepts, get explanations, or quiz yourself. Responses route through Gemini with
+                  automatic fallback providers.
                 </p>
               </div>
             )}

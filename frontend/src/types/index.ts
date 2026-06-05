@@ -13,6 +13,10 @@ export interface User {
 }
 
 export interface UserProfile {
+  avatar?: string | null;
+  avatar_url?: string | null;
+  avatar_preset?: string;
+  updated_at?: string;
   bio?: string;
   phone?: string;
   timezone?: string;

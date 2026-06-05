@@ -1,12 +1,14 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { PageLoader } from "@/components/page-loader";
 import NotFound from "@/pages/not-found";
 
+import Home from "@/pages/home";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import VerifyEmail from "@/pages/verify-email";
@@ -14,14 +16,11 @@ import PasswordReset from "@/pages/password-reset";
 import PasswordResetConfirm from "@/pages/password-reset-confirm";
 
 import Dashboard from "@/pages/dashboard";
-import Chat from "@/pages/chat";
 import Planner from "@/pages/planner";
 import Goals from "@/pages/goals";
 import Revision from "@/pages/revision";
-import Notes from "@/pages/notes";
 import Flashcards from "@/pages/flashcards";
 import Quizzes from "@/pages/quizzes";
-import Analytics from "@/pages/analytics";
 import Productivity from "@/pages/productivity";
 import Notifications from "@/pages/notifications";
 import Profile from "@/pages/profile";
@@ -31,6 +30,11 @@ import Subscription from "@/pages/subscription";
 
 import { AppLayout } from "@/components/layout";
 import { PrivateRoute } from "@/components/private-route";
+import { AdminRoute } from "@/components/admin-route";
+
+const Chat = lazy(() => import("@/pages/chat"));
+const Notes = lazy(() => import("@/pages/notes"));
+const Analytics = lazy(() => import("@/pages/analytics"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,11 +50,15 @@ const queryClient = new QueryClient({
   },
 });
 
+function LazyPage({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
+}
+
 function AuthExpiredListener() {
   const [, navigate] = useLocation();
 
   useEffect(() => {
-    const handleAuthExpired = () => navigate("/login");
+    const handleAuthExpired = () => navigate("/");
     window.addEventListener("brainpilot:auth-expired", handleAuthExpired);
     return () => {
       window.removeEventListener("brainpilot:auth-expired", handleAuthExpired);
@@ -64,23 +72,40 @@ function PrivateRoutes() {
   return (
     <AppLayout>
       <Switch>
-        <Route path="/" component={Dashboard} />
         <Route path="/dashboard" component={Dashboard} />
-        <Route path="/chat" component={Chat} />
+        <Route path="/chat">
+          {() => (
+            <LazyPage>
+              <Chat />
+            </LazyPage>
+          )}
+        </Route>
         <Route path="/planner" component={Planner} />
         <Route path="/goals" component={Goals} />
         <Route path="/revision" component={Revision} />
-        <Route path="/notes" component={Notes} />
+        <Route path="/notes">
+          {() => (
+            <LazyPage>
+              <Notes />
+            </LazyPage>
+          )}
+        </Route>
         <Route path="/flashcards" component={Flashcards} />
         <Route path="/quizzes" component={Quizzes} />
-        <Route path="/analytics" component={Analytics} />
+        <Route path="/analytics">
+          {() => (
+            <LazyPage>
+              <Analytics />
+            </LazyPage>
+          )}
+        </Route>
         <Route path="/productivity" component={Productivity} />
         <Route path="/notifications" component={Notifications} />
         <Route path="/profile" component={Profile} />
         <Route path="/pdfs" component={PDFs} />
         <Route path="/subscription" component={Subscription} />
-        <Route path="/admin/users" component={AdminUsers} />
-        <Route path="/admin" component={AdminUsers} />
+        <Route path="/admin/users">{() => <AdminRoute component={AdminUsers} />}</Route>
+        <Route path="/admin">{() => <AdminRoute component={AdminUsers} />}</Route>
         <Route component={NotFound} />
       </Switch>
     </AppLayout>
@@ -92,6 +117,7 @@ function Router() {
     <>
       <AuthExpiredListener />
       <Switch>
+        <Route path="/" component={Home} />
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
         <Route path="/verify-email" component={VerifyEmail} />
@@ -108,7 +134,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>

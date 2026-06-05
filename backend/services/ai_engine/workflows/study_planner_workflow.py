@@ -40,7 +40,8 @@ class StudyPlannerWorkflow:
                 syllabus_text=syllabus_text,
             )
 
-        result = self.adapter.generate_json(prompt)
+        adapter = GeminiAdapter(user=user)
+        result = adapter.generate_json(prompt)
         self._validate_plan(result)
         logger.info("Study plan generated with %d sessions", len(result.get("sessions", [])))
         return result

@@ -60,6 +60,41 @@ export const useStreak = () => {
   });
 };
 
+export const useUpdatePomodoro = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...payload
+    }: {
+      id: string;
+      subject?: string;
+      task_description?: string;
+      work_duration_minutes?: number;
+      break_duration_minutes?: number;
+      pomodoros_planned?: number;
+    }) => {
+      const { data } = await api.patch(`/productivity/pomodoro/${id}/`, payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["productivity", "pomodoro"] });
+    },
+  });
+};
+
+export const useDeletePomodoro = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/productivity/pomodoro/${id}/`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["productivity", "pomodoro"] });
+    },
+  });
+};
+
 export const useFocusLogs = () => {
   return useQuery({
     queryKey: ["productivity", "focus-logs"],

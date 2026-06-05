@@ -53,5 +53,21 @@ class NoteListSerializer(serializers.ModelSerializer):
         return obj.flashcards.count()
 
 
+class CreateFlashcardSerializer(serializers.Serializer):
+    question = serializers.CharField(max_length=2000)
+    answer = serializers.CharField(max_length=5000)
+    subject = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+    difficulty = serializers.ChoiceField(
+        choices=["easy", "medium", "hard"], default="medium", required=False
+    )
+    note_id = serializers.UUIDField(required=False, allow_null=True)
+
+
+class UpdateFlashcardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Flashcard
+        fields = ["question", "answer", "subject", "difficulty"]
+
+
 class GenerateFlashcardsSerializer(serializers.Serializer):
     count = serializers.IntegerField(min_value=1, max_value=20, default=5)

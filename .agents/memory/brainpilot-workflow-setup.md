@@ -5,23 +5,25 @@ description: How to start both services, env var requirements, and path/port det
 
 ## Services
 
-| Service | Workflow name | Command | Port |
-|---------|--------------|---------|------|
-| Backend | BrainPilot Backend | `bash backend/run_dev.sh` | 8000 |
-| Frontend | BrainPilot Frontend | `pnpm --filter @workspace/brainpilot-web run dev` | 5000 |
+Single combined workflow "Start application" on port 5000 (webview):
 
-Both start in parallel via the **Project** workflow (run button). Frontend serves at port 5000 (webview).
+```bash
+bash -c 'cd /home/runner/workspace/backend && DJANGO_SETTINGS_MODULE=config.settings.development python manage.py migrate --run-syncdb 2>&1 | tail -5; DJANGO_SETTINGS_MODULE=config.settings.development python manage.py runserver localhost:8000 & cd /home/runner/workspace && pnpm install --no-frozen-lockfile 2>&1 | tail -5 && PORT=5000 pnpm --filter @workspace/brainpilot-web dev'
+```
+
+Backend on port 8000 (localhost), Vite frontend on port 5000 (0.0.0.0).
 
 ## Python setup
 
-- The backend targets Python 3.11.
-- `backend/run_dev.sh` uses `uv sync --python python3.11` then `uv run --no-sync`.
-- `pyproject.toml` must use `requires-python = ">=3.11"` and `django>=5.2,<6.0` (Django 6 requires Python 3.12).
+- The backend targets Python 3.11 (available in Replit as python3).
+- Dependencies installed via `pip install` (uv not available in Replit env), against `backend/requirements/development.txt`.
+- Django 5.x (not 6.x) — Django 6 requires Python >=3.12 which is unavailable.
 
-## Django version
+## pnpm version
 
-- **Django 5.2 LTS** (not 6.x) — Django 6 requires Python >=3.12 which is unavailable.
-- `pyproject.toml` is the source of truth for `uv sync` — `requirements/*.txt` files are legacy and NOT used by the dev runner.
+- Replit has **pnpm 10.26.1** installed (not 11.x).
+- `package.json` `packageManager` field must be `"pnpm@10.26.1"` (not 11.5.1) to prevent self-install loop.
+- Use `pnpm install --no-frozen-lockfile` (lockfile was generated with 11.x).
 
 ## Env vars
 

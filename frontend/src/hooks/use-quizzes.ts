@@ -64,6 +64,42 @@ export const useSubmitQuiz = () => {
   });
 };
 
+export const useUpdateQuiz = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...payload
+    }: {
+      id: string;
+      title?: string;
+      subject?: string;
+      topic?: string;
+      difficulty?: string;
+      questions?: Array<Record<string, unknown>>;
+    }) => {
+      const { data } = await api.patch(`/quizzes/${id}/`, payload);
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["quizzes"] });
+      queryClient.invalidateQueries({ queryKey: ["quizzes", variables.id] });
+    },
+  });
+};
+
+export const useDeleteQuiz = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/quizzes/${id}/`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quizzes"] });
+    },
+  });
+};
+
 export const useAttempts = () => {
   return useQuery({
     queryKey: ["quizzes", "attempts"],

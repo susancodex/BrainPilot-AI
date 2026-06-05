@@ -23,6 +23,41 @@ class PomodoroListView(APIView):
         return created_response(data=PomodoroSessionSerializer(session).data, message="Pomodoro session started.")
 
 
+class PomodoroDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            from .models import PomodoroSession
+            session = PomodoroSession.objects.get(id=pk, user=request.user)
+        except Exception:
+            from common.exceptions import NotFoundError
+            raise NotFoundError("Pomodoro session not found.")
+        return success_response(data=PomodoroSessionSerializer(session).data)
+
+    def patch(self, request, pk):
+        try:
+            from .models import PomodoroSession
+            session = PomodoroSession.objects.get(id=pk, user=request.user)
+        except Exception:
+            from common.exceptions import NotFoundError
+            raise NotFoundError("Pomodoro session not found.")
+        serializer = PomodoroSessionSerializer(session, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return success_response(data=PomodoroSessionSerializer(session).data)
+
+    def delete(self, request, pk):
+        try:
+            from .models import PomodoroSession
+            session = PomodoroSession.objects.get(id=pk, user=request.user)
+        except Exception:
+            from common.exceptions import NotFoundError
+            raise NotFoundError("Pomodoro session not found.")
+        session.delete()
+        return success_response(message="Pomodoro session deleted.")
+
+
 class CompletePomodoroView(APIView):
     permission_classes = [IsAuthenticated]
 

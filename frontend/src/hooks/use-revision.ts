@@ -44,6 +44,41 @@ export const useCreateRevisionTopic = () => {
   });
 };
 
+export const useUpdateRevisionTopic = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...payload
+    }: {
+      id: string;
+      subject?: string;
+      topic?: string;
+      confidence_level?: number;
+      notes?: string;
+      is_weak?: boolean;
+    }) => {
+      const { data } = await api.patch(`/revision/topics/${id}/`, payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["revision", "topics"] });
+    },
+  });
+};
+
+export const useDeleteRevisionTopic = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/revision/topics/${id}/`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["revision", "topics"] });
+    },
+  });
+};
+
 export const useRecordRevision = () => {
   const queryClient = useQueryClient();
   return useMutation({

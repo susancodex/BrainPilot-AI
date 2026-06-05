@@ -8,5 +8,6 @@ urlpatterns = [
     path("<uuid:pk>/flashcards/generate/", views.GenerateFlashcardsView.as_view(), name="notes-flashcards-generate"),
     path("flashcards/", views.FlashcardListView.as_view(), name="flashcards-list"),
     path("flashcards/due/", views.FlashcardDueView.as_view(), name="flashcards-due"),
+    path("flashcards/<uuid:pk>/", views.FlashcardDetailView.as_view(), name="flashcards-detail"),
     path("flashcards/<uuid:pk>/review/", views.FlashcardReviewView.as_view(), name="flashcards-review"),
 ]

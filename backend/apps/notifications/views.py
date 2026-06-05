@@ -33,3 +33,24 @@ class MarkAllReadView(APIView):
     def post(self, request):
         count = NotificationService.mark_all_read(request.user)
         return success_response(message=f"Marked {count} notifications as read.")
+
+
+class NotificationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        try:
+            notification = NotificationService.get_user_notifications(request.user).get(id=pk)
+        except Exception:
+            from common.exceptions import NotFoundError
+            raise NotFoundError("Notification not found.")
+        notification.delete()
+        return success_response(message="Notification deleted.")
+
+
+class ClearAllNotificationsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        count, _ = NotificationService.get_user_notifications(request.user).delete()
+        return success_response(message=f"Deleted {count} notification(s).")

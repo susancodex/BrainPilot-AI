@@ -24,6 +24,25 @@ class RevisionTopicListView(APIView):
         return created_response(data=RevisionTopicSerializer(topic).data)
 
 
+class RevisionTopicDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        topic = RevisionService.get_topic(request.user, pk)
+        return success_response(data=RevisionTopicSerializer(topic).data)
+
+    def patch(self, request, pk):
+        topic = RevisionService.get_topic(request.user, pk)
+        serializer = RevisionTopicSerializer(topic, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return success_response(data=RevisionTopicSerializer(topic).data)
+
+    def delete(self, request, pk):
+        RevisionService.get_topic(request.user, pk).delete()
+        return success_response(message="Revision topic deleted.")
+
+
 class DueRevisionTopicsView(APIView):
     permission_classes = [IsAuthenticated]
 

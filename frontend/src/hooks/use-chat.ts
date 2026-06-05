@@ -52,6 +52,20 @@ export const useSendMessage = () => {
   });
 };
 
+export const useUpdateConversation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: { id: string; title?: string; subject_context?: string }) => {
+      const { data } = await api.patch(`/chatbot/conversations/${id}/`, payload);
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["chat", "conversations", variables.id] });
+    },
+  });
+};
+
 export const useDeleteConversation = () => {
   const queryClient = useQueryClient();
   return useMutation({

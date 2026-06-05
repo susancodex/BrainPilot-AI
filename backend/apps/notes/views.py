@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from .models import Note
 from .serializers import (
     NoteSerializer, NoteListSerializer, FlashcardSerializer,
-    GenerateFlashcardsSerializer,
+    GenerateFlashcardsSerializer, CreateFlashcardSerializer, UpdateFlashcardSerializer,
 )
 from .services import NoteService
 from common.responses import success_response, created_response
@@ -81,6 +81,12 @@ class FlashcardListView(APIView):
         flashcards = NoteService.get_all_flashcards(request.user)
         return success_response(data=FlashcardSerializer(flashcards, many=True).data)
 
+    def post(self, request):
+        serializer = CreateFlashcardSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        flashcard = NoteService.create_flashcard(request.user, **serializer.validated_data)
+        return created_response(data=FlashcardSerializer(flashcard).data, message="Flashcard created.")
+
 
 class FlashcardDueView(APIView):
     permission_classes = [IsAuthenticated]
@@ -88,6 +94,25 @@ class FlashcardDueView(APIView):
     def get(self, request):
         flashcards = NoteService.get_due_flashcards(request.user)
         return success_response(data=FlashcardSerializer(flashcards, many=True).data)
+
+
+class FlashcardDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        flashcard = NoteService.get_flashcard(request.user, pk)
+        return success_response(data=FlashcardSerializer(flashcard).data)
+
+    def patch(self, request, pk):
+        flashcard = NoteService.get_flashcard(request.user, pk)
+        serializer = UpdateFlashcardSerializer(flashcard, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return success_response(data=FlashcardSerializer(flashcard).data)
+
+    def delete(self, request, pk):
+        NoteService.get_flashcard(request.user, pk).delete()
+        return success_response(message="Flashcard deleted.")
 
 
 class FlashcardReviewView(APIView):

@@ -1,7 +1,7 @@
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from .serializers import QuizSerializer, QuizAttemptSerializer, GenerateQuizSerializer, SubmitAttemptSerializer
+from .serializers import QuizSerializer, QuizAttemptSerializer, GenerateQuizSerializer, SubmitAttemptSerializer, UpdateQuizSerializer
 from .services import QuizService
 from services.ai_engine.workflows.quiz_workflow import QuizWorkflow
 from common.responses import success_response, created_response
@@ -32,6 +32,13 @@ class QuizDetailView(APIView):
 
     def get(self, request, pk):
         quiz = QuizService.get_quiz(request.user, pk)
+        return success_response(data=QuizSerializer(quiz).data)
+
+    def patch(self, request, pk):
+        quiz = QuizService.get_quiz(request.user, pk)
+        serializer = UpdateQuizSerializer(quiz, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return success_response(data=QuizSerializer(quiz).data)
 
     def delete(self, request, pk):

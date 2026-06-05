@@ -12,3 +12,36 @@ packages = ["freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp
 [userenv.shared]
 DJANGO_SETTINGS_MODULE = "config.settings.development"
 PORT = "5000"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash -c 'cd /home/runner/workspace/backend && DJANGO_SETTINGS_MODULE=config.settings.development python manage.py migrate --run-syncdb 2>&1 | tail -5; DJANGO_SETTINGS_MODULE=config.settings.development python manage.py runserver localhost:8000 & cd /home/runner/workspace && pnpm install --no-frozen-lockfile 2>&1 | tail -5 && PORT=5000 pnpm --filter @workspace/brainpilot-web dev'"
+waitForPort = 5000
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["bash", "-c", "cd /home/runner/workspace/backend && DJANGO_SETTINGS_MODULE=config.settings.development python manage.py migrate --run-syncdb && DJANGO_SETTINGS_MODULE=config.settings.development gunicorn --bind=0.0.0.0:5000 --reuse-port config.wsgi:application"]
+build = ["bash", "-c", "cd /home/runner/workspace && pnpm install --no-frozen-lockfile && PORT=5000 pnpm --filter @workspace/brainpilot-web build && cd /home/runner/workspace/backend && pip install -r requirements/base.txt && DJANGO_SETTINGS_MODULE=config.settings.production python manage.py collectstatic --noinput"]

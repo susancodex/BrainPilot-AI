@@ -32,6 +32,12 @@ class ConversationDetailSerializer(ConversationSerializer):
         fields = ConversationSerializer.Meta.fields + ["messages"]
 
 
+class UpdateConversationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Conversation
+        fields = ["title", "subject_context"]
+
+
 class SendMessageSerializer(serializers.Serializer):
     content = serializers.CharField(max_length=4000)
     conversation_id = serializers.UUIDField(required=False, allow_null=True)

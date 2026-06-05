@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 
 from .serializers import (
     ConversationSerializer, ConversationDetailSerializer,
-    MessageSerializer, SendMessageSerializer,
+    MessageSerializer, SendMessageSerializer, UpdateConversationSerializer,
 )
 from .services import ChatService
 from common.responses import success_response, created_response
@@ -37,11 +37,17 @@ class ConversationDetailView(APIView):
         conversation = ChatService.get_conversation(request.user, pk)
         return success_response(data=ConversationDetailSerializer(conversation).data)
 
+    def patch(self, request, pk):
+        conversation = ChatService.get_conversation(request.user, pk)
+        serializer = UpdateConversationSerializer(conversation, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return success_response(data=ConversationSerializer(conversation).data)
+
     def delete(self, request, pk):
         conversation = ChatService.get_conversation(request.user, pk)
-        conversation.is_active = False
-        conversation.save(update_fields=["is_active"])
-        return success_response(message="Conversation archived.")
+        conversation.delete()
+        return success_response(message="Conversation deleted.")
 
 
 class SendMessageView(APIView):

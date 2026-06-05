@@ -22,6 +22,12 @@ class QuizAttemptSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "score", "max_score", "percentage", "ai_feedback", "completed", "created_at"]
 
 
+class UpdateQuizSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Quiz
+        fields = ["title", "subject", "topic", "difficulty", "questions"]
+
+
 class GenerateQuizSerializer(serializers.Serializer):
     subject = serializers.CharField()
     topic = serializers.CharField(required=False, allow_blank=True, default="")

@@ -80,6 +80,30 @@ class NoteService:
         return note
 
     @staticmethod
+    def get_flashcard(user, flashcard_id) -> Flashcard:
+        try:
+            return Flashcard.objects.get(id=flashcard_id, user=user)
+        except Flashcard.DoesNotExist:
+            raise NotFoundError("Flashcard not found.")
+
+    @staticmethod
+    def create_flashcard(user, question: str, answer: str, subject: str = "", difficulty: str = "medium", note_id=None) -> Flashcard:
+        note = None
+        if note_id:
+            try:
+                note = Note.objects.get(id=note_id, user=user)
+            except Note.DoesNotExist:
+                pass
+        return Flashcard.objects.create(
+            user=user,
+            note=note,
+            question=question,
+            answer=answer,
+            subject=subject,
+            difficulty=difficulty,
+        )
+
+    @staticmethod
     def save_flashcards(user, note: Note, flashcards_data: list) -> list[Flashcard]:
         created = []
         allowed_fields = {"question", "answer", "difficulty"}

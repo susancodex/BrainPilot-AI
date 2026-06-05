@@ -93,6 +93,13 @@ class ProductivityService:
         return {"session": session, "focus_log": focus_log, "streak": streak}
 
     @staticmethod
+    def get_session(user, session_id) -> PomodoroSession:
+        try:
+            return PomodoroSession.objects.get(id=session_id, user=user)
+        except PomodoroSession.DoesNotExist:
+            raise NotFoundError("Pomodoro session not found.")
+
+    @staticmethod
     def get_user_sessions(user, status=None):
         qs = PomodoroSession.objects.filter(user=user)
         if status:

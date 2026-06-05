@@ -108,7 +108,7 @@ class FlashcardDetailView(APIView):
         serializer = UpdateFlashcardSerializer(flashcard, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return success_response(data=FlashcardSerializer(flashcard).data)
+        return success_response(data=FlashcardSerializer(serializer.instance).data)
 
     def delete(self, request, pk):
         NoteService.get_flashcard(request.user, pk).delete()

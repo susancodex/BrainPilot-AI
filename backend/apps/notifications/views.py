@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 
 from .serializers import NotificationSerializer
 from .services import NotificationService
-from common.responses import success_response
+from common.responses import success_response, created_response
 
 
 class NotificationListView(APIView):
@@ -39,12 +39,7 @@ class NotificationDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, pk):
-        try:
-            notification = NotificationService.get_user_notifications(request.user).get(id=pk)
-        except Exception:
-            from common.exceptions import NotFoundError
-            raise NotFoundError("Notification not found.")
-        notification.delete()
+        NotificationService.delete_notification(request.user, pk)
         return success_response(message="Notification deleted.")
 
 
@@ -52,5 +47,5 @@ class ClearAllNotificationsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request):
-        count, _ = NotificationService.get_user_notifications(request.user).delete()
+        count = NotificationService.clear_all_notifications(request.user)
         return success_response(message=f"Deleted {count} notification(s).")

@@ -39,7 +39,7 @@ class QuizDetailView(APIView):
         serializer = UpdateQuizSerializer(quiz, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return success_response(data=QuizSerializer(quiz).data)
+        return success_response(data=QuizSerializer(serializer.instance).data)
 
     def delete(self, request, pk):
         QuizService.get_quiz(request.user, pk).delete()

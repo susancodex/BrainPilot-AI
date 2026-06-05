@@ -2,8 +2,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from .serializers import (
-    PomodoroSessionSerializer, StudyStreakSerializer, FocusLogSerializer,
-    CompletePomodoroSerializer, LogSessionSerializer, SessionCompleteResponseSerializer,
+    PomodoroSessionSerializer, UpdatePomodoroSerializer, StudyStreakSerializer,
+    FocusLogSerializer, CompletePomodoroSerializer, LogSessionSerializer,
+    SessionCompleteResponseSerializer,
 )
 from .services import ProductivityService
 from common.responses import success_response, created_response
@@ -27,33 +28,18 @@ class PomodoroDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
-        try:
-            from .models import PomodoroSession
-            session = PomodoroSession.objects.get(id=pk, user=request.user)
-        except Exception:
-            from common.exceptions import NotFoundError
-            raise NotFoundError("Pomodoro session not found.")
+        session = ProductivityService.get_session(request.user, pk)
         return success_response(data=PomodoroSessionSerializer(session).data)
 
     def patch(self, request, pk):
-        try:
-            from .models import PomodoroSession
-            session = PomodoroSession.objects.get(id=pk, user=request.user)
-        except Exception:
-            from common.exceptions import NotFoundError
-            raise NotFoundError("Pomodoro session not found.")
-        serializer = PomodoroSessionSerializer(session, data=request.data, partial=True)
+        session = ProductivityService.get_session(request.user, pk)
+        serializer = UpdatePomodoroSerializer(session, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return success_response(data=PomodoroSessionSerializer(session).data)
+        return success_response(data=PomodoroSessionSerializer(serializer.instance).data)
 
     def delete(self, request, pk):
-        try:
-            from .models import PomodoroSession
-            session = PomodoroSession.objects.get(id=pk, user=request.user)
-        except Exception:
-            from common.exceptions import NotFoundError
-            raise NotFoundError("Pomodoro session not found.")
+        session = ProductivityService.get_session(request.user, pk)
         session.delete()
         return success_response(message="Pomodoro session deleted.")
 

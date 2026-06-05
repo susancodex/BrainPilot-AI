@@ -42,7 +42,7 @@ class ConversationDetailView(APIView):
         serializer = UpdateConversationSerializer(conversation, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return success_response(data=ConversationSerializer(conversation).data)
+        return success_response(data=ConversationSerializer(serializer.instance).data)
 
     def delete(self, request, pk):
         conversation = ChatService.get_conversation(request.user, pk)

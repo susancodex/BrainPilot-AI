@@ -36,7 +36,7 @@ class RevisionTopicDetailView(APIView):
         serializer = RevisionTopicSerializer(topic, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return success_response(data=RevisionTopicSerializer(topic).data)
+        return success_response(data=serializer.data)
 
     def delete(self, request, pk):
         RevisionService.get_topic(request.user, pk).delete()

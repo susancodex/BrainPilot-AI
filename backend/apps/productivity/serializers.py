@@ -27,6 +27,20 @@ class FocusLogSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "productivity_score", "created_at"]
 
 
+class UpdatePomodoroSerializer(serializers.ModelSerializer):
+    """Restricts which fields can be changed on an existing session."""
+
+    class Meta:
+        model = PomodoroSession
+        fields = [
+            "subject",
+            "task_description",
+            "work_duration_minutes",
+            "break_duration_minutes",
+            "pomodoros_planned",
+        ]
+
+
 class CompletePomodoroSerializer(serializers.Serializer):
     pomodoros_completed = serializers.IntegerField(min_value=1)
 

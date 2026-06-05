@@ -34,5 +34,22 @@ class NotificationService:
         )
 
     @staticmethod
+    def get_notification(user, notification_id) -> Notification:
+        try:
+            return Notification.objects.get(id=notification_id, user=user)
+        except Notification.DoesNotExist:
+            raise NotFoundError("Notification not found.")
+
+    @staticmethod
+    def delete_notification(user, notification_id) -> None:
+        notification = NotificationService.get_notification(user, notification_id)
+        notification.delete()
+
+    @staticmethod
+    def clear_all_notifications(user) -> int:
+        deleted_count, _ = Notification.objects.filter(user=user).delete()
+        return deleted_count
+
+    @staticmethod
     def get_unread_count(user) -> int:
         return Notification.objects.filter(user=user, is_read=False).count()

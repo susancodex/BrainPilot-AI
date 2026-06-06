@@ -39,8 +39,31 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
 
 # Static files via WhiteNoise
-MIDDLEWARE = ["whitenoise.middleware.WhiteNoiseMiddleware"] + MIDDLEWARE
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# Insert WhiteNoise directly after SecurityMiddleware (position 1), as required by WhiteNoise docs.
+_security_idx = next(
+    (i for i, m in enumerate(MIDDLEWARE) if "SecurityMiddleware" in m), 0
+)
+MIDDLEWARE = (
+    MIDDLEWARE[: _security_idx + 1]
+    + ["whitenoise.middleware.WhiteNoiseMiddleware"]
+    + MIDDLEWARE[_security_idx + 1 :]
+)
+
+# STORAGES replaces the deprecated STATICFILES_STORAGE setting (Django 4.2+)
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+# Allow running without Celery workers by executing tasks inline.
+# Set CELERY_ALWAYS_EAGER=true on the web service if you skip the worker.
+if os.environ.get("CELERY_ALWAYS_EAGER", "false").lower() == "true":
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
 
 # Production: file + console logging (write to /tmp to avoid permission issues)
 LOGGING = {

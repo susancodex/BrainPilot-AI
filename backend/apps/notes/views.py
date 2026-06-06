@@ -49,6 +49,7 @@ class NoteDetailView(APIView):
 
 class GenerateNoteSummaryView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_scope = "ai_generate"
 
     def post(self, request, pk):
         note = NoteService.get_note(request.user, pk)
@@ -61,6 +62,7 @@ class GenerateNoteSummaryView(APIView):
 
 class GenerateFlashcardsView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_scope = "ai_generate"
 
     def post(self, request, pk):
         note = NoteService.get_note(request.user, pk)

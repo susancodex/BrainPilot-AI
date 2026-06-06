@@ -202,6 +202,26 @@ class MeView(APIView):
         serializer.save()
         return success_response(data=serializer.data, message="Profile updated.")
 
+    def delete(self, request):
+        """
+        Soft-delete the authenticated user's account (GDPR/CCPA).
+        Sets is_active=False and blacklists all outstanding JWT tokens.
+        """
+        user = request.user
+        try:
+            from rest_framework_simplejwt.token_blacklist.models import (
+                OutstandingToken, BlacklistedToken,
+            )
+            tokens = OutstandingToken.objects.filter(user=user)
+            for token in tokens:
+                BlacklistedToken.objects.get_or_create(token=token)
+        except Exception:
+            pass
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+        logger.info("Account deactivated for user=%s", user.pk)
+        return success_response(message="Account deactivated. You have been signed out.")
+
 
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]

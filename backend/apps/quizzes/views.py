@@ -17,6 +17,7 @@ class QuizListView(APIView):
 
 class GenerateQuizView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_scope = "ai_generate"
 
     def post(self, request):
         serializer = GenerateQuizSerializer(data=request.data)

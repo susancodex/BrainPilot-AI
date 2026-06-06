@@ -153,11 +153,14 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
         "anon": "30/minute",
         "user": "120/minute",
         "auth": "10/minute",
+        "ai_generate": "20/minute",
+        "ai_chat": "60/minute",
     },
     "EXCEPTION_HANDLER": "common.exceptions.custom_exception_handler",
 }

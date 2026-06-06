@@ -1,0 +1,163 @@
+A Blueprint file was found, but there was an issue.
+services[0]
+must specify IP allow list
+
+################################################################
+# BrainPilot AI — Render Blueprint
+#
+# REQUIRED secrets — add in Render dashboard before deploying:
+#   DJANGO_SECRET_KEY  → python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+#   GEMINI_API_KEY     → https://aistudio.google.com/app/apikey
+#   GROQ_API_KEY       → https://console.groq.com/keys        (optional fallback)
+#   OPENROUTER_API_KEY → https://openrouter.ai/keys           (optional fallback)
+#   EMAIL_HOST_PASSWORD → your SMTP app password              (optional)
+#
+# DEPLOY STEPS:
+#   1. Push this repo to GitHub
+#   2. Render dashboard → New → Blueprint → select repo
+#   3. Add the secrets listed above
+#   4. Click Apply
+################################################################
+databases:
+  - name: brainpilot-db
+    databaseName: brainpilot_db
+    user: brainpilot
+    plan: free
+services:
+  # ── Redis (used for Celery task queue and Django cache) ───────────────────
+  # NOTE: Render removed the free Redis plan. Use 'starter' ($10/mo).
+  # To run without Redis (no background tasks), remove this block and set
+  # CELERY_ALWAYS_EAGER=true on the web service below.
+  - type: redis
+    name: brainpilot-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
+  # ── Web Service — Django API + React SPA ─────────────────────────────────
+  - type: web
+    name: brainpilot-api
+    runtime: python
+    region: oregon
+    plan: starter
+    buildCommand: |
+      set -e
+      # ── Install Node.js 20 + pnpm ──────────────────────────────────────
+      echo ">>> Installing Node.js 20..."
+      curl -fsSL https://deb.nodesource.com/setup_20.x | bash - 2>&1
+      apt-get install -y nodejs 2>&1
+      npm install -g pnpm@10 --silent
+      node --version && pnpm --version
+      # ── Build React frontend ───────────────────────────────────────────
+      echo ">>> Building frontend..."
+      pnpm install --no-frozen-lockfile
+      pnpm --filter @workspace/brainpilot-web run build
+      # ── Install Python dependencies ────────────────────────────────────
+      echo ">>> Installing Python packages..."
+      pip install -r backend/requirements/production.txt
+      # ── Collect static files (migrations run at startup, not here) ─────
+      echo ">>> Collecting static files..."
+      cd backend
+      DJANGO_SETTINGS_MODULE=config.settings.production python manage.py collectstatic --noinput
+      cd ..
+      echo ">>> Build complete."
+    startCommand: bash backend/run_prod.sh
+    healthCheckPath: /api/v1/live/
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: PYTHONPATH
+        value: backend
+      - key: DJANGO_SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: brainpilot-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: brainpilot-redis
+          type: redis
+          property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: SECURE_SSL_REDIRECT
+        value: "false"
+      - key: DEFAULT_FROM_EMAIL
+        value: noreply@brainpilot.ai
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: "587"
+      # Optional — set these after your first deploy:
+      # ALLOWED_HOSTS, CORS_ALLOWED_ORIGINS, FRONTEND_URL,
+      # EMAIL_HOST_USER, EMAIL_HOST_PASSWORD
+  # ── Celery Worker ─────────────────────────────────────────────────────────
+  # Handles background AI tasks (revision reminders etc.).
+  # Requires the Redis service above. Comment out if using CELERY_ALWAYS_EAGER=true.
+  - type: worker
+    name: brainpilot-celery-worker
+    runtime: python
+    region: oregon
+    plan: starter
+    buildCommand: pip install -r backend/requirements/production.txt
+    startCommand: >
+      cd backend && celery -A config.celery worker
+      --loglevel=info
+      --concurrency=2
+      --max-tasks-per-child=1000
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: PYTHONPATH
+        value: backend
+      - key: DJANGO_SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: brainpilot-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: brainpilot-redis
+          type: redis
+          property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+  # ── Celery Beat (Scheduled Tasks) ─────────────────────────────────────────
+  # Sends daily revision reminders at 08:00 UTC.
+  # Requires the Redis service and Celery worker above.
+  - type: worker
+    name: brainpilot-celery-beat
+    runtime: python
+    region: oregon
+    plan: starter
+    buildCommand: pip install -r backend/requirements/production.txt
+    startCommand: >
+      cd backend && celery -A config.celery beat
+      --loglevel=info
+      --schedule /tmp/celerybeat-schedule
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: PYTHONPATH
+        value: backend
+      - key: DJANGO_SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: brainpilot-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: brainpilot-redis
+          type: redis
+          property: connectionString

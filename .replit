@@ -12,6 +12,7 @@ packages = ["freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp
 [userenv.shared]
 DJANGO_SETTINGS_MODULE = "config.settings.development"
 PORT = "5000"
+DJANGO_SECRET_KEY = "rh7-=%+sygxs3ec$(+)t4nlgppyzo8*17^2oox3!l*%=hi(3t+"
 
 [workflows]
 runButton = "Project"

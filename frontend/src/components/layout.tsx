@@ -16,7 +16,7 @@ import {
   BrainCircuit, LayoutDashboard, FileText, MessageSquare, Layers,
   Target, Calendar, RotateCcw, BarChart2, Timer, Bell, User,
   LogOut, Moon, Sun, ChevronLeft, ChevronRight,
-  Shield, Menu, File, CreditCard, X,
+  Shield, Menu, File, CreditCard, X, Activity,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -110,18 +110,34 @@ function Layout({ children }: LayoutProps) {
             <Link
               href="/admin/users"
               onClick={() => setMobileOpen(false)}
-              aria-current={location.startsWith("/admin") ? "page" : undefined}
+              aria-current={location === "/admin/users" || location === "/admin" ? "page" : undefined}
               className={cn(
                 "w-full flex items-center gap-3 px-3 min-h-[44px] py-2.5 rounded-lg text-sm font-medium transition-colors group",
-                location.startsWith("/admin")
+                location === "/admin/users" || location === "/admin"
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
                 collapsed && "justify-center px-2"
               )}
-              title={collapsed ? "Admin" : undefined}
+              title={collapsed ? "Admin Portal" : undefined}
             >
               <Shield className="w-4 h-4 shrink-0" />
               {!collapsed && <span>Admin Portal</span>}
+            </Link>
+            <Link
+              href="/admin/ai-health"
+              onClick={() => setMobileOpen(false)}
+              aria-current={location === "/admin/ai-health" ? "page" : undefined}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 min-h-[44px] py-2.5 rounded-lg text-sm font-medium transition-colors group",
+                location === "/admin/ai-health"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+                collapsed && "justify-center px-2"
+              )}
+              title={collapsed ? "AI Health" : undefined}
+            >
+              <Activity className="w-4 h-4 shrink-0" />
+              {!collapsed && <span>AI Health</span>}
             </Link>
           </>
         )}

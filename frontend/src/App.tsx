@@ -25,6 +25,7 @@ import Productivity from "@/pages/productivity";
 import Notifications from "@/pages/notifications";
 import Profile from "@/pages/profile";
 import AdminUsers from "@/pages/admin/users";
+import AiHealthDashboard from "@/pages/admin/ai-health";
 import PDFs from "@/pages/pdfs";
 import Subscription from "@/pages/subscription";
 
@@ -105,6 +106,7 @@ function PrivateRoutes() {
         <Route path="/pdfs" component={PDFs} />
         <Route path="/subscription" component={Subscription} />
         <Route path="/admin/users">{() => <AdminRoute component={AdminUsers} />}</Route>
+        <Route path="/admin/ai-health">{() => <AdminRoute component={AiHealthDashboard} />}</Route>
         <Route path="/admin">{() => <AdminRoute component={AdminUsers} />}</Route>
         <Route component={NotFound} />
       </Switch>

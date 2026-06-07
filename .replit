@@ -35,7 +35,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "bash -c 'cd /home/runner/workspace/backend && DJANGO_SETTINGS_MODULE=config.settings.development python manage.py migrate --run-syncdb 2>&1 | tail -5; DJANGO_SETTINGS_MODULE=config.settings.development python manage.py runserver localhost:8000 & cd /home/runner/workspace && pnpm install --no-frozen-lockfile 2>&1 | tail -5 && PORT=5000 pnpm --filter @workspace/brainpilot-web dev'"
+args = "bash -c 'cd /home/runner/workspace/backend && DJANGO_SETTINGS_MODULE=config.settings.development /home/runner/workspace/.venv/bin/python manage.py migrate --run-syncdb 2>&1 | tail -5 && DJANGO_SETTINGS_MODULE=config.settings.development /home/runner/workspace/.venv/bin/python manage.py runserver localhost:8000 & cd /home/runner/workspace && pnpm install --no-frozen-lockfile 2>&1 | tail -5 && PORT=5000 pnpm --filter @workspace/brainpilot-web dev'"
 waitForPort = 5000
 
 [[ports]]

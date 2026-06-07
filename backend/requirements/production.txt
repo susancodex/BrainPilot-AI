@@ -1,4 +1,11 @@
+# Production dependencies — extends base
 -r base.txt
-sentry-sdk>=1.40
+
+# Static files compression + serving (WhiteNoise)
 whitenoise>=6.6
+
+# PostgreSQL async driver (faster than psycopg2 on Render)
 psycopg[binary]>=3.1
+
+# Groq AI fallback (not in base.txt)
+groq>=0.9

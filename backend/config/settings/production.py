@@ -10,6 +10,7 @@ REQUIRE_EMAIL_VERIFICATION = (
 # Comma-separated list of allowed hostnames, e.g. "api.example.com,www.example.com"
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h.strip()]
 
+# Render auto-injects this; production.py reads it so ALLOWED_HOSTS needs no manual config.
 _render_host = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
 if _render_host and _render_host not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(_render_host)
@@ -18,8 +19,12 @@ if _render_host and _render_host not in ALLOWED_HOSTS:
 CORS_ALLOWED_ORIGINS = [
     o.strip() for o in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()
 ]
+# Allow the Render public hostname automatically
+if _render_host:
+    _render_origin = f"https://{_render_host}"
+    if _render_origin not in CORS_ALLOWED_ORIGINS:
+        CORS_ALLOWED_ORIGINS.append(_render_origin)
 
-# Allow any subdomain of your production domains (add regexes as needed)
 CORS_ALLOWED_ORIGIN_REGEXES = []
 
 # Security headers
@@ -38,8 +43,37 @@ SECURE_HSTS_PRELOAD = True
 DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
 
-# Static files via WhiteNoise
-# Insert WhiteNoise directly after SecurityMiddleware (position 1), as required by WhiteNoise docs.
+# ── Caching ───────────────────────────────────────────────────────────────────
+# Use Redis when REDIS_URL is provided (paid tier), otherwise fall back to
+# in-process memory cache (free tier — no persistence across restarts).
+_redis_url = os.environ.get("REDIS_URL", "").strip()
+if _redis_url:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": _redis_url,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "SOCKET_CONNECT_TIMEOUT": 5,
+                "SOCKET_TIMEOUT": 5,
+            },
+        }
+    }
+else:
+    # Free tier / no Redis — tasks already run eagerly via CELERY_ALWAYS_EAGER
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        }
+    }
+
+# ── Celery (eager mode on free tier when no Redis broker) ─────────────────────
+if os.environ.get("CELERY_ALWAYS_EAGER", "false").lower() == "true":
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
+
+# ── Static files via WhiteNoise ───────────────────────────────────────────────
+# Insert WhiteNoise directly after SecurityMiddleware (position 1).
 _security_idx = next(
     (i for i, m in enumerate(MIDDLEWARE) if "SecurityMiddleware" in m), 0
 )
@@ -59,19 +93,20 @@ STORAGES = {
     },
 }
 
-# Allow running without Celery workers by executing tasks inline.
-# Set CELERY_ALWAYS_EAGER=true on the web service if you skip the worker.
-if os.environ.get("CELERY_ALWAYS_EAGER", "false").lower() == "true":
-    CELERY_TASK_ALWAYS_EAGER = True
-    CELERY_TASK_EAGER_PROPAGATES = True
+# ── Email ─────────────────────────────────────────────────────────────────────
+# Fall back to console backend if SMTP credentials are not configured.
+if os.environ.get("EMAIL_HOST_USER", "").strip():
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-# Production: file + console logging (write to /tmp to avoid permission issues)
+# ── Logging ───────────────────────────────────────────────────────────────────
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
         "verbose": {
-            "format": "level={levelname} time={asctime} logger={name} module={module} process={process:d} thread={thread:d} message={message}",
+            "format": "level={levelname} time={asctime} logger={name} module={module} message={message}",
             "style": "{",
         },
         "simple": {
@@ -84,30 +119,15 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "simple",
         },
-        "file": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": "/tmp/brainpilot.log",
-            "maxBytes": 1024 * 1024 * 10,
-            "backupCount": 3,
-            "formatter": "verbose",
-        },
-        "error_file": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": "/tmp/brainpilot_error.log",
-            "maxBytes": 1024 * 1024 * 10,
-            "backupCount": 3,
-            "formatter": "verbose",
-            "level": "ERROR",
-        },
     },
     "root": {
-        "handlers": ["console", "file"],
+        "handlers": ["console"],
         "level": "INFO",
     },
     "loggers": {
-        "django": {"handlers": ["console", "file"], "level": "INFO", "propagate": False},
+        "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "django.db.backends": {"handlers": ["console"], "level": "WARNING", "propagate": False},
-        "apps": {"handlers": ["console", "file", "error_file"], "level": "INFO", "propagate": False},
-        "services": {"handlers": ["console", "file", "error_file"], "level": "INFO", "propagate": False},
+        "apps": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "services": {"handlers": ["console"], "level": "INFO", "propagate": False},
     },
 }

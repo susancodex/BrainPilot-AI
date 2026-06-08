@@ -1,39 +1,38 @@
 ################################################################
-# BrainPilot AI — Render Free Blueprint
+# BrainPilot AI — Render Backend Blueprint
 #
-# Deploys:
-#   • 1 free web service  (Django API + React SPA via WhiteNoise)
-#   • 1 free PostgreSQL database
-#
-# No Redis / no Celery workers — tasks run eagerly (inline).
-# Upgrade to starter plan + add the Redis + worker blocks
-# from docs/ when you need background task processing.
+# Architecture:
+#   Frontend  → Vercel          (React + Vite)
+#   Backend   → Render (here)   (Django + DRF + Gunicorn)
+#   Database  → Neon PostgreSQL (external — set DATABASE_URL below)
 #
 # ── REQUIRED secrets — add in Render dashboard ────────────────
-#   DJANGO_SECRET_KEY   → python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-#   GEMINI_API_KEY      → https://aistudio.google.com/app/apikey
+#   DJANGO_SECRET_KEY      → python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+#   DATABASE_URL           → your Neon connection string (see neon.tech)
+#   GEMINI_API_KEY         → https://aistudio.google.com/app/apikey
 #
-# ── OPTIONAL secrets ──────────────────────────────────────────
-#   GROQ_API_KEY        → https://console.groq.com/keys
-#   OPENROUTER_API_KEY  → https://openrouter.ai/keys
-#   EMAIL_HOST_PASSWORD → your SMTP app password
+# ── REQUIRED after first deploy ───────────────────────────────
+#   CORS_ALLOWED_ORIGINS   → https://your-app.vercel.app
+#   CSRF_TRUSTED_ORIGINS   → https://your-app.vercel.app
+#   FRONTEND_URL           → https://your-app.vercel.app
+#
+# ── OPTIONAL ──────────────────────────────────────────────────
+#   GROQ_API_KEY           → https://console.groq.com/keys
+#   OPENROUTER_API_KEY     → https://openrouter.ai/keys
+#   EMAIL_HOST_USER        → your SMTP user
+#   EMAIL_HOST_PASSWORD    → your SMTP app password
 #
 # ── DEPLOY STEPS ──────────────────────────────────────────────
-#   1. Push this repo to GitHub
-#   2. Render dashboard → New → Blueprint → select repo
-#   3. Add the required secrets listed above
-#   4. Click "Apply"  — Render does the rest automatically
+#   1. Create a Neon database → copy the connection string
+#   2. Push this repo to GitHub
+#   3. Render dashboard → New → Blueprint → select repo
+#   4. Add the required secrets listed above
+#   5. Click "Apply"
 ################################################################
-
-databases:
-  - name: brainpilot-db
-    databaseName: brainpilot_db
-    user: brainpilot
-    plan: free
 
 services:
 
-  # ── Web Service — Django API + React SPA ──────────────────────────────────
+  # ── Django REST API ───────────────────────────────────────────────────────────
   - type: web
     name: brainpilot-api
     runtime: python
@@ -47,53 +46,55 @@ services:
     healthCheckPath: /api/v1/live/
 
     envVars:
-      # ── Django ────────────────────────────────────────────────────────────
+      # ── Django core ───────────────────────────────────────────────────────────
       - key: DJANGO_SETTINGS_MODULE
         value: config.settings.production
       - key: PYTHONPATH
         value: backend
       - key: DJANGO_SECRET_KEY
-        sync: false                       # set manually in Render dashboard
+        sync: false                        # set manually in Render dashboard
 
-      # ── Database (auto-wired from the free PostgreSQL above) ──────────────
+      # ── Neon PostgreSQL ───────────────────────────────────────────────────────
+      # Get this from your Neon project → Connection Details → Connection string
+      # Format: postgresql://user:pass@ep-xxx.us-east-2.aws.neon.tech/brainpilot?sslmode=require
       - key: DATABASE_URL
-        fromDatabase:
-          name: brainpilot-db
-          property: connectionString
+        sync: false                        # set manually in Render dashboard
 
-      # ── AI providers ──────────────────────────────────────────────────────
+      # ── AI providers ──────────────────────────────────────────────────────────
       - key: GEMINI_API_KEY
-        sync: false                       # required — set in dashboard
+        sync: false                        # required
       - key: GEMINI_MODEL
         value: gemini-2.5-flash
       - key: GROQ_API_KEY
-        sync: false                       # optional fallback
+        sync: false                        # optional fallback
       - key: OPENROUTER_API_KEY
-        sync: false                       # optional fallback
+        sync: false                        # optional fallback
 
-      # ── Free-tier tweaks ──────────────────────────────────────────────────
-      # No Redis on free tier — run Celery tasks synchronously in-process.
+      # ── CORS / CSRF — set to your Vercel URL after first deploy ───────────────
+      # Example: https://brainpilot.vercel.app
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+
+      # ── Free-tier tweaks ──────────────────────────────────────────────────────
+      # No Redis on free tier — Celery tasks run synchronously in-process
       - key: CELERY_ALWAYS_EAGER
         value: "true"
 
-      # ── Security / CORS ───────────────────────────────────────────────────
-      # Render injects RENDER_EXTERNAL_HOSTNAME automatically; production.py
-      # reads it so you don't need to set ALLOWED_HOSTS manually.
-      # Set CORS_ALLOWED_ORIGINS after your first deploy if you use a custom
-      # frontend domain.  Example: https://brainpilot.onrender.com
+      # ── Security ──────────────────────────────────────────────────────────────
       - key: SECURE_SSL_REDIRECT
-        value: "false"                    # Render terminates TLS upstream
+        value: "false"                     # Render terminates TLS upstream
+      - key: REQUIRE_EMAIL_VERIFICATION
+        value: "false"                     # flip to true once email is configured
 
-      # ── Email (optional — console backend used if not set) ────────────────
+      # ── Email (optional) ──────────────────────────────────────────────────────
       - key: EMAIL_HOST
         value: smtp.gmail.com
       - key: EMAIL_PORT
         value: "587"
-      # Set these in the dashboard only if you want real email delivery:
-      # EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, DEFAULT_FROM_EMAIL
       - key: DEFAULT_FROM_EMAIL
         value: noreply@brainpilot.ai
-
-      # ── Misc ──────────────────────────────────────────────────────────────
-      - key: REQUIRE_EMAIL_VERIFICATION
-        value: "false"                    # flip to true once email is wired up
+      # Set EMAIL_HOST_USER and EMAIL_HOST_PASSWORD manually when ready

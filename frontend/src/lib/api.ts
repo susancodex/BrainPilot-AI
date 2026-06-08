@@ -1,8 +1,14 @@
 import axios from "axios";
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from "./auth";
 
+// VITE_API_URL = the Render backend origin, e.g. "https://brainpilot-api.onrender.com"
+// In dev (no env var): empty string → relative URLs handled by the Vite proxy (/api → localhost:8000)
+const _apiOrigin = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
+
 const api = axios.create({
-  baseURL: (import.meta.env.VITE_API_URL as string | undefined) ?? "/api/v1",
+  // Dev:  baseURL="/api/v1"  → relative, Vite proxy forwards to Django on localhost:8000
+  // Prod: baseURL="https://brainpilot-api.onrender.com"  → absolute calls to Render
+  baseURL: _apiOrigin || "/api/v1",
 });
 
 api.interceptors.request.use((config) => {
@@ -54,7 +60,13 @@ api.interceptors.response.use(
       }
 
       try {
-        const { data } = await axios.post("/api/v1/token/refresh/", { refresh });
+        // Use a bare axios instance (no interceptors) to avoid re-triggering this handler.
+        // _apiOrigin is "" in dev (Vite proxy resolves the relative path) and the full
+        // Render origin in production, so the URL is always correct in both environments.
+        const { data } = await axios.post(
+          `${_apiOrigin}/api/v1/token/refresh/`,
+          { refresh },
+        );
         setTokens(data.access, refresh);
         api.defaults.headers.common.Authorization = `Bearer ${data.access}`;
         originalRequest.headers.Authorization = `Bearer ${data.access}`;

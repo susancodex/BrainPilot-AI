@@ -7,27 +7,37 @@ REQUIRE_EMAIL_VERIFICATION = (
     os.environ.get("REQUIRE_EMAIL_VERIFICATION", "true").lower() == "true"
 )
 
-# Comma-separated list of allowed hostnames, e.g. "api.example.com,www.example.com"
+# ── Allowed hosts ─────────────────────────────────────────────────────────────
+# Comma-separated: ALLOWED_HOSTS=api.example.com,www.example.com
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h.strip()]
 
-# Render auto-injects this; production.py reads it so ALLOWED_HOSTS needs no manual config.
+# Render auto-injects RENDER_EXTERNAL_HOSTNAME — no manual config needed.
 _render_host = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
 if _render_host and _render_host not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(_render_host)
 
-# Comma-separated list of allowed CORS origins, e.g. "https://app.example.com"
+# ── CORS ──────────────────────────────────────────────────────────────────────
+# Comma-separated: CORS_ALLOWED_ORIGINS=https://your-app.vercel.app
 CORS_ALLOWED_ORIGINS = [
     o.strip() for o in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()
 ]
-# Allow the Render public hostname automatically
+CORS_ALLOWED_ORIGIN_REGEXES = []
+
+# ── CSRF ──────────────────────────────────────────────────────────────────────
+# Comma-separated list of trusted origins for CSRF protection.
+# Must include every origin that submits forms/POST requests (e.g. your Vercel URL).
+# Example: CSRF_TRUSTED_ORIGINS=https://your-app.vercel.app,https://brainpilot-api.onrender.com
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
+]
 if _render_host:
     _render_origin = f"https://{_render_host}"
+    if _render_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_render_origin)
     if _render_origin not in CORS_ALLOWED_ORIGINS:
         CORS_ALLOWED_ORIGINS.append(_render_origin)
 
-CORS_ALLOWED_ORIGIN_REGEXES = []
-
-# Security headers
+# ── Security headers ──────────────────────────────────────────────────────────
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "false").lower() == "true"
 SESSION_COOKIE_SECURE = True
@@ -39,13 +49,13 @@ SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
-# Match PDF upload limit in apps/pdfs/serializers.py (20 MB)
+# ── Upload limits (match apps/pdfs/serializers.py — 20 MB) ───────────────────
 DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
 
 # ── Caching ───────────────────────────────────────────────────────────────────
-# Use Redis when REDIS_URL is provided (paid tier), otherwise fall back to
-# in-process memory cache (free tier — no persistence across restarts).
+# Use Redis when REDIS_URL is set (paid tier), otherwise use in-process LocMemCache
+# (free tier — no cross-worker persistence, tasks already run eagerly).
 _redis_url = os.environ.get("REDIS_URL", "").strip()
 if _redis_url:
     CACHES = {
@@ -60,20 +70,19 @@ if _redis_url:
         }
     }
 else:
-    # Free tier / no Redis — tasks already run eagerly via CELERY_ALWAYS_EAGER
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
         }
     }
 
-# ── Celery (eager mode on free tier when no Redis broker) ─────────────────────
+# ── Celery (eager / inline when no Redis broker is available) ─────────────────
 if os.environ.get("CELERY_ALWAYS_EAGER", "false").lower() == "true":
     CELERY_TASK_ALWAYS_EAGER = True
     CELERY_TASK_EAGER_PROPAGATES = True
 
 # ── Static files via WhiteNoise ───────────────────────────────────────────────
-# Insert WhiteNoise directly after SecurityMiddleware (position 1).
+# Insert WhiteNoise directly after SecurityMiddleware, as required by WhiteNoise docs.
 _security_idx = next(
     (i for i, m in enumerate(MIDDLEWARE) if "SecurityMiddleware" in m), 0
 )
@@ -83,7 +92,6 @@ MIDDLEWARE = (
     + MIDDLEWARE[_security_idx + 1 :]
 )
 
-# STORAGES replaces the deprecated STATICFILES_STORAGE setting (Django 4.2+)
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -94,7 +102,7 @@ STORAGES = {
 }
 
 # ── Email ─────────────────────────────────────────────────────────────────────
-# Fall back to console backend if SMTP credentials are not configured.
+# Fall back to console backend when SMTP credentials are not configured.
 if os.environ.get("EMAIL_HOST_USER", "").strip():
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 else:

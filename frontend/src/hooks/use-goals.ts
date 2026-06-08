@@ -26,7 +26,7 @@ export const useGoal = (id: string | null) => {
 export const useCreateGoal = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { title: string; description: string; target_date: string; subject: string }) => {
+    mutationFn: async (payload: { title: string; description?: string; target_date?: string; subject?: string; category?: string; priority?: string }) => {
       const { data } = await api.post("/goals/", payload);
       return data;
     },

@@ -38,6 +38,9 @@ All 13+ pages complete. Admin portal at `/admin/users` (staff-only guard via `Re
 - `analytics.tsx` quiz performance: `quizPerf.avg_percentage` → `quizPerf.summary.avg_percentage`; `quizPerf.quiz_count` → `quizPerf.summary.total_attempts`; chart uses `by_subject` (subject accuracy bars) instead of non-existent `trend`
 - `analytics.tsx` revision stats: `revStats.weak_topic_count` → `revStats.weak_topics`; `revStats.mastered_count` → `revStats.mastered`; `revStats.due_count` now provided by backend
 - Backend `analytics/services.py`: added `due_count` field to `get_revision_stats()` (counts topics where `next_revision_at <= now`)
+- `Flashcard` type: `front`/`back`/`review_count`/`next_review_date` → `question`/`answer`/`times_reviewed`/`next_review_at` (backend model uses these names); `flashcards.tsx` updated to match
+- `Goal` status type: `'active'|'paused'` → `'not_started'|'in_progress'` to match backend `Status.choices`
+- `useCreateGoal` payload type: added `category?` and `priority?` fields (backend accepts them but hook type was too narrow, causing TS errors)
 
 **API response shapes (post-interceptor unwrap):**
 - Quiz performance: `{summary: {avg_percentage, total_attempts, total_questions}, by_subject: [{subject, accuracy}]}`

@@ -46,12 +46,16 @@ export interface Note {
 
 export interface Flashcard {
   id: string;
-  note: string;
-  front: string;
-  back: string;
+  note?: string | null;
+  question: string;
+  answer: string;
+  subject?: string;
   difficulty?: string;
-  next_review_date: string;
-  review_count: number;
+  times_reviewed: number;
+  times_correct: number;
+  last_reviewed_at: string | null;
+  next_review_at: string | null;
+  created_at: string;
 }
 
 export interface Conversation {
@@ -146,7 +150,7 @@ export interface Goal {
   subject?: string;
   category: 'academic' | 'skill' | 'certification' | 'exam' | 'personal';
   priority: 'low' | 'medium' | 'high' | 'critical';
-  status: 'active' | 'completed' | 'paused' | 'abandoned';
+  status: 'not_started' | 'in_progress' | 'completed' | 'abandoned';
   progress: number;
   target_date: string;
   milestone_items?: Milestone[];

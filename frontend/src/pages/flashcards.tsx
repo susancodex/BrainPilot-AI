@@ -129,7 +129,7 @@ export default function Flashcards() {
                       <Badge variant="secondary" className="text-xs">Front</Badge>
                     </div>
                     <BrainCircuit className="w-8 h-8 text-muted-foreground/30 mb-4" />
-                    <h2 className="text-xl font-semibold leading-relaxed text-foreground">{activeCard?.front}</h2>
+                    <h2 className="text-xl font-semibold leading-relaxed text-foreground">{activeCard?.question}</h2>
                     <p className="absolute bottom-4 text-xs text-muted-foreground flex items-center gap-1">
                       <Eye className="w-3 h-3" /> Click to reveal
                     </p>
@@ -140,7 +140,7 @@ export default function Flashcards() {
                     <div className="absolute top-4 left-4">
                       <Badge className="text-xs bg-primary/20 text-primary border-primary/30">Answer</Badge>
                     </div>
-                    <h2 className="text-xl font-semibold leading-relaxed text-foreground">{activeCard?.back}</h2>
+                    <h2 className="text-xl font-semibold leading-relaxed text-foreground">{activeCard?.answer}</h2>
                   </Card>
                 </div>
               </div>
@@ -210,15 +210,15 @@ export default function Flashcards() {
                     <div className="space-y-3">
                       <div className="p-3 bg-muted/40 rounded-lg">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Question</p>
-                        <p className="text-sm font-medium text-foreground">{card.front}</p>
+                        <p className="text-sm font-medium text-foreground">{card.question}</p>
                       </div>
                       <div className="p-3 bg-primary/5 border border-primary/10 rounded-lg">
                         <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">Answer</p>
-                        <p className="text-sm text-foreground">{card.back}</p>
+                        <p className="text-sm text-foreground">{card.answer}</p>
                       </div>
                     </div>
                     <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
-                      <span>Reviewed {card.review_count} times</span>
+                      <span>Reviewed {card.times_reviewed} times</span>
                       {card.difficulty && (
                         <Badge variant="outline" className="text-[10px]">{card.difficulty}</Badge>
                       )}

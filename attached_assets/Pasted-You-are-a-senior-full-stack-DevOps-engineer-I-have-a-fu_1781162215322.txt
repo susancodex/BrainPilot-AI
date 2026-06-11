@@ -1,0 +1,110 @@
+You are a senior full-stack DevOps engineer.
+
+I have a full-stack project:
+Frontend: React + Vite + TypeScript
+Backend: Django REST Framework
+Database: PostgreSQL (production via Neon or Render)
+Goal: Prepare this project for production deployment (Render backend + Vercel frontend).
+
+TASKS:
+
+━━━━━━━━━━━━━━━━━━━━━━
+1. BACKEND SETUP (DJANGO)
+━━━━━━━━━━━━━━━━━━━━━━
+
+- Install all required dependencies:
+  django
+  djangorestframework
+  django-cors-headers
+  gunicorn
+  psycopg2-binary
+  python-dotenv
+
+- Create/verify requirements.txt
+
+- Update settings.py for production:
+  - Set DEBUG = False
+  - Configure ALLOWED_HOSTS = ["*"]
+  - Add CORS support:
+      CORS_ALLOW_ALL_ORIGINS = True
+  - Add middleware:
+      corsheaders.middleware.CorsMiddleware
+
+- Configure database to use environment variables:
+
+  DATABASES = {
+      'default': {
+          'ENGINE': 'django.db.backends.postgresql',
+          'NAME': os.environ.get("DB_NAME"),
+          'USER': os.environ.get("DB_USER"),
+          'PASSWORD': os.environ.get("DB_PASSWORD"),
+          'HOST': os.environ.get("DB_HOST"),
+          'PORT': os.environ.get("DB_PORT", "5432"),
+      }
+  }
+
+- Add .env support using python-dotenv
+
+- Create Procfile for Render:
+  web: gunicorn project_name.wsgi:application
+
+- Run migrations:
+  python manage.py makemigrations
+  python manage.py migrate
+
+- Collect static files:
+  python manage.py collectstatic --noinput
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+2. FRONTEND SETUP (VITE + REACT)
+━━━━━━━━━━━━━━━━━━━━━━
+
+- Install dependencies:
+  npm install
+
+- Ensure production build works:
+  npm run build
+
+- Add environment variable support:
+  Create .env file:
+    VITE_API_URL=http://localhost:8000 (dev)
+    VITE_API_URL=https://your-backend-url.onrender.com (prod)
+
+- Ensure API calls use:
+  import.meta.env.VITE_API_URL
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+3. PROJECT STRUCTURE CLEANUP
+━━━━━━━━━━━━━━━━━━━━━━
+
+Organize as:
+  /backend (Django)
+  /frontend (React)
+
+Ensure both run independently.
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+4. DEPLOYMENT READINESS CHECK
+━━━━━━━━━━━━━━━━━━━━━━
+
+Verify:
+- No missing dependencies
+- Django runs with gunicorn
+- React builds successfully
+- CORS configured correctly
+- Environment variables used everywhere
+- PostgreSQL ready for production
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+5. OUTPUT
+━━━━━━━━━━━━━━━━━━━━━━
+
+Give me:
+- Final folder structure
+- All required commands to run locally
+- All required commands for deployment (Render + Vercel)
+- Any fixes required for errors you find

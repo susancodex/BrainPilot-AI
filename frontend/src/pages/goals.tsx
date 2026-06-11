@@ -121,7 +121,7 @@ export default function Goals() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Create New Goal</DialogTitle></DialogHeader>
-            <GoalFormFields form={newGoal} onChange={setNewGoal} />
+            <GoalFormFields form={newGoal} onChange={(patch) => setNewGoal((prev) => ({ ...prev, ...patch }))} />
             <DialogFooter>
               <Button onClick={handleCreate} disabled={!newGoal.title || createGoal.isPending}>
                 {createGoal.isPending ? "Saving…" : "Save Goal"}

@@ -1,22 +1,24 @@
 import { useState, useRef, useEffect } from "react";
 import {
-  usePDFs, useUploadPDF, useDeletePDF,
-  usePDFChat, useSendPDFMessage, usePDFHighlights,
+  usePDFs, useUploadPDF, useDeletePDF, useUpdatePDF,
+  usePDFChat, useSendPDFMessage,
 } from "@/hooks/use-pdfs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { PDFDocument, PDFChatMessage } from "@/types";
 import {
   FileText, Upload, Trash2, MessageSquare, ArrowLeft,
-  Send, Loader2, BookOpen, HighlighterIcon, File,
-  CheckCircle2, Clock,
+  Send, Loader2, BookOpen, File,
+  CheckCircle2, Clock, Pencil, MoreHorizontal,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -33,10 +35,12 @@ function PDFCard({
   doc,
   onChat,
   onDelete,
+  onEdit,
 }: {
   doc: PDFDocument;
   onChat: (doc: PDFDocument) => void;
   onDelete: (id: string) => void;
+  onEdit: (doc: PDFDocument) => void;
 }) {
   return (
     <Card className="group hover:border-primary/40 hover:shadow-md transition-all cursor-pointer">
@@ -54,6 +58,21 @@ function PDFCard({
                 ) : (
                   <Clock className="h-4 w-4 text-amber-500 animate-spin" />
                 )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="p-0.5 rounded hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                      <MoreHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(doc); }}>
+                      <Pencil className="w-3.5 h-3.5 mr-2" /> Edit details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(doc.id); }}>
+                      <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -68,21 +87,10 @@ function PDFCard({
           </div>
         </div>
         <div className="flex items-center gap-2 mt-4">
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex-1 gap-1.5"
-            onClick={() => onChat(doc)}
-          >
-            <MessageSquare className="h-3.5 w-3.5" />
-            Chat with PDF
+          <Button size="sm" variant="outline" className="flex-1 gap-1.5" onClick={() => onChat(doc)}>
+            <MessageSquare className="h-3.5 w-3.5" /> Chat with PDF
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={() => onDelete(doc.id)}
-          >
+          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => onDelete(doc.id)}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -100,14 +108,7 @@ function ChatMessage({ msg }: { msg: PDFChatMessage }) {
           <BookOpen className="h-4 w-4 text-primary" />
         </div>
       )}
-      <div
-        className={cn(
-          "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm",
-          isUser
-            ? "bg-primary text-primary-foreground rounded-br-sm"
-            : "bg-muted text-foreground rounded-bl-sm"
-        )}
-      >
+      <div className={cn("max-w-[80%] rounded-2xl px-4 py-2.5 text-sm", isUser ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm")}>
         {isUser ? (
           <p className="whitespace-pre-wrap">{msg.content}</p>
         ) : (
@@ -155,34 +156,22 @@ function PDFChatPanel({ doc, onBack }: { doc: PDFDocument; onBack: () => void })
         </div>
         <div>
           <h2 className="font-semibold text-foreground line-clamp-1">{doc.title}</h2>
-          <p className="text-xs text-muted-foreground">
-            {doc.page_count} pages · {formatBytes(doc.file_size)}
-          </p>
+          <p className="text-xs text-muted-foreground">{doc.page_count} pages · {formatBytes(doc.file_size)}</p>
         </div>
       </div>
 
       <ScrollArea className="flex-1 py-4" ref={scrollRef as any}>
         {isLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-12 w-3/4" />
-            ))}
-          </div>
+          <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-3/4" />)}</div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full py-16 text-center">
-            <div className="p-4 rounded-2xl bg-primary/10 mb-4">
-              <MessageSquare className="h-8 w-8 text-primary" />
-            </div>
+            <div className="p-4 rounded-2xl bg-primary/10 mb-4"><MessageSquare className="h-8 w-8 text-primary" /></div>
             <h3 className="font-semibold text-foreground mb-1">Chat with your PDF</h3>
-            <p className="text-sm text-muted-foreground max-w-xs">
-              Ask questions about the document, request summaries, or get explanations of key concepts.
-            </p>
+            <p className="text-sm text-muted-foreground max-w-xs">Ask questions about the document, request summaries, or get explanations of key concepts.</p>
           </div>
         ) : (
           <div className="space-y-4 px-1">
-            {messages.map((msg) => (
-              <ChatMessage key={msg.id} msg={msg} />
-            ))}
+            {messages.map((msg) => <ChatMessage key={msg.id} msg={msg} />)}
             {sendMessage.isPending && (
               <div className="flex gap-3">
                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -199,23 +188,9 @@ function PDFChatPanel({ doc, onBack }: { doc: PDFDocument; onBack: () => void })
 
       <div className="pt-4 border-t border-border">
         <div className="flex gap-2">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about this document..."
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-            className="flex-1"
-          />
-          <Button
-            onClick={handleSend}
-            disabled={!input.trim() || sendMessage.isPending}
-            size="icon"
-          >
-            {sendMessage.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
+          <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about this document..." onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()} className="flex-1" />
+          <Button onClick={handleSend} disabled={!input.trim() || sendMessage.isPending} size="icon">
+            {sendMessage.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
       </div>
@@ -227,9 +202,12 @@ export default function PDFs() {
   const { data: docs, isLoading } = usePDFs();
   const uploadPDF = useUploadPDF();
   const deletePDF = useDeletePDF();
+  const updatePDF = useUpdatePDF();
   const { toast } = useToast();
 
   const [activeDoc, setActiveDoc] = useState<PDFDocument | null>(null);
+  const [editDoc, setEditDoc] = useState<PDFDocument | null>(null);
+  const [editForm, setEditForm] = useState({ title: "", subject: "" });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -258,89 +236,91 @@ export default function PDFs() {
     }
   }
 
+  const openEdit = (doc: PDFDocument) => {
+    setEditDoc(doc);
+    setEditForm({ title: doc.title, subject: doc.subject || "" });
+  };
+
+  const handleEditSave = () => {
+    if (!editDoc) return;
+    updatePDF.mutate(
+      { id: editDoc.id, title: editForm.title || undefined, subject: editForm.subject || undefined },
+      {
+        onSuccess: () => {
+          setEditDoc(null);
+          toast({ title: "PDF updated!" });
+        },
+        onError: () => {
+          toast({ title: "Failed to update PDF", variant: "destructive" });
+        },
+      }
+    );
+  };
+
   const docList = Array.isArray(docs) ? docs : [];
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+      {/* Edit dialog */}
+      <Dialog open={!!editDoc} onOpenChange={(o) => !o && setEditDoc(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Pencil className="w-4 h-4" /> Edit PDF Details</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Title</Label>
+              <Input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} placeholder="PDF title..." />
+            </div>
+            <div className="space-y-2">
+              <Label>Subject</Label>
+              <Input value={editForm.subject} onChange={(e) => setEditForm({ ...editForm, subject: e.target.value })} placeholder="E.g. Biology, History..." />
+            </div>
+          </div>
+          <div className="flex gap-3 justify-end">
+            <Button variant="outline" onClick={() => setEditDoc(null)}>Cancel</Button>
+            <Button onClick={handleEditSave} disabled={updatePDF.isPending || !editForm.title.trim()}>
+              {updatePDF.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Sidebar — PDF list */}
-      <div className={cn(
-        "border-r border-border flex flex-col transition-all",
-        activeDoc ? "w-80 shrink-0" : "flex-1"
-      )}>
-        {/* Header */}
+      <div className={cn("border-r border-border flex flex-col transition-all", activeDoc ? "w-80 shrink-0" : "flex-1")}>
         <div className="p-5 border-b border-border">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-                <File className="h-5 w-5 text-red-500" />
-                PDF Library
+                <File className="h-5 w-5 text-red-500" /> PDF Library
               </h1>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {docList.length} document{docList.length !== 1 ? "s" : ""}
-              </p>
+              <p className="text-sm text-muted-foreground mt-0.5">{docList.length} document{docList.length !== 1 ? "s" : ""}</p>
             </div>
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadPDF.isPending}
-              className="gap-1.5"
-              size="sm"
-            >
-              {uploadPDF.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Upload className="h-4 w-4" />
-              )}
+            <Button onClick={() => fileInputRef.current?.click()} disabled={uploadPDF.isPending} className="gap-1.5" size="sm">
+              {uploadPDF.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               Upload PDF
             </Button>
           </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf"
-            className="hidden"
-            onChange={handleFileSelect}
-          />
+          <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={handleFileSelect} />
         </div>
 
-        {/* PDF grid / list */}
         <ScrollArea className="flex-1">
           <div className="p-5">
             {isLoading ? (
-              <div className="grid grid-cols-1 gap-4">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-32 rounded-xl" />
-                ))}
-              </div>
+              <div className="grid grid-cols-1 gap-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-32 rounded-xl" />)}</div>
             ) : docList.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div
-                  className="p-6 rounded-3xl bg-muted mb-4 cursor-pointer hover:bg-muted/70 transition-colors"
-                  onClick={() => fileInputRef.current?.click()}
-                >
+                <div className="p-6 rounded-3xl bg-muted mb-4 cursor-pointer hover:bg-muted/70 transition-colors" onClick={() => fileInputRef.current?.click()}>
                   <Upload className="h-10 w-10 text-muted-foreground" />
                 </div>
                 <h3 className="font-semibold text-foreground mb-1">No PDFs yet</h3>
-                <p className="text-sm text-muted-foreground max-w-xs">
-                  Upload PDF documents and chat with them using AI to extract insights and answer questions.
-                </p>
-                <Button
-                  variant="outline"
-                  className="mt-4 gap-2"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4" />
-                  Upload your first PDF
+                <p className="text-sm text-muted-foreground max-w-xs">Upload PDF documents and chat with them using AI to extract insights and answer questions.</p>
+                <Button variant="outline" className="mt-4 gap-2" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="h-4 w-4" /> Upload your first PDF
                 </Button>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-3">
                 {docList.map((doc) => (
-                  <PDFCard
-                    key={doc.id}
-                    doc={doc}
-                    onChat={setActiveDoc}
-                    onDelete={handleDelete}
-                  />
+                  <PDFCard key={doc.id} doc={doc} onChat={setActiveDoc} onDelete={handleDelete} onEdit={openEdit} />
                 ))}
               </div>
             )}

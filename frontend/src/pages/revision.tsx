@@ -1,52 +1,89 @@
 import { useState } from "react";
-import { useRevisionTopics, useDueRevisionTopics, useWeakRevisionTopics, useRecordRevision, useCreateRevisionTopic } from "@/hooks/use-revision";
+import {
+  useRevisionTopics, useDueRevisionTopics, useWeakRevisionTopics,
+  useRecordRevision, useCreateRevisionTopic, useUpdateRevisionTopic, useDeleteRevisionTopic,
+} from "@/hooks/use-revision";
 import type { RevisionTopic } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { BookOpen, Check, Star, Clock, AlertTriangle, Plus } from "lucide-react";
+import { BookOpen, Check, Star, Clock, AlertTriangle, Plus, Pencil, Trash2, MoreHorizontal } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Revision() {
   const { data: allTopics, isLoading: loadingAll } = useRevisionTopics();
   const { data: dueTopics, isLoading: loadingDue } = useDueRevisionTopics();
   const { data: weakTopics, isLoading: loadingWeak } = useWeakRevisionTopics();
-  
+
   const recordRevision = useRecordRevision();
   const createTopic = useCreateRevisionTopic();
+  const updateTopic = useUpdateRevisionTopic();
+  const deleteTopic = useDeleteRevisionTopic();
+  const { toast } = useToast();
 
   const [newTopic, setNewTopic] = useState({ subject: "", topic: "", confidence_level: [3] });
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [activeReviewId, setActiveReviewId] = useState<string | null>(null);
   const [reviewData, setReviewData] = useState({ duration_minutes: 15, confidence_after: [3], notes: "" });
 
+  const [editTopic, setEditTopic] = useState<RevisionTopic | null>(null);
+  const [editForm, setEditForm] = useState({ subject: "", topic: "", confidence_level: [3] });
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
   const handleAddTopic = () => {
-    createTopic.mutate({ 
-      subject: newTopic.subject, 
-      topic: newTopic.topic, 
-      confidence_level: newTopic.confidence_level[0] 
-    }, {
-      onSuccess: () => {
-        setIsAddOpen(false);
-        setNewTopic({ subject: "", topic: "", confidence_level: [3] });
+    createTopic.mutate(
+      { subject: newTopic.subject, topic: newTopic.topic, confidence_level: newTopic.confidence_level[0] },
+      {
+        onSuccess: () => {
+          setIsAddOpen(false);
+          setNewTopic({ subject: "", topic: "", confidence_level: [3] });
+          toast({ title: "Topic added!" });
+        },
       }
-    });
+    );
   };
 
   const handleRecord = () => {
     if (!activeReviewId) return;
-    recordRevision.mutate({
-      topic_id: activeReviewId,
-      duration_minutes: reviewData.duration_minutes,
-      confidence_after: reviewData.confidence_after[0],
-      notes: reviewData.notes
-    }, {
-      onSuccess: () => setActiveReviewId(null)
+    recordRevision.mutate(
+      { topic_id: activeReviewId, duration_minutes: reviewData.duration_minutes, confidence_after: reviewData.confidence_after[0], notes: reviewData.notes },
+      { onSuccess: () => setActiveReviewId(null) }
+    );
+  };
+
+  const openEdit = (topic: RevisionTopic) => {
+    setEditTopic(topic);
+    setEditForm({ subject: topic.subject, topic: topic.topic, confidence_level: [topic.confidence_level] });
+  };
+
+  const handleEdit = () => {
+    if (!editTopic) return;
+    updateTopic.mutate(
+      { id: editTopic.id, subject: editForm.subject, topic: editForm.topic, confidence_level: editForm.confidence_level[0] },
+      {
+        onSuccess: () => {
+          setEditTopic(null);
+          toast({ title: "Topic updated!" });
+        },
+      }
+    );
+  };
+
+  const handleDelete = () => {
+    if (!deleteId) return;
+    deleteTopic.mutate(deleteId, {
+      onSuccess: () => {
+        setDeleteId(null);
+        toast({ title: "Topic deleted" });
+      },
     });
   };
 
@@ -61,8 +98,25 @@ export default function Revision() {
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start mb-2">
           <div className="text-xs font-semibold text-primary uppercase tracking-wider">{topic.subject}</div>
-          <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${getConfidenceColor(topic.confidence_level)}`}>
-            <Star className="w-3 h-3 fill-current" /> LVL {topic.confidence_level}
+          <div className="flex items-center gap-1">
+            <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${getConfidenceColor(topic.confidence_level)}`}>
+              <Star className="w-3 h-3 fill-current" /> LVL {topic.confidence_level}
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground">
+                  <MoreHorizontal className="w-3.5 h-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => openEdit(topic)}>
+                  <Pencil className="w-3.5 h-3.5 mr-2" /> Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(topic.id)}>
+                  <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
         <CardTitle className="text-lg leading-tight">{topic.topic}</CardTitle>
@@ -85,38 +139,29 @@ export default function Revision() {
       <CardFooter className="pt-0 mt-auto">
         <Dialog open={activeReviewId === topic.id} onOpenChange={(o) => !o && setActiveReviewId(null)}>
           <DialogTrigger asChild>
-            <Button 
-              className="w-full gap-2" 
-              variant={topic.is_weak ? "default" : "outline"}
-              onClick={() => setActiveReviewId(topic.id)}
-            >
+            <Button className="w-full gap-2" variant={topic.is_weak ? "default" : "outline"} onClick={() => setActiveReviewId(topic.id)}>
               <Check className="w-4 h-4" /> Review Now
             </Button>
           </DialogTrigger>
           {activeReviewId === topic.id && (
             <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Log Review: {topic.topic}</DialogTitle>
-              </DialogHeader>
+              <DialogHeader><DialogTitle>Log Review: {topic.topic}</DialogTitle></DialogHeader>
               <div className="space-y-6 py-4">
                 <div className="space-y-2">
                   <Label>Time Spent (minutes)</Label>
-                  <Input type="number" min={1} value={reviewData.duration_minutes} onChange={e => setReviewData({...reviewData, duration_minutes: parseInt(e.target.value) || 0})} />
+                  <Input type="number" min={1} value={reviewData.duration_minutes} onChange={e => setReviewData({ ...reviewData, duration_minutes: parseInt(e.target.value) || 0 })} />
                 </div>
                 <div className="space-y-4">
                   <div className="flex justify-between">
                     <Label>New Confidence Level</Label>
                     <span className="font-bold text-primary">{reviewData.confidence_after[0]} / 5</span>
                   </div>
-                  <Slider min={1} max={5} step={1} value={reviewData.confidence_after} onValueChange={v => setReviewData({...reviewData, confidence_after: v})} />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Weak</span>
-                    <span>Mastered</span>
-                  </div>
+                  <Slider min={1} max={5} step={1} value={reviewData.confidence_after} onValueChange={v => setReviewData({ ...reviewData, confidence_after: v })} />
+                  <div className="flex justify-between text-xs text-muted-foreground"><span>Weak</span><span>Mastered</span></div>
                 </div>
                 <div className="space-y-2">
                   <Label>Notes (Optional)</Label>
-                  <Textarea placeholder="What was hard? What stuck?" value={reviewData.notes} onChange={e => setReviewData({...reviewData, notes: e.target.value})} />
+                  <Textarea placeholder="What was hard? What stuck?" value={reviewData.notes} onChange={e => setReviewData({ ...reviewData, notes: e.target.value })} />
                 </div>
               </div>
               <DialogFooter>
@@ -136,21 +181,19 @@ export default function Revision() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Spaced Repetition</h1>
           <p className="text-muted-foreground mt-1">Review topics at the perfect time to maximize retention.</p>
         </div>
-        
+
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" /> Add Topic
-            </Button>
+            <Button className="gap-2"><Plus className="w-4 h-4" /> Add Topic</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Add Revision Topic</DialogTitle></DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-2"><Label>Subject</Label><Input value={newTopic.subject} onChange={e => setNewTopic({...newTopic, subject: e.target.value})} /></div>
-              <div className="space-y-2"><Label>Topic</Label><Input value={newTopic.topic} onChange={e => setNewTopic({...newTopic, topic: e.target.value})} /></div>
+              <div className="space-y-2"><Label>Subject</Label><Input value={newTopic.subject} onChange={e => setNewTopic({ ...newTopic, subject: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Topic</Label><Input value={newTopic.topic} onChange={e => setNewTopic({ ...newTopic, topic: e.target.value })} /></div>
               <div className="space-y-4">
                 <div className="flex justify-between"><Label>Current Confidence</Label><span className="font-bold">{newTopic.confidence_level[0]}/5</span></div>
-                <Slider min={1} max={5} step={1} value={newTopic.confidence_level} onValueChange={v => setNewTopic({...newTopic, confidence_level: v})} />
+                <Slider min={1} max={5} step={1} value={newTopic.confidence_level} onValueChange={v => setNewTopic({ ...newTopic, confidence_level: v })} />
               </div>
             </div>
             <DialogFooter>
@@ -160,13 +203,48 @@ export default function Revision() {
         </Dialog>
       </div>
 
+      {/* Edit dialog */}
+      <Dialog open={!!editTopic} onOpenChange={(o) => !o && setEditTopic(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Topic</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2"><Label>Subject</Label><Input value={editForm.subject} onChange={e => setEditForm({ ...editForm, subject: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Topic</Label><Input value={editForm.topic} onChange={e => setEditForm({ ...editForm, topic: e.target.value })} /></div>
+            <div className="space-y-4">
+              <div className="flex justify-between"><Label>Confidence Level</Label><span className="font-bold">{editForm.confidence_level[0]}/5</span></div>
+              <Slider min={1} max={5} step={1} value={editForm.confidence_level} onValueChange={v => setEditForm({ ...editForm, confidence_level: v })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTopic(null)}>Cancel</Button>
+            <Button onClick={handleEdit} disabled={updateTopic.isPending || !editForm.subject || !editForm.topic}>
+              {updateTopic.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirm */}
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Topic?</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently delete this revision topic and its history.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Tabs defaultValue="due" className="w-full">
         <TabsList className="grid w-full grid-cols-3 max-w-md mb-6">
           <TabsTrigger value="due" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Due Now</TabsTrigger>
           <TabsTrigger value="weak">Weak Topics</TabsTrigger>
           <TabsTrigger value="all">All Topics</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="due">
           {loadingDue ? <div className="text-muted-foreground">Loading...</div> : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -180,7 +258,7 @@ export default function Revision() {
             </div>
           )}
         </TabsContent>
-        
+
         <TabsContent value="weak">
           {loadingWeak ? <div className="text-muted-foreground">Loading...</div> : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

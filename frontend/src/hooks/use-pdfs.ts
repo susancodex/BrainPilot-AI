@@ -51,6 +51,19 @@ export function useDeletePDF() {
   });
 }
 
+export function useUpdatePDF() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: { id: string; title?: string; subject?: string; tags?: string[] }) => {
+      const res = await api.patch(`/pdfs/${id}/`, payload);
+      return res.data as PDFDocument;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pdfs"] });
+    },
+  });
+}
+
 export function usePDFChat(pdfId: string) {
   return useQuery<PDFChatMessage[]>({
     queryKey: ["pdfs", pdfId, "chat"],

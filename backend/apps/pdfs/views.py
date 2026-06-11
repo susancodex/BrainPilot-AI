@@ -52,6 +52,13 @@ class PDFDetailView(APIView):
             data=PDFDocumentSerializer(doc, context={"request": request}).data
         )
 
+    def patch(self, request, pk):
+        doc = PDFService.get_pdf(request.user, pk)
+        serializer = PDFDocumentSerializer(doc, data=request.data, partial=True, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return success_response(data=serializer.data, message="PDF updated.")
+
     def delete(self, request, pk):
         PDFService.delete_pdf(request.user, pk)
         return success_response(message="PDF deleted.")

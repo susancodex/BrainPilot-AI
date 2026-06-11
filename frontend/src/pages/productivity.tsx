@@ -1,17 +1,18 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTimerStore } from "@/store/timer";
-import { useCompleteSession, useStartPomodoro, useStreak, usePomodoro } from "@/hooks/use-productivity";
+import { useCompleteSession, useStartPomodoro, useStreak, usePomodoro, useDeletePomodoro } from "@/hooks/use-productivity";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import type { PomodoroSession, StudyStreak } from "@/types";
 import {
   Play, Pause, RotateCcw, Flame, Timer, CheckCircle,
-  Coffee, Clock, Settings2,
+  Coffee, Clock, Settings2, Trash2,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
@@ -30,9 +31,12 @@ export default function Productivity() {
   const { toast } = useToast();
   const startPomodoro = useStartPomodoro();
   const completeSession = useCompleteSession();
+  const deletePomodoro = useDeletePomodoro();
   const { data: streakData } = useStreak();
   const { data: pomodoros } = usePomodoro();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const streak = streakData as StudyStreak | undefined;
   const sessions = (pomodoros as PomodoroSession[] | undefined) ?? [];
@@ -60,16 +64,8 @@ export default function Productivity() {
     if (timer.mode === "focus") {
       timer.incrementPomodoros();
       completeSession.mutate(
-        {
-          subject: timer.subject || "General",
-          focus_minutes: timer.focusMinutes,
-          task_description: timer.description || undefined,
-        },
-        {
-          onSuccess: () => {
-            toast({ title: "Session complete! 🎉", description: `${timer.focusMinutes} minutes of focus logged.` });
-          },
-        }
+        { subject: timer.subject || "General", focus_minutes: timer.focusMinutes, task_description: timer.description || undefined },
+        { onSuccess: () => { toast({ title: "Session complete! 🎉", description: `${timer.focusMinutes} minutes of focus logged.` }); } }
       );
     } else {
       toast({ title: "Break over!", description: "Time to get back to work." });
@@ -90,6 +86,16 @@ export default function Productivity() {
       });
     }
     timer.start();
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!deleteId) return;
+    deletePomodoro.mutate(deleteId, {
+      onSuccess: () => {
+        setDeleteId(null);
+        toast({ title: "Session deleted" });
+      },
+    });
   };
 
   const progress = timer.getProgressPercent();
@@ -134,16 +140,14 @@ export default function Productivity() {
                       <span className="font-bold text-primary text-sm">{timer[key]} min</span>
                     </div>
                     <Slider
-                      min={1}
-                      max={120}
-                      step={1}
-                      value={[timer[key]]}
+                      min={1} max={120} step={1} value={[timer[key]]}
                       onValueChange={([v]) => {
                         const { focusMinutes, shortBreakMinutes, longBreakMinutes } = timer;
-                        const newFocus = key === "focusMinutes" ? v : focusMinutes;
-                        const newShort = key === "shortBreakMinutes" ? v : shortBreakMinutes;
-                        const newLong = key === "longBreakMinutes" ? v : longBreakMinutes;
-                        timer.setDurations(newFocus, newShort, newLong);
+                        timer.setDurations(
+                          key === "focusMinutes" ? v : focusMinutes,
+                          key === "shortBreakMinutes" ? v : shortBreakMinutes,
+                          key === "longBreakMinutes" ? v : longBreakMinutes,
+                        );
                       }}
                       disabled={timer.status === "running"}
                     />
@@ -155,12 +159,25 @@ export default function Productivity() {
         </div>
       </div>
 
+      {/* Delete confirm */}
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Session?</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently remove this focus session from your history.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Timer */}
         <div className="lg:col-span-7">
           <Card className="border-border shadow-lg">
             <CardHeader className="pb-2">
-              {/* Mode tabs */}
               <div className="flex gap-1 bg-muted p-1 rounded-lg w-fit mx-auto">
                 {(["focus", "short_break", "long_break"] as const).map((mode) => (
                   <button
@@ -169,9 +186,7 @@ export default function Productivity() {
                     disabled={timer.status === "running"}
                     className={cn(
                       "px-4 py-1.5 rounded-md text-xs font-semibold transition-colors",
-                      timer.mode === mode
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
+                      timer.mode === mode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                     )}
                   >
                     {mode === "focus" ? "Focus" : mode === "short_break" ? "Short Break" : "Long Break"}
@@ -180,18 +195,10 @@ export default function Productivity() {
               </div>
             </CardHeader>
             <CardContent className="flex flex-col items-center py-6">
-              {/* SVG timer ring */}
               <div className="relative w-64 h-64 flex items-center justify-center mb-8">
                 <svg className="w-full h-full -rotate-90">
                   <circle cx="128" cy="128" r={RADIUS} className="stroke-muted fill-none" strokeWidth="10" />
-                  <circle
-                    cx="128" cy="128" r={RADIUS}
-                    className={cn("fill-none transition-all duration-1000 ease-linear", modeColor)}
-                    strokeWidth="10"
-                    strokeDasharray={CIRCUMFERENCE}
-                    strokeDashoffset={strokeDashoffset}
-                    strokeLinecap="round"
-                  />
+                  <circle cx="128" cy="128" r={RADIUS} className={cn("fill-none transition-all duration-1000 ease-linear", modeColor)} strokeWidth="10" strokeDasharray={CIRCUMFERENCE} strokeDashoffset={strokeDashoffset} strokeLinecap="round" />
                 </svg>
                 <div className="absolute flex flex-col items-center">
                   <span className={cn("text-6xl font-bold tabular-nums tracking-tighter", timer.status === "running" ? modeColor.split(" ")[0] : "text-foreground")}>
@@ -211,20 +218,8 @@ export default function Productivity() {
               </div>
 
               <div className="w-full max-w-xs space-y-3 mb-6">
-                <Input
-                  placeholder="What subject are you studying?"
-                  value={timer.subject}
-                  onChange={(e) => timer.setSubject(e.target.value)}
-                  disabled={timer.status === "running"}
-                  className="text-center font-medium"
-                />
-                <Input
-                  placeholder="Task description (optional)"
-                  value={timer.description}
-                  onChange={(e) => timer.setDescription(e.target.value)}
-                  disabled={timer.status === "running"}
-                  className="text-center text-sm"
-                />
+                <Input placeholder="What subject are you studying?" value={timer.subject} onChange={(e) => timer.setSubject(e.target.value)} disabled={timer.status === "running"} className="text-center font-medium" />
+                <Input placeholder="Task description (optional)" value={timer.description} onChange={(e) => timer.setDescription(e.target.value)} disabled={timer.status === "running"} className="text-center text-sm" />
               </div>
 
               <div className="flex items-center gap-4">
@@ -237,13 +232,7 @@ export default function Productivity() {
                     <Play className="w-5 h-5 fill-current" /> {timer.status === "paused" ? "Resume" : "Start"}
                   </Button>
                 )}
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="w-14 h-14 rounded-full p-0"
-                  onClick={timer.reset}
-                  disabled={timer.status === "idle" && timer.secondsLeft === timer.getTotalSeconds()}
-                >
+                <Button size="lg" variant="outline" className="w-14 h-14 rounded-full p-0" onClick={timer.reset} disabled={timer.status === "idle" && timer.secondsLeft === timer.getTotalSeconds()}>
                   <RotateCcw className="w-5 h-5" />
                 </Button>
               </div>
@@ -285,7 +274,7 @@ export default function Productivity() {
               <div className="space-y-2.5">
                 {sessions.length ? (
                   sessions.slice(0, 5).map((p) => (
-                    <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
+                    <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-card group">
                       <div>
                         <div className="font-medium text-sm flex items-center gap-1.5">
                           {p.subject}
@@ -295,9 +284,19 @@ export default function Productivity() {
                           {new Date(p.started_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-bold text-sm text-primary">{p.total_focus_minutes}m</div>
-                        <div className="text-[10px] text-muted-foreground">{p.pomodoros_completed} 🍅</div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <div className="font-bold text-sm text-primary">{p.total_focus_minutes}m</div>
+                          <div className="text-[10px] text-muted-foreground">{p.pomodoros_completed} 🍅</div>
+                        </div>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => setDeleteId(p.id)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
                       </div>
                     </div>
                   ))

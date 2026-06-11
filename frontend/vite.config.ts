@@ -23,6 +23,74 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // ── React core ────────────────────────────────────────────────────
+          if (id.includes("node_modules/react/") ||
+              id.includes("node_modules/react-dom/") ||
+              id.includes("node_modules/scheduler/")) {
+            return "vendor-react";
+          }
+
+          // ── Routing ───────────────────────────────────────────────────────
+          if (id.includes("node_modules/wouter/")) {
+            return "vendor-router";
+          }
+
+          // ── Data fetching ─────────────────────────────────────────────────
+          if (id.includes("node_modules/@tanstack/") ||
+              id.includes("node_modules/axios/")) {
+            return "vendor-query";
+          }
+
+          // ── Radix UI primitives ───────────────────────────────────────────
+          if (id.includes("node_modules/@radix-ui/")) {
+            return "vendor-ui";
+          }
+
+          // ── Rich text editor (heaviest single dep) ────────────────────────
+          if (id.includes("node_modules/@tiptap/")) {
+            return "vendor-editor";
+          }
+
+          // ── Charts ────────────────────────────────────────────────────────
+          if (id.includes("node_modules/recharts/") ||
+              id.includes("node_modules/d3-") ||
+              id.includes("node_modules/victory-")) {
+            return "vendor-charts";
+          }
+
+          // ── Markdown rendering ────────────────────────────────────────────
+          if (id.includes("node_modules/react-markdown/") ||
+              id.includes("node_modules/remark") ||
+              id.includes("node_modules/rehype") ||
+              id.includes("node_modules/unified/") ||
+              id.includes("node_modules/micromark") ||
+              id.includes("node_modules/mdast") ||
+              id.includes("node_modules/hast") ||
+              id.includes("node_modules/vfile")) {
+            return "vendor-markdown";
+          }
+
+          // ── Theming + misc UI ─────────────────────────────────────────────
+          if (id.includes("node_modules/next-themes/") ||
+              id.includes("node_modules/class-variance-authority/") ||
+              id.includes("node_modules/clsx/") ||
+              id.includes("node_modules/tailwind-merge/") ||
+              id.includes("node_modules/lucide-react/")) {
+            return "vendor-ui-utils";
+          }
+
+          // ── Everything else in node_modules → general vendor chunk ────────
+          if (id.includes("node_modules/")) {
+            return "vendor-misc";
+          }
+        },
+      },
+    },
+    // Raise the warning threshold — per-chunk warnings are now meaningful
+    chunkSizeWarningLimit: 600,
   },
   server: {
     port,

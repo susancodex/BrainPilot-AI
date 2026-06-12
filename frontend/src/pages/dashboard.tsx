@@ -22,277 +22,376 @@ const CHART_COLORS = [
   "hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))",
   "hsl(var(--chart-4))", "hsl(var(--chart-5))",
 ];
-
 const CHART_DOT_CLASSES = [
-  "bg-blue-500",
-  "bg-cyan-500",
-  "bg-emerald-500",
-  "bg-amber-500",
-  "bg-rose-500",
+  "bg-blue-500", "bg-cyan-500", "bg-emerald-500", "bg-amber-500", "bg-rose-500",
 ];
 
 function getGreeting(name?: string) {
   const h = new Date().getHours();
-  const greeting = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
-  return `${greeting}${name ? `, ${name.split(" ")[0]}` : ""}`;
+  const base = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+  return name ? `${base}, ${name.split(" ")[0]}` : base;
 }
 
+// ── Stat card ───────────────────────────────────────────────────────────────
 interface StatCardProps {
   title: string;
   value: string | number;
   sub?: string;
   icon: React.ReactNode;
-  accent: string;
+  iconBg: string;
   href?: string;
 }
 
-function StatCard({ title, value, sub, icon, accent, href }: StatCardProps) {
-  const inner = (
-    <Card className="border-border bg-card transition-colors hover:border-primary/40 cursor-pointer">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
-            <p className="text-2xl font-bold text-foreground mt-1 tabular-nums sm:text-3xl">{value}</p>
-            {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
-          </div>
-          <div className={`p-2.5 rounded-xl ${accent}`}>{icon}</div>
+function StatCard({ title, value, sub, icon, iconBg, href }: StatCardProps) {
+  const content = (
+    <Card className={cn(
+      "border-border/60 bg-card transition-colors",
+      href && "cursor-pointer hover:border-primary/30",
+    )}>
+      <CardContent className="flex items-start justify-between gap-3 p-5">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {title}
+          </p>
+          <p className="mt-1.5 text-2xl font-semibold tabular-nums tracking-tight text-foreground sm:text-3xl">
+            {value}
+          </p>
+          {sub && (
+            <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>
+          )}
+        </div>
+        <div className={cn("shrink-0 rounded-lg p-2.5", iconBg)}>
+          {icon}
         </div>
       </CardContent>
     </Card>
   );
-  return href ? <Link href={href}>{inner}</Link> : inner;
+  return href ? <Link href={href}>{content}</Link> : content;
 }
 
+// ── Section header ───────────────────────────────────────────────────────────
+function SectionHeader({
+  icon: Icon,
+  title,
+  href,
+  linkLabel = "View all",
+}: {
+  icon: React.ElementType;
+  title: string;
+  href?: string;
+  linkLabel?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <Icon className="h-4 w-4 text-muted-foreground" />
+        {title}
+      </h2>
+      {href && (
+        <Button variant="ghost" size="sm" asChild className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground">
+          <Link href={href}>
+            {linkLabel}
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+        </Button>
+      )}
+    </div>
+  );
+}
+
+// ── Loading skeleton ─────────────────────────────────────────────────────────
+function DashboardSkeleton() {
+  return (
+    <div className="mx-auto max-w-7xl space-y-6">
+      <Skeleton className="h-[100px] w-full rounded-xl" />
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-[104px] rounded-xl" />)}
+      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Skeleton className="h-64 rounded-xl lg:col-span-2" />
+        <Skeleton className="h-64 rounded-xl" />
+      </div>
+    </div>
+  );
+}
+
+// ── Dashboard ────────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user }                                     = useAuth();
   const { data: summary, isLoading: summaryLoading } = useDashboardSummary();
-  const { data: trends, isLoading: trendsLoading } = useTrends();
+  const { data: trends,  isLoading: trendsLoading }  = useTrends();
   const { data: subjects, isLoading: subjectsLoading } = useSubjectBreakdown();
-  const { data: streak } = useStreak();
+  const { data: streak }                             = useStreak();
 
   const s = summary as DashboardSummary | undefined;
 
-  if (summaryLoading) {
-    return (
-      <div className="space-y-6 max-w-7xl mx-auto min-w-0">
-        <Skeleton className="h-28 w-full rounded-2xl" />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Skeleton className="h-72 rounded-xl lg:col-span-2" />
-          <Skeleton className="h-72 rounded-xl" />
-        </div>
-      </div>
-    );
-  }
+  if (summaryLoading) return <DashboardSkeleton />;
 
-  const todayMinutes = s?.today_focus_minutes ?? 0;
-  const todayHours = (todayMinutes / 60).toFixed(1);
+  const todayHours = ((s?.today_focus_minutes ?? 0) / 60).toFixed(1);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto min-w-0">
-      <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="mx-auto max-w-7xl space-y-6">
+
+      {/* ── Header banner ─────────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-border/60 bg-card px-5 py-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2 flex-wrap sm:text-2xl md:text-3xl">
+            <h1 className="flex flex-wrap items-center gap-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
               {getGreeting(user?.first_name ?? user?.full_name)}
               {(streak?.current_streak ?? 0) > 0 && (
-                <span className="inline-flex items-center gap-1 text-orange-500 text-xl font-semibold">
-                  <Flame className="w-5 h-5 fill-current" /> {streak?.current_streak}
+                <span className="inline-flex items-center gap-1 text-lg font-semibold text-orange-500">
+                  <Flame className="h-5 w-5 fill-current" />
+                  {streak?.current_streak}
                 </span>
               )}
             </h1>
-            <p className="text-muted-foreground mt-1 text-sm">
+            <p className="mt-1 text-sm text-muted-foreground">
               {s?.due_revisions
                 ? `You have ${s.due_revisions} revision${s.due_revisions > 1 ? "s" : ""} due today.`
                 : "You're all caught up — keep the streak going!"}
             </p>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:gap-3 shrink-0">
-            <Button asChild variant="outline" className="gap-2 min-h-[44px] w-full sm:w-auto">
-              <Link href="/chat"><MessageSquare className="w-4 h-4" />Ask AI</Link>
+          <div className="flex shrink-0 gap-2">
+            <Button variant="outline" asChild className="h-9 gap-1.5 text-sm">
+              <Link href="/chat">
+                <MessageSquare className="h-3.5 w-3.5" />
+                Ask AI
+              </Link>
             </Button>
-            <Button asChild className="gap-2 shadow-sm min-h-[44px] w-full sm:w-auto">
-              <Link href="/productivity"><Play className="w-4 h-4 fill-current" />Focus Now</Link>
+            <Button asChild className="h-9 gap-1.5 text-sm">
+              <Link href="/productivity">
+                <Play className="h-3.5 w-3.5 fill-current" />
+                Focus now
+              </Link>
             </Button>
           </div>
         </div>
       </div>
 
-      {/* KPI row */}
-      <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 lg:grid-cols-4 sm:gap-4">
+      {/* ── KPI row ───────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard
           title="Streak"
           value={`${s?.streak ?? 0}d`}
           sub={streak?.longest_streak ? `Best: ${streak.longest_streak}d` : "Keep going!"}
-          icon={<Flame className="w-4 h-4 text-orange-500" />}
-          accent="bg-orange-500/10"
+          icon={<Flame className="h-4 w-4 text-orange-500" />}
+          iconBg="bg-orange-500/10"
           href="/productivity"
         />
         <StatCard
-          title="Today's Focus"
+          title="Today's focus"
           value={`${todayHours}h`}
           sub={`${s?.today_sessions ?? 0} session${(s?.today_sessions ?? 0) !== 1 ? "s" : ""}`}
-          icon={<Clock className="w-4 h-4 text-blue-500" />}
-          accent="bg-blue-500/10"
+          icon={<Clock className="h-4 w-4 text-blue-500" />}
+          iconBg="bg-blue-500/10"
           href="/productivity"
         />
         <StatCard
-          title="Active Goals"
+          title="Active goals"
           value={s?.goals_summary?.active ?? 0}
           sub={`${s?.goals_summary?.completed ?? 0} completed`}
-          icon={<Target className="w-4 h-4 text-green-500" />}
-          accent="bg-green-500/10"
+          icon={<Target className="h-4 w-4 text-emerald-600" />}
+          iconBg="bg-emerald-500/10"
           href="/goals"
         />
         <StatCard
           title="Notes"
           value={s?.notes_count ?? 0}
           sub={`${s?.due_revisions ?? 0} revisions due`}
-          icon={<FileText className="w-4 h-4 text-slate-600" />}
-          accent="bg-slate-600/10"
+          icon={<FileText className="h-4 w-4 text-slate-500" />}
+          iconBg="bg-slate-500/10"
           href="/notes"
         />
       </div>
 
-      {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 border-border">
-          <CardHeader className="flex flex-col gap-2 pb-2 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <BarChart2 className="w-4 h-4 text-primary shrink-0" /> Weekly Study Hours
-            </CardTitle>
-            <Button variant="ghost" size="sm" asChild className="text-xs text-muted-foreground h-9 min-h-[44px] w-fit self-start sm:h-7 sm:min-h-0">
-              <Link href="/analytics">View all <ArrowRight className="w-3 h-3 ml-1" /></Link>
-            </Button>
+      {/* ── Charts row ────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+
+        {/* Weekly bar chart */}
+        <Card className="border-border/60 lg:col-span-2">
+          <CardHeader className="px-5 pb-3 pt-5">
+            <SectionHeader icon={BarChart2} title="Weekly Study Hours" href="/analytics" />
           </CardHeader>
-          <CardContent className="h-48 min-h-[12rem] sm:h-56">
-            {trendsLoading ? (
-              <Skeleton className="h-full w-full rounded" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={(trends as StudyTrend[] | undefined) ?? []} barSize={28}>
-                  <XAxis dataKey="name" fontSize={11} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis fontSize={11} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${v}h`} />
-                  <Tooltip
-                    cursor={{ fill: "hsl(var(--muted))", radius: 4 }}
-                    contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", fontSize: 12 }}
-                    formatter={(v: number) => [`${v}h`, "Study time"]}
-                  />
-                  <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+          <CardContent className="px-5 pb-5">
+            <div className="h-52">
+              {trendsLoading ? (
+                <Skeleton className="h-full w-full rounded" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={(trends as StudyTrend[] | undefined) ?? []} barSize={24} barGap={4}>
+                    <XAxis
+                      dataKey="name"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                      stroke="hsl(var(--muted-foreground))"
+                    />
+                    <YAxis
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                      stroke="hsl(var(--muted-foreground))"
+                      tickFormatter={(v) => `${v}h`}
+                      width={28}
+                    />
+                    <Tooltip
+                      cursor={{ fill: "hsl(var(--muted))", radius: 4 }}
+                      contentStyle={{
+                        borderRadius: 8,
+                        border: "1px solid hsl(var(--border))",
+                        background: "hsl(var(--card))",
+                        fontSize: 12,
+                        boxShadow: "none",
+                      }}
+                      formatter={(v: number) => [`${v}h`, "Study time"]}
+                    />
+                    <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[5, 5, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-chart-3" /> Subject Breakdown
-            </CardTitle>
+        {/* Subject donut */}
+        <Card className="border-border/60">
+          <CardHeader className="px-5 pb-3 pt-5">
+            <SectionHeader icon={BookOpen} title="Subject Breakdown" />
           </CardHeader>
-          <CardContent className="h-48 min-h-[12rem] sm:h-56 flex flex-col items-center justify-center">
-            {subjectsLoading ? (
-              <Skeleton className="h-full w-full rounded" />
-            ) : (subjects as SubjectBreakdown[] | undefined)?.length ? (
-              <>
-                <ResponsiveContainer width="100%" height={160}>
-                  <PieChart>
-                    <Pie data={subjects as SubjectBreakdown[]} cx="50%" cy="50%" innerRadius={50} outerRadius={72} paddingAngle={3} dataKey="value">
-                      {(subjects as SubjectBreakdown[]).map((_, i) => (
-                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", fontSize: 12 }} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="flex flex-wrap justify-center gap-x-3 gap-y-1">
-                  {(subjects as SubjectBreakdown[]).slice(0, 4).map((sub, i) => (
-                    <div key={i} className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <div className={cn("w-2 h-2 rounded-full shrink-0", CHART_DOT_CLASSES[i % CHART_DOT_CLASSES.length])} />
-                      {sub.name}
-                    </div>
-                  ))}
+          <CardContent className="flex flex-col items-center px-5 pb-5">
+            <div className="h-52 w-full">
+              {subjectsLoading ? (
+                <Skeleton className="h-full w-full rounded" />
+              ) : (subjects as SubjectBreakdown[] | undefined)?.length ? (
+                <>
+                  <ResponsiveContainer width="100%" height={170}>
+                    <PieChart>
+                      <Pie
+                        data={subjects as SubjectBreakdown[]}
+                        cx="50%" cy="50%"
+                        innerRadius={52} outerRadius={74}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {(subjects as SubjectBreakdown[]).map((_, i) => (
+                          <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: 8,
+                          border: "1px solid hsl(var(--border))",
+                          background: "hsl(var(--card))",
+                          fontSize: 12,
+                          boxShadow: "none",
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="mt-1 flex flex-wrap justify-center gap-x-3 gap-y-1.5">
+                    {(subjects as SubjectBreakdown[]).slice(0, 4).map((sub, i) => (
+                      <div key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <div className={cn("h-2 w-2 shrink-0 rounded-full", CHART_DOT_CLASSES[i % CHART_DOT_CLASSES.length])} />
+                        {sub.name}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center text-center text-muted-foreground">
+                  <BookOpen className="mb-2 h-9 w-9 text-border" />
+                  <p className="text-sm">Start studying to see your breakdown</p>
                 </div>
-              </>
-            ) : (
-              <div className="text-center text-muted-foreground text-sm">
-                <BookOpen className="w-10 h-10 mx-auto mb-2 text-muted" />
-                Start studying to see your breakdown
-              </div>
-            )}
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Bottom row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 border-border">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-primary" /> Recent Activity
-            </CardTitle>
+      {/* ── Bottom row ────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+
+        {/* Recent activity */}
+        <Card className="border-border/60 lg:col-span-2">
+          <CardHeader className="px-5 pb-3 pt-5">
+            <SectionHeader icon={TrendingUp} title="Recent Activity" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-5 pb-5">
             {s?.recent_activity?.length ? (
-              <div className="space-y-2.5">
+              <ul className="space-y-3">
                 {s.recent_activity.slice(0, 6).map((activity, i) => (
-                  <div key={i} className="flex items-start gap-3 min-w-0">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-2" />
-                    <span className="text-sm text-foreground flex-1 min-w-0 break-words">{activity.description}</span>
-                    <span className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">{activity.time}</span>
-                  </div>
+                  <li key={i} className="flex min-w-0 items-start gap-3">
+                    <div className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-primary/60" />
+                    <span className="min-w-0 flex-1 break-words text-sm text-foreground">
+                      {activity.description}
+                    </span>
+                    <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+                      {activity.time}
+                    </span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <Calendar className="w-10 h-10 mb-3 text-muted" />
-                <p className="text-sm">No activity yet — start a session!</p>
+              <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
+                <Calendar className="mb-3 h-9 w-9 text-border" />
+                <p className="text-sm">No activity yet — start a session to see it here.</p>
               </div>
             )}
           </CardContent>
         </Card>
 
+        {/* Right column: AI suggestion + quick actions */}
         <div className="space-y-4">
-          <Card className="border-border bg-muted/30">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-primary">
-                <Sparkles className="w-4 h-4" /> AI Suggestion
+
+          {/* AI suggestion */}
+          <Card className="border-primary/20 bg-primary/[0.03]">
+            <CardHeader className="px-5 pb-2 pt-4">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-primary">
+                <Sparkles className="h-3.5 w-3.5" />
+                AI Suggestion
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-foreground leading-relaxed">
+            <CardContent className="px-5 pb-4">
+              <p className="text-sm leading-relaxed text-foreground">
                 {s?.ai_suggestion ?? "Great consistency! Keep reviewing your topics and stay ahead of your goals."}
               </p>
-              <Button variant="outline" size="sm" asChild className="mt-3 w-full border-primary/30">
-                <Link href="/chat"><MessageSquare className="w-3.5 h-3.5 mr-2" />Discuss with AI</Link>
+              <Button variant="outline" size="sm" asChild className="mt-3 w-full gap-1.5 border-primary/20 text-xs hover:border-primary/40">
+                <Link href="/chat">
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  Discuss with AI
+                </Link>
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="border-border">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold">Quick Actions</CardTitle>
+          {/* Quick actions */}
+          <Card className="border-border/60">
+            <CardHeader className="px-5 pb-2 pt-4">
+              <CardTitle className="text-sm font-semibold text-foreground">Quick actions</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-2 sm:gap-3">
+            <CardContent className="grid grid-cols-2 gap-2 px-5 pb-4">
               {[
-                { label: "New Note", icon: FileText, href: "/notes", color: "text-slate-700" },
-                { label: "Flashcards", icon: Layers, href: "/flashcards", color: "text-amber-600" },
-                { label: "Revision", icon: BookOpen, href: "/revision", color: "text-blue-600" },
-                { label: "Analytics", icon: BarChart2, href: "/analytics", color: "text-emerald-600" },
+                { label: "New Note",   icon: FileText, href: "/notes",     color: "text-slate-600" },
+                { label: "Flashcards", icon: Layers,   href: "/flashcards", color: "text-amber-600" },
+                { label: "Revision",   icon: BookOpen, href: "/revision",   color: "text-blue-600"  },
+                { label: "Analytics",  icon: BarChart2,href: "/analytics",  color: "text-emerald-600" },
               ].map(({ label, icon: Icon, href, color }) => (
-                <Button key={label} variant="outline" size="sm" asChild className="h-auto min-h-[44px] py-3 flex-col gap-1.5 border-border hover:border-primary/40">
+                <Button
+                  key={label}
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  className="flex h-auto min-h-[60px] flex-col gap-1.5 border-border/60 py-3 hover:border-primary/30"
+                >
                   <Link href={href}>
-                    <Icon className={`w-4 h-4 ${color}`} />
+                    <Icon className={cn("h-4 w-4", color)} />
                     <span className="text-xs font-medium">{label}</span>
                   </Link>
                 </Button>
               ))}
             </CardContent>
           </Card>
+
         </div>
       </div>
     </div>

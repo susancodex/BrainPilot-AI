@@ -52,7 +52,12 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
 
     class Meta:
         db_table = "accounts_users"
-        indexes = [models.Index(fields=["email", "is_active"])]
+        indexes = [
+            models.Index(fields=["email", "is_active"]),
+            models.Index(fields=["is_email_verified"]),
+            models.Index(fields=["created_at"]),
+            models.Index(fields=["locked_until"]),
+        ]
 
     @property
     def full_name(self):
@@ -114,3 +119,8 @@ class EmailVerificationToken(TimeStampedModel):
 
     class Meta:
         db_table = "accounts_email_verification_tokens"
+        indexes = [
+            models.Index(fields=["token"]),
+            models.Index(fields=["expires_at"]),
+            models.Index(fields=["used"]),
+        ]

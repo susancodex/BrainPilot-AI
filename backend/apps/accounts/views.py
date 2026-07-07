@@ -1,5 +1,7 @@
 import logging
 from django.utils import timezone
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -12,6 +14,7 @@ from .serializers import (
 )
 from .avatar_presets import AVATAR_PRESET_CHOICES
 from .services import AuthService, UserProfileService
+from .utils import set_jwt_cookies, delete_jwt_cookies
 from common.exceptions import AppError
 from common.responses import success_response, created_response, error_response
 
@@ -30,7 +33,11 @@ class HealthCheckView(APIView):
     )
     def get(self, request):
         return success_response(
-            data={"status": "ok", "timestamp": timezone.now().isoformat()},
+            data={
+                "status": "ok",
+                "timestamp": timezone.now().isoformat(),
+                "version": "1.0.0",
+            },
             message="BrainPilot AI is operational",
         )
 
@@ -68,6 +75,7 @@ class ReadinessCheckView(APIView):
                 "status": "ready" if all_ok else "not_ready",
                 "checks": checks,
                 "timestamp": timezone.now().isoformat(),
+                "version": "1.0.0",
             },
             message="Service is ready" if all_ok else "Service is not ready",
             status_code=200 if all_ok else 503,
@@ -83,6 +91,7 @@ class LivenessCheckView(APIView):
             data={
                 "status": "alive",
                 "timestamp": timezone.now().isoformat(),
+                "version": "1.0.0",
             },
         )
 
@@ -119,16 +128,20 @@ class RegisterView(APIView):
         data.pop("password_confirm", None)
         user = AuthService.register_user(**data)
         tokens = AuthService.login_user(user, request=request)
-        return created_response(
+        
+        response = created_response(
             data={
-                "access": tokens["access"],
-                "refresh": tokens["refresh"],
                 "user": UserSerializer(tokens["user"], context={"request": request}).data,
             },
             message="Account created. Please verify your email."
             if not user.is_email_verified
             else "Account created.",
         )
+        
+        # Set JWT tokens as HttpOnly cookies
+        set_jwt_cookies(response, tokens["access"], tokens["refresh"])
+        
+        return response
 
 
 class LoginView(APIView):
@@ -167,14 +180,18 @@ class LoginView(APIView):
             return error_response(message, errors=serializer.errors)
 
         tokens = AuthService.login_user(serializer.validated_data["user"], request=request)
-        return success_response(
+        
+        response = success_response(
             data={
-                "access": tokens["access"],
-                "refresh": tokens["refresh"],
                 "user": UserSerializer(tokens["user"], context={"request": request}).data,
             },
             message="Login successful.",
         )
+        
+        # Set JWT tokens as HttpOnly cookies
+        set_jwt_cookies(response, tokens["access"], tokens["refresh"])
+        
+        return response
 
 
 class LogoutView(APIView):
@@ -199,7 +216,13 @@ class LogoutView(APIView):
                 token.blacklist()
             except Exception:
                 pass
-        return success_response(message="Logged out successfully.")
+        
+        response = success_response(message="Logged out successfully.")
+        
+        # Delete JWT cookies
+        delete_jwt_cookies(response)
+        
+        return response
 
 
 class VerifyEmailView(APIView):
@@ -392,6 +415,7 @@ class AvatarPresetsView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @method_decorator(cache_page(60 * 60 * 24))  # Cache for 24 hours
     @extend_schema(
         summary="Get Avatar Presets",
         description="List available built-in avatar presets",

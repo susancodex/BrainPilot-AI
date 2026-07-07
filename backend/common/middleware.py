@@ -104,6 +104,7 @@ class RequestLoggingMiddleware:
     - Response status code
     - Request duration
     - User ID (if authenticated)
+    - Client IP
     """
 
     def __init__(self, get_response):
@@ -112,6 +113,10 @@ class RequestLoggingMiddleware:
     def __call__(self, request):
         import time
         
+        # Skip logging for health checks
+        if getattr(request, 'skip_logging', False):
+            return self.get_response(request)
+        
         start_time = time.time()
         
         response = self.get_response(request)
@@ -119,17 +124,29 @@ class RequestLoggingMiddleware:
         duration = time.time() - start_time
         
         user_id = getattr(request.user, "id", "anonymous")
+        client_ip = self._get_client_ip(request)
         
-        logger.info(
-            "Request: %s %s | Status: %d | Duration: %.3fs | User: %s",
+        # Log slow requests (> 1 second) as warnings
+        log_level = logger.warning if duration > 1.0 else logger.info
+        
+        log_level(
+            "Request: %s %s | Status: %d | Duration: %.3fs | User: %s | IP: %s",
             request.method,
             request.path,
             response.status_code,
             duration,
             user_id,
+            client_ip,
         )
         
         return response
+
+    def _get_client_ip(self, request):
+        """Extract client IP from request headers."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0].strip()
+        return request.META.get('REMOTE_ADDR', 'unknown')
 
 
 class HealthCheckMiddleware:
@@ -143,9 +160,17 @@ class HealthCheckMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        health_paths = ["/health/", "/api/v1/health/", "/api/v1/ai/health/"]
+        health_paths = [
+            "/health/",
+            "/api/v1/health/",
+            "/api/v1/ready/",
+            "/api/v1/live/",
+            "/api/v1/ai/health/",
+        ]
         
         if request.path in health_paths:
             request.rate_limited = False
+            # Skip logging for health checks to reduce noise
+            request.skip_logging = True
         
         return self.get_response(request)

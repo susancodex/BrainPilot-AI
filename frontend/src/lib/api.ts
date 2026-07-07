@@ -1,5 +1,4 @@
 import axios from "axios";
-import { getAccessToken, getRefreshToken, setTokens, clearTokens } from "./auth";
 
 // VITE_API_URL = the Render backend origin, e.g. "https://brainpilot-api.onrender.com"
 // In dev (no env var): empty string → relative URLs handled by the Vite proxy (/api → localhost:8000)
@@ -9,14 +8,7 @@ const api = axios.create({
   // Dev:  baseURL="/api/v1"  → relative, Vite proxy forwards to Django on localhost:8000
   // Prod: baseURL="https://brainpilot-api.onrender.com"  → absolute calls to Render
   baseURL: _apiOrigin || "/api/v1",
-});
-
-api.interceptors.request.use((config) => {
-  const token = getAccessToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  withCredentials: true, // Important for HttpOnly cookies
 });
 
 // Unwrap the standard backend envelope: { success, message, data: X } → X
@@ -40,8 +32,7 @@ api.interceptors.response.use(
         return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
         })
-          .then((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
+          .then(() => {
             return api(originalRequest);
           })
           .catch((err) => {
@@ -52,29 +43,18 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refresh = getRefreshToken();
-      if (!refresh) {
-        clearTokens();
-        redirectToLogin();
-        return Promise.reject(error);
-      }
-
       try {
-        // Use a bare axios instance (no interceptors) to avoid re-triggering this handler.
-        // _apiOrigin is "" in dev (Vite proxy resolves the relative path) and the full
-        // Render origin in production, so the URL is always correct in both environments.
+        // With HttpOnly cookies, the browser automatically sends the refresh token cookie
+        // We just need to call the refresh endpoint
         const { data } = await axios.post(
           `${_apiOrigin}/api/v1/token/refresh/`,
-          { refresh },
+          {},
+          { withCredentials: true },
         );
-        setTokens(data.access, refresh);
-        api.defaults.headers.common.Authorization = `Bearer ${data.access}`;
-        originalRequest.headers.Authorization = `Bearer ${data.access}`;
         processQueue(null, data.access);
         return api(originalRequest);
       } catch (err) {
         processQueue(err, null);
-        clearTokens();
         redirectToLogin();
         return Promise.reject(err);
       } finally {

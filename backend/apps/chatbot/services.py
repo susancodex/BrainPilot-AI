@@ -1,7 +1,9 @@
 import json
 import logging
+import hashlib
 from django.utils import timezone
 from django.db import transaction
+from django.core.cache import cache
 
 from .models import Conversation, Message
 from common.exceptions import NotFoundError
@@ -9,9 +11,16 @@ from common.exceptions import NotFoundError
 logger = logging.getLogger(__name__)
 
 MAX_CONTEXT_MESSAGES = 20
+CACHE_TIMEOUT = 24 * 60 * 60  # 24 hours in seconds
 
 
 class ChatService:
+    @staticmethod
+    def _get_cache_key(prompt: str, user_id: str) -> str:
+        """Generate a cache key for AI responses based on prompt and user."""
+        prompt_hash = hashlib.sha256(prompt.encode()).hexdigest()[:16]
+        return f"ai_response:{user_id}:{prompt_hash}"
+    
     @staticmethod
     def get_or_create_conversation(user, conversation_id=None, subject_context="") -> Conversation:
         if conversation_id:
@@ -61,6 +70,32 @@ class ChatService:
 
         context = ChatService.get_context_messages(conversation)
 
+        # Check cache for AI response
+        cache_key = ChatService._get_cache_key(content, str(user.id))
+        cached_response = cache.get(cache_key)
+        
+        if cached_response:
+            logger.info("AI response retrieved from cache for streaming (user %s)", user.id)
+            # Stream cached response character by character for consistent UX
+            for char in cached_response:
+                yield f"data: {json.dumps({'type': 'chunk', 'content': char, 'conversation_id': str(conversation.id)})}\n\n"
+            
+            assistant_message = Message.objects.create(
+                conversation=conversation,
+                role="assistant",
+                content=cached_response,
+                token_count=len(cached_response.split()),
+            )
+            conversation.message_count += 2
+            conversation.last_message_at = timezone.now()
+            if not conversation.title and content:
+                conversation.title = content[:100]
+            conversation.save(update_fields=["message_count", "last_message_at", "title"])
+            
+            from .serializers import MessageSerializer
+            yield f"data: {json.dumps({'type': 'done', 'conversation_id': str(conversation.id), 'message': MessageSerializer(assistant_message).data})}\n\n"
+            return
+
         from services.ai_engine.adapters.gemini_adapter import GeminiAdapter
         from services.ai_engine.memory.conversation_memory import ConversationMemory
 
@@ -79,6 +114,11 @@ class ChatService:
             return
 
         ai_response = "".join(full_response)
+        
+        # Cache the response for 24 hours
+        cache.set(cache_key, ai_response, CACHE_TIMEOUT)
+        logger.info("AI response cached for streaming (user %s)", user.id)
+        
         assistant_message = Message.objects.create(
             conversation=conversation,
             role="assistant",
@@ -108,13 +148,25 @@ class ChatService:
 
         context = ChatService.get_context_messages(conversation)
 
-        from services.ai_engine.adapters.gemini_adapter import GeminiAdapter
-        from services.ai_engine.memory.conversation_memory import ConversationMemory
+        # Check cache for AI response
+        cache_key = ChatService._get_cache_key(content, str(user.id))
+        cached_response = cache.get(cache_key)
+        
+        if cached_response:
+            logger.info("AI response retrieved from cache for user %s", user.id)
+            ai_response = cached_response
+        else:
+            from services.ai_engine.adapters.gemini_adapter import GeminiAdapter
+            from services.ai_engine.memory.conversation_memory import ConversationMemory
 
-        adapter = GeminiAdapter(user=user)
-        memory = ConversationMemory()
-        system_prompt = memory.build_system_prompt(user)
-        ai_response = adapter.chat(system_prompt=system_prompt, messages=context)
+            adapter = GeminiAdapter(user=user)
+            memory = ConversationMemory()
+            system_prompt = memory.build_system_prompt(user)
+            ai_response = adapter.chat(system_prompt=system_prompt, messages=context)
+            
+            # Cache the response for 24 hours
+            cache.set(cache_key, ai_response, CACHE_TIMEOUT)
+            logger.info("AI response cached for user %s", user.id)
 
         assistant_message = Message.objects.create(
             conversation=conversation,

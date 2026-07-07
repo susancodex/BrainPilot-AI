@@ -36,6 +36,21 @@ class ConflictError(AppError):
         super().__init__(message=message, status_code=status.HTTP_409_CONFLICT)
 
 
+class ValidationError(AppError):
+    def __init__(self, message="Validation error", errors=None):
+        super().__init__(message=message, status_code=status.HTTP_400_BAD_REQUEST, errors=errors)
+
+
+class UnauthorizedError(AppError):
+    def __init__(self, message="Authentication required"):
+        super().__init__(message=message, status_code=status.HTTP_401_UNAUTHORIZED)
+
+
+class RateLimitError(AppError):
+    def __init__(self, message="Rate limit exceeded"):
+        super().__init__(message=message, status_code=status.HTTP_429_TOO_MANY_REQUESTS)
+
+
 def _normalize_api_message(message: str) -> str:
     lower = message.lower()
     if "already exists" in lower or "already registered" in lower:

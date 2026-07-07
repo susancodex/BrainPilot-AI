@@ -9,7 +9,8 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 INSTALLED_APPS += ["debug_toolbar"]
 
-MIDDLEWARE = ["debug_toolbar.middleware.DebugToolbarMiddleware"] + MIDDLEWARE
+# Insert debug toolbar after gzip middleware
+MIDDLEWARE.insert(2, "debug_toolbar.middleware.DebugToolbarMiddleware")
 
 INTERNAL_IPS = ["127.0.0.1", "::1"]
 

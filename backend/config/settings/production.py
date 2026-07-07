@@ -1,5 +1,24 @@
 import os
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.celery import CeleryIntegration
 from .base import *
+
+# ── Sentry Error Tracking ───────────────────────────────────────────────────────
+# Configure Sentry for error monitoring in production
+sentry_dsn = os.environ.get("SENTRY_DSN", "").strip()
+if sentry_dsn:
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        integrations=[
+            DjangoIntegration(),
+            CeleryIntegration(),
+        ],
+        traces_sample_rate=0.1,  # 10% of transactions for performance monitoring
+        profiles_sample_rate=0.1,  # 10% of profiles for performance monitoring
+        environment=os.environ.get("SENTRY_ENVIRONMENT", "production"),
+        send_default_pii=False,
+    )
 
 DEBUG = False
 
@@ -53,6 +72,19 @@ SECURE_HSTS_PRELOAD = True
 DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
 
+# ── Database Connection Pooling ───────────────────────────────────────────────
+# Configure connection pooling for Neon PostgreSQL
+DATABASES = {
+    "default": dj_database_url.config(
+        default=os.environ.get("DATABASE_URL", ""),
+        conn_max_age=600,
+        conn_health_checks=True,
+        options={
+            "sslmode": "require",
+        },
+    )
+}
+
 # ── Caching ───────────────────────────────────────────────────────────────────
 # Use Redis when REDIS_URL is set (paid tier), otherwise use in-process LocMemCache
 # (free tier — no cross-worker persistence, tasks already run eagerly).
@@ -77,14 +109,18 @@ else:
     }
 
 # ── Celery (asynchronous by default in production) ─────────────────────────────
-# Only use eager mode if explicitly set (for free-tier deployments without Redis)
-if os.environ.get("CELERY_ALWAYS_EAGER", "false").lower() == "true":
-    CELERY_TASK_ALWAYS_EAGER = True
-    CELERY_TASK_EAGER_PROPAGATES = True
-else:
-    # Production default: asynchronous processing with Redis
+# Use external Redis/RabbitMQ for async tasks
+# Set REDIS_URL to your Upstash Redis or CloudAMQP RabbitMQ instance
+_redis_broker = os.environ.get("REDIS_URL", "").strip()
+if _redis_broker:
+    CELERY_BROKER_URL = _redis_broker
+    CELERY_RESULT_BACKEND = _redis_broker
     CELERY_TASK_ALWAYS_EAGER = False
     CELERY_TASK_EAGER_PROPAGATES = False
+else:
+    # Fallback to eager mode if no external broker is configured
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
 
 # ── Static files via WhiteNoise ───────────────────────────────────────────────
 # Insert WhiteNoise directly after SecurityMiddleware, as required by WhiteNoise docs.

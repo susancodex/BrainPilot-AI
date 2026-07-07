@@ -76,10 +76,15 @@ else:
         }
     }
 
-# ── Celery (eager / inline when no Redis broker is available) ─────────────────
+# ── Celery (asynchronous by default in production) ─────────────────────────────
+# Only use eager mode if explicitly set (for free-tier deployments without Redis)
 if os.environ.get("CELERY_ALWAYS_EAGER", "false").lower() == "true":
     CELERY_TASK_ALWAYS_EAGER = True
     CELERY_TASK_EAGER_PROPAGATES = True
+else:
+    # Production default: asynchronous processing with Redis
+    CELERY_TASK_ALWAYS_EAGER = False
+    CELERY_TASK_EAGER_PROPAGATES = False
 
 # ── Static files via WhiteNoise ───────────────────────────────────────────────
 # Insert WhiteNoise directly after SecurityMiddleware, as required by WhiteNoise docs.

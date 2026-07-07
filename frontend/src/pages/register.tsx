@@ -17,10 +17,12 @@ const registerSchema = z
     email: z.string().email("Please enter a valid email"),
     password: z
       .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Za-z]/, "Include at least one letter")
-      .regex(/\d/, "Include at least one number"),
-    password_confirm: z.string().min(8, "Please confirm your password"),
+      .min(12, "Password must be at least 12 characters")
+      .regex(/[A-Z]/, "Include at least one uppercase letter")
+      .regex(/[a-z]/, "Include at least one lowercase letter")
+      .regex(/\d/, "Include at least one number")
+      .regex(/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/, "Include at least one special character"),
+    password_confirm: z.string().min(12, "Please confirm your password"),
   })
   .refine((data) => data.password === data.password_confirm, {
     message: "Passwords do not match",
@@ -81,7 +83,7 @@ export default function Register() {
       }
     >
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField
               control={form.control}
@@ -132,8 +134,8 @@ export default function Register() {
                 <FormControl>
                   <Input type="password" autoComplete="new-password" {...field} />
                 </FormControl>
-                <p className="text-xs text-muted-foreground">
-                  At least 8 characters with letters and numbers. Avoid common passwords like &quot;password123&quot;.
+                <p className="text-sm text-muted-foreground">
+                  At least 12 characters with uppercase, lowercase, numbers, and special characters.
                 </p>
                 <FormMessage />
               </FormItem>
@@ -152,7 +154,7 @@ export default function Register() {
               </FormItem>
             )}
           />
-          <Button type="submit" className="w-full min-h-[44px]" disabled={registerAccount.isPending}>
+          <Button type="submit" className="w-full" disabled={registerAccount.isPending}>
             {registerAccount.isPending ? "Creating account…" : "Create account"}
           </Button>
         </form>

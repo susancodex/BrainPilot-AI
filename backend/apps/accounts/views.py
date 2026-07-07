@@ -3,6 +3,7 @@ from django.utils import timezone
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 
 from .serializers import (
     RegisterSerializer, LoginSerializer, UserSerializer,
@@ -21,6 +22,12 @@ class HealthCheckView(APIView):
     """Basic liveness probe — returns 200 if the process is running."""
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        summary="Health Check",
+        description="Returns 200 if the backend service is running and operational",
+        responses={200: {"type": "object", "properties": {"status": {"type": "string"}}}},
+        tags=["Health"]
+    )
     def get(self, request):
         return success_response(
             data={"status": "ok", "timestamp": timezone.now().isoformat()},
@@ -82,8 +89,29 @@ class LivenessCheckView(APIView):
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
-    throttle_scope = "auth"
+    throttle_scope = "auth_register"
 
+    @extend_schema(
+        summary="User Registration",
+        description="Register a new user account with email, password, and profile information",
+        request=RegisterSerializer,
+        responses={
+            201: {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "access": {"type": "string"},
+                            "refresh": {"type": "string"},
+                            "user": {"type": "object"}
+                        }
+                    }
+                }
+            }
+        },
+        tags=["Authentication"]
+    )
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -107,6 +135,27 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = "auth"
 
+    @extend_schema(
+        summary="User Login",
+        description="Authenticate user with email and password, returns JWT tokens",
+        request=LoginSerializer,
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "access": {"type": "string"},
+                            "refresh": {"type": "string"},
+                            "user": {"type": "object"}
+                        }
+                    }
+                }
+            }
+        },
+        tags=["Authentication"]
+    )
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if not serializer.is_valid():
@@ -131,6 +180,17 @@ class LoginView(APIView):
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        summary="User Logout",
+        description="Logout user and blacklist refresh token",
+        request={
+            "type": "object",
+            "properties": {
+                "refresh": {"type": "string"}
+            }
+        },
+        tags=["Authentication"]
+    )
     def post(self, request):
         refresh_token = request.data.get("refresh")
         if refresh_token:
@@ -146,6 +206,17 @@ class VerifyEmailView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = "auth"
 
+    @extend_schema(
+        summary="Verify Email",
+        description="Verify user email address using token sent to email",
+        request={
+            "type": "object",
+            "properties": {
+                "token": {"type": "string"}
+            }
+        },
+        tags=["Authentication"]
+    )
     def post(self, request):
         token = request.data.get("token")
         if not token:
@@ -156,8 +227,14 @@ class VerifyEmailView(APIView):
 
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
-    throttle_scope = "auth"
+    throttle_scope = "auth_reset"
 
+    @extend_schema(
+        summary="Request Password Reset",
+        description="Request password reset link to be sent to email",
+        request=PasswordResetRequestSerializer,
+        tags=["Authentication"]
+    )
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -169,6 +246,12 @@ class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = "auth"
 
+    @extend_schema(
+        summary="Confirm Password Reset",
+        description="Reset password using token from email",
+        request=PasswordResetConfirmSerializer,
+        tags=["Authentication"]
+    )
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -181,18 +264,38 @@ class PasswordResetConfirmView(APIView):
 
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_scope = "profile_update"
 
     def _user_with_profile(self, user):
         from .models import User
 
         return User.objects.select_related("profile").get(pk=user.pk)
 
+    @extend_schema(
+        summary="Get Current User",
+        description="Get current authenticated user profile information",
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "data": {"type": "object"}
+                }
+            }
+        },
+        tags=["User Profile"]
+    )
     def get(self, request):
         user = self._user_with_profile(request.user)
         return success_response(
             data=UserSerializer(user, context={"request": request}).data
         )
 
+    @extend_schema(
+        summary="Update Current User",
+        description="Update current authenticated user profile",
+        request=UserSerializer,
+        tags=["User Profile"]
+    )
     def patch(self, request):
         user = self._user_with_profile(request.user)
         serializer = UserSerializer(
@@ -202,6 +305,11 @@ class MeView(APIView):
         serializer.save()
         return success_response(data=serializer.data, message="Profile updated.")
 
+    @extend_schema(
+        summary="Delete Account",
+        description="Delete current authenticated user account",
+        tags=["User Profile"]
+    )
     def delete(self, request):
         """
         Soft-delete the authenticated user's account (GDPR/CCPA).
@@ -226,6 +334,12 @@ class MeView(APIView):
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        summary="Change Password",
+        description="Change password for authenticated user",
+        request=ChangePasswordSerializer,
+        tags=["User Profile"]
+    )
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
@@ -236,13 +350,33 @@ class ChangePasswordView(APIView):
 
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_scope = "profile_update"
 
+    @extend_schema(
+        summary="Get User Profile",
+        description="Get detailed user profile information",
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "data": {"type": "object"}
+                }
+            }
+        },
+        tags=["User Profile"]
+    )
     def get(self, request):
         profile = UserProfileService.get_or_create_profile(request.user)
         return success_response(
             data=UserProfileSerializer(profile, context={"request": request}).data
         )
 
+    @extend_schema(
+        summary="Update User Profile",
+        description="Update user profile details",
+        request=UserProfileSerializer,
+        tags=["User Profile"]
+    )
     def patch(self, request):
         profile = UserProfileService.get_or_create_profile(request.user)
         serializer = UserProfileSerializer(
@@ -258,6 +392,24 @@ class AvatarPresetsView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        summary="Get Avatar Presets",
+        description="List available built-in avatar presets",
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "presets": {"type": "array"}
+                        }
+                    }
+                }
+            }
+        },
+        tags=["User Profile"]
+    )
     def get(self, request):
         presets = [
             {"id": slug, "label": label}
@@ -270,7 +422,19 @@ class ProfileAvatarView(APIView):
     """Upload or remove a custom profile photo."""
 
     permission_classes = [IsAuthenticated]
+    throttle_scope = "file_upload"
 
+    @extend_schema(
+        summary="Upload Avatar",
+        description="Upload custom profile picture",
+        request={
+            "type": "object",
+            "properties": {
+                "avatar": {"type": "file"}
+            }
+        },
+        tags=["User Profile"]
+    )
     def post(self, request):
         uploaded = request.FILES.get("avatar")
         if not uploaded:
@@ -284,6 +448,11 @@ class ProfileAvatarView(APIView):
             message="Profile photo updated.",
         )
 
+    @extend_schema(
+        summary="Delete Avatar",
+        description="Remove custom profile picture and revert to preset",
+        tags=["User Profile"]
+    )
     def delete(self, request):
         profile = UserProfileService.clear_avatar(request.user)
         return success_response(

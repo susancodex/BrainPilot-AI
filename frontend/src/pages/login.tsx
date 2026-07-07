@@ -52,7 +52,7 @@ export default function Login() {
       }
     >
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
             control={form.control}
             name="email"
@@ -71,7 +71,12 @@ export default function Login() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <div className="flex items-center justify-between">
+                  <FormLabel>Password</FormLabel>
+                  <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+                    Forgot password?
+                  </Link>
+                </div>
                 <FormControl>
                   <Input
                     type="password"
@@ -85,7 +90,7 @@ export default function Login() {
               </FormItem>
             )}
           />
-          <Button type="submit" className="w-full min-h-[44px]" disabled={login.isPending} data-testid="button-submit-login">
+          <Button type="submit" className="w-full" disabled={login.isPending} data-testid="button-submit-login">
             {login.isPending ? "Signing in…" : "Sign in"}
           </Button>
         </form>

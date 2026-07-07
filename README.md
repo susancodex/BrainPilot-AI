@@ -39,12 +39,14 @@ An AI-powered study companion SaaS that helps students plan, revise, quiz themse
 |-------|-----------|
 | **Frontend** | React 19, Vite 7, Tailwind CSS 4, Zustand, TanStack Query |
 | **Backend** | Python 3.12, Django 6, Django REST Framework |
+| **API Documentation** | drf-spectacular (Swagger/OpenAPI) |
 | **Authentication** | JWT via `djangorestframework-simplejwt` |
 | **AI (Primary)** | Google Gemini `gemini-2.5-flash` |
 | **AI (Fallback 1)** | Groq `llama-3.3-70b-versatile` |
 | **AI (Fallback 2)** | OpenRouter (multi-model rotation) |
 | **Database** | PostgreSQL |
 | **Task Queue** | Celery with Redis broker |
+| **Retry Logic** | tenacity for resilient AI operations |
 | **PDF Processing** | pypdf |
 | **Production Server** | Gunicorn + WhiteNoise |
 | **Package Managers** | pnpm (frontend), uv (backend) |
@@ -54,12 +56,15 @@ An AI-powered study companion SaaS that helps students plan, revise, quiz themse
 ```
 brainpilot/
 ├── frontend/                   React 19 + Vite + Tailwind CSS
-│   └── src/
-│       ├── components/         Shared UI components (shadcn/ui)
-│       ├── hooks/              Domain-specific API hooks
-│       ├── pages/              Route-level page components
-│       ├── store/              Zustand global state
-│       └── types/              TypeScript interfaces
+│   ├── src/
+│   │   ├── components/         Shared UI components (shadcn/ui)
+│   │   ├── hooks/              Domain-specific API hooks
+│   │   ├── pages/              Route-level page components
+│   │   ├── store/              Zustand global state
+│   │   └── types/              TypeScript interfaces
+│   ├── public/                 Static assets
+│   ├── package.json            Frontend dependencies
+│   └── vite.config.ts          Vite configuration
 │
 ├── backend/                    Django 6 + DRF API
 │   ├── ai/                     Multi-provider AI gateway
@@ -67,14 +72,21 @@ brainpilot/
 │   │   ├── factory.py          Singleton gateway factory
 │   │   ├── providers/          Gemini, Groq, OpenRouter implementations
 │   │   ├── interfaces.py       Abstract AIProvider contract
-│   │   └── types.py            ProviderHealth tracking
+│   │   ├── types.py            ProviderHealth tracking
+│   │   └── exceptions.py       AI-specific exceptions
 │   │
 │   ├── apps/                   Feature applications
 │   │   ├── accounts/           Auth, JWT, user profiles
+│   │   │   ├── models.py        User, UserProfile models
+│   │   │   ├── serializers.py   DRF serializers
+│   │   │   ├── views.py         API views with Swagger docs
+│   │   │   ├── services.py      Business logic
+│   │   │   └── urls.py          URL routing
 │   │   ├── planner/            AI study plans + sessions
 │   │   ├── goals/              Learning goals
 │   │   ├── revision/           Spaced-repetition topics
 │   │   ├── notes/              Rich notes + AI summary + flashcards
+│   │   │   ├── tasks.py         Celery tasks for async AI operations
 │   │   ├── quizzes/            AI quiz generation + attempts
 │   │   ├── chatbot/            Gemini chat + SSE streaming
 │   │   ├── analytics/          Study trend queries (no models)
@@ -83,18 +95,50 @@ brainpilot/
 │   │   ├── dashboard/          Summary view
 │   │   └── notifications/      In-app alerts
 │   │
-│   ├── services/ai_engine/     AI orchestration layer
-│   │   ├── adapters/           Gateway shim for legacy service calls
-│   │   ├── prompts/            Prompt templates
-│   │   └── memory/             Conversation memory
+│   ├── common/                 Shared utilities
+│   │   ├── base_models.py      Abstract base models
+│   │   ├── exceptions.py       Custom exceptions
+│   │   ├── responses.py        Standard API responses
+│   │   ├── middleware.py       Security, logging, health checks
+│   │   └── validators.py       Input validation utilities
 │   │
-│   ├── common/                 Base models, exceptions, responses, pagination
-│   └── config/settings/        base / development / production settings
+│   ├── config/                 Django configuration
+│   │   ├── settings/
+│   │   │   ├── base.py         Base settings
+│   │   │   ├── development.py  Development overrides
+│   │   │   ├── production.py   Production settings
+│   │   │   └── test.py         Test settings
+│   │   ├── urls.py             Root URL configuration
+│   │   ├── celery.py           Celery configuration
+│   │   └── asgi.py             ASGI configuration
+│   │
+│   ├── tests/                  Test suite
+│   │   ├── conftest.py         Pytest fixtures
+│   │   ├── test_viewsets_auth.py
+│   │   ├── test_viewsets_notes.py
+│   │   └── test_viewsets_goals.py
+│   │
+│   ├── manage.py               Django management script
+│   ├── requirements/            Python dependencies
+│   │   ├── base.txt            Core dependencies
+│   │   ├── dev.txt             Development dependencies
+│   │   └── prod.txt            Production dependencies
+│   ├── .env.example            Environment variables template
+│   ├── Dockerfile              Production Docker image
+│   ├── docker-compose.yml      Docker services
+│   └── pyproject.toml          Project configuration
 │
-└── lib/                        Shared TypeScript workspace packages
-    ├── api-client-react/       Generated typed API hooks
-    ├── api-spec/               OpenAPI specification
-    └── api-zod/                Generated Zod validation schemas
+├── .github/                    GitHub CI/CD
+│   └── workflows/
+│       └── main.yml            CI/CD pipeline
+│
+├── docs/                       Documentation
+│   └── testing/
+│       └── guide.md           Testing strategy
+│
+├── README.md                   Project documentation
+├── .gitignore                  Git ignore rules
+└── render.yaml                 Render deployment config
 ```
 
 ## Local Development Setup
@@ -183,10 +227,13 @@ Copy `backend/.env.example` to `backend/.env` and configure the following:
 
 ## API Reference
 
-All endpoints are under `/api/v1/`. Interactive documentation:
+All endpoints are under `/api/v1/`. Interactive documentation is available via:
 
-- **Swagger UI**: `http://localhost:8000/api/v1/schema/swagger-ui/`
-- **ReDoc**: `http://localhost:8000/api/v1/schema/redoc/`
+- **Swagger UI**: `http://localhost:8000/api/docs/`
+- **ReDoc**: `http://localhost:8000/api/redoc/`
+- **OpenAPI Schema**: `http://localhost:8000/api/schema/`
+
+The API documentation is powered by `drf-spectacular` and provides comprehensive Swagger/OpenAPI specifications for all endpoints, including request/response schemas, authentication requirements, and example usage.
 
 ### Authentication
 
@@ -195,8 +242,16 @@ All endpoints are under `/api/v1/`. Interactive documentation:
 | POST | `auth/register/` | Create account |
 | POST | `auth/login/` | Login, receive JWT tokens |
 | POST | `auth/logout/` | Blacklist refresh token |
-| GET/PATCH | `auth/me/` | Current user |
+| GET/PATCH | `auth/me/` | Current user profile |
 | POST | `auth/password/reset/` | Request password reset |
+| POST | `auth/password/reset/confirm/` | Confirm password reset |
+| POST | `auth/verify-email/` | Verify email address |
+| POST | `auth/change-password/` | Change password for authenticated user |
+| GET | `auth/me/profile/` | Get detailed user profile |
+| PATCH | `auth/me/profile/` | Update user profile |
+| GET | `auth/me/profile/avatar/presets/` | Get available avatar presets |
+| POST | `auth/me/profile/avatar/` | Upload custom avatar |
+| DELETE | `auth/me/profile/avatar/` | Remove custom avatar |
 | POST | `token/refresh/` | Refresh access token |
 
 ### Study Planner
@@ -277,8 +332,12 @@ Request → Gemini (primary)
 - **Thin views** — all business logic lives in `services.py` per app; all AI logic in `services/ai_engine/`
 - **SSE streaming** — `chatbot/send/stream/` uses `StreamingHttpResponse`. Events: `chunk`, `done`, `error`
 - **Celery** — `.delay()` calls are wrapped in try/except; server degrades gracefully without Redis (expected in dev)
+- **Async AI Operations** — Note summarization and flashcard generation run as Celery tasks with tenacity retry logic for robustness
+- **Circuit Breaker** — AI gateway implements circuit breaker pattern with provider health tracking and automatic failover
+- **Security Middleware** — Custom middleware for CSP, HSTS, X-Frame-Options, request logging, and health checks
 - **Analytics** — has no models; queries cross-app tables at runtime
 - **Auto-verify in development** — email verification is skipped in `DEBUG=True` so you can sign up and immediately sign in
+- **API Documentation** — Comprehensive Swagger/OpenAPI documentation via `drf-spectacular` with all endpoints documented
 
 ## Testing
 
@@ -308,3 +367,11 @@ To report a vulnerability, follow the process in [`SECURITY.md`](SECURITY.md).
 ## License
 
 MIT — see [`LICENSE`](LICENSE) for details.
+
+---
+
+## Created By
+
+**Susan Acharya**
+
+Portfolio: [www.susanacharya1.com.np](https://www.susanacharya1.com.np)

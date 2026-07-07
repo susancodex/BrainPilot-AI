@@ -12,6 +12,30 @@ class Note(BaseModel):
     is_pinned = models.BooleanField(default=False)
     ai_summary = models.TextField(blank=True)
     summary_generated_at = models.DateTimeField(blank=True, null=True)
+    
+    # Async AI operation status tracking
+    summary_status = models.CharField(
+        max_length=20,
+        choices=[
+            ("pending", "Pending"),
+            ("processing", "Processing"),
+            ("completed", "Completed"),
+            ("failed", "Failed"),
+        ],
+        default="pending",
+        blank=True,
+    )
+    flashcards_status = models.CharField(
+        max_length=20,
+        choices=[
+            ("pending", "Pending"),
+            ("processing", "Processing"),
+            ("completed", "Completed"),
+            ("failed", "Failed"),
+        ],
+        default="pending",
+        blank=True,
+    )
 
     class Meta:
         db_table = "notes_notes"

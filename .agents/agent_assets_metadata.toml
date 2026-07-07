@@ -1,8 +1,0 @@
-uploads = []
-generated = []
-
-[[outputs]]
-id = "n7uyifK23FLcxiRz7mo3p"
-uri = "file://README.md"
-type = "text"
-title = "BrainPilot AI — README.md"

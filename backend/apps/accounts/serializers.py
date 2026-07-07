@@ -10,7 +10,7 @@ from .models import User, UserProfile
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=8)
+    password = serializers.CharField(write_only=True, min_length=12)
     password_confirm = serializers.CharField(write_only=True)
 
     class Meta:
@@ -25,6 +25,28 @@ class RegisterSerializer(serializers.ModelSerializer):
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError("This account is already registered.")
         return email
+
+    def validate_password(self, value: str) -> str:
+        # Enhanced password requirements
+        if not any(c.isupper() for c in value):
+            raise serializers.ValidationError("Password must contain at least one uppercase letter.")
+        if not any(c.islower() for c in value):
+            raise serializers.ValidationError("Password must contain at least one lowercase letter.")
+        if not any(c.isdigit() for c in value):
+            raise serializers.ValidationError("Password must contain at least one digit.")
+        if not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in value):
+            raise serializers.ValidationError("Password must contain at least one special character.")
+        
+        # Check for common passwords
+        common_passwords = ["password", "123456", "qwerty", "abc123", "letmein", "welcome", "monkey"]
+        if value.lower() in common_passwords:
+            raise serializers.ValidationError("Please choose a stronger password.")
+        
+        # Check for sequential patterns
+        if any(str(i) * 3 in value.lower() for i in range(10)):
+            raise serializers.ValidationError("Password cannot contain repeated numbers.")
+        
+        return value
 
     def validate(self, attrs):
         if attrs["password"] != attrs["password_confirm"]:
@@ -135,14 +157,33 @@ class UserSerializer(serializers.ModelSerializer):
 
 class ChangePasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(write_only=True)
-    new_password = serializers.CharField(write_only=True, min_length=8)
+    new_password = serializers.CharField(write_only=True, min_length=12)
 
     def validate_current_password(self, value):
         if not self.context["request"].user.check_password(value):
             raise serializers.ValidationError("Current password is incorrect.")
         return value
 
-    def validate_new_password(self, value):
+    def validate_new_password(self, value: str) -> str:
+        # Enhanced password requirements
+        if not any(c.isupper() for c in value):
+            raise serializers.ValidationError("Password must contain at least one uppercase letter.")
+        if not any(c.islower() for c in value):
+            raise serializers.ValidationError("Password must contain at least one lowercase letter.")
+        if not any(c.isdigit() for c in value):
+            raise serializers.ValidationError("Password must contain at least one digit.")
+        if not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in value):
+            raise serializers.ValidationError("Password must contain at least one special character.")
+        
+        # Check for common passwords
+        common_passwords = ["password", "123456", "qwerty", "abc123", "letmein", "welcome", "monkey"]
+        if value.lower() in common_passwords:
+            raise serializers.ValidationError("Please choose a stronger password.")
+        
+        # Check for sequential patterns
+        if any(str(i) * 3 in value.lower() for i in range(10)):
+            raise serializers.ValidationError("Password cannot contain repeated numbers.")
+        
         validate_password(value)
         return value
 
@@ -153,8 +194,27 @@ class PasswordResetRequestSerializer(serializers.Serializer):
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
     token = serializers.CharField()
-    new_password = serializers.CharField(min_length=8)
+    new_password = serializers.CharField(min_length=12)
 
-    def validate_new_password(self, value):
+    def validate_new_password(self, value: str) -> str:
+        # Enhanced password requirements
+        if not any(c.isupper() for c in value):
+            raise serializers.ValidationError("Password must contain at least one uppercase letter.")
+        if not any(c.islower() for c in value):
+            raise serializers.ValidationError("Password must contain at least one lowercase letter.")
+        if not any(c.isdigit() for c in value):
+            raise serializers.ValidationError("Password must contain at least one digit.")
+        if not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in value):
+            raise serializers.ValidationError("Password must contain at least one special character.")
+        
+        # Check for common passwords
+        common_passwords = ["password", "123456", "qwerty", "abc123", "letmein", "welcome", "monkey"]
+        if value.lower() in common_passwords:
+            raise serializers.ValidationError("Please choose a stronger password.")
+        
+        # Check for sequential patterns
+        if any(str(i) * 3 in value.lower() for i in range(10)):
+            raise serializers.ValidationError("Password cannot contain repeated numbers.")
+        
         validate_password(value)
         return value

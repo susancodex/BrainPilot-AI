@@ -1,13 +1,12 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { usePasswordResetConfirm } from "@/hooks/use-auth";
+import { AuthLayout } from "@/components/auth-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { BrainCircuit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const resetConfirmSchema = z.object({
@@ -48,55 +47,53 @@ export default function PasswordResetConfirm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <div className="max-w-md w-full space-y-8 bg-card p-8 rounded-xl shadow-lg border border-border">
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center p-3 rounded-full bg-primary/10 text-primary mb-4">
-            <BrainCircuit className="w-8 h-8" />
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Create New Password</h1>
-          <p className="text-muted-foreground">Please enter your new password below.</p>
-        </div>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>New Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} data-testid="input-new-password" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirm Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} data-testid="input-confirm-password" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={resetConfirm.isPending || !token}
-              data-testid="button-submit-new-password"
-            >
-              {resetConfirm.isPending ? "Updating..." : "Reset Password"}
-            </Button>
-          </form>
-        </Form>
-      </div>
-    </div>
+    <AuthLayout
+      title="Create new password"
+      description="Please enter your new password below."
+      footer={
+        <Link href="/login" className="font-medium text-primary hover:underline">
+          Back to sign in
+        </Link>
+      }
+    >
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>New Password</FormLabel>
+                <FormControl>
+                  <Input type="password" placeholder="••••••••" {...field} data-testid="input-new-password" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirm Password</FormLabel>
+                <FormControl>
+                  <Input type="password" placeholder="••••••••" {...field} data-testid="input-confirm-password" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={resetConfirm.isPending || !token}
+            data-testid="button-submit-new-password"
+          >
+            {resetConfirm.isPending ? "Updating..." : "Reset Password"}
+          </Button>
+        </form>
+      </Form>
+    </AuthLayout>
   );
 }

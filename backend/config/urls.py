@@ -6,6 +6,7 @@ from django.conf import settings
 from django.views.static import serve as media_serve
 from django.http import FileResponse, Http404
 from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework.permissions import AllowAny
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from apps.accounts.views import HealthCheckView, ReadinessCheckView, LivenessCheckView
@@ -40,15 +41,16 @@ def serve_asset(request, path, *args, **kwargs):
 
 
 urlpatterns = [
+    # API Documentation - must be before catch-all
+    path("api/schema/", SpectacularAPIView.as_view(permission_classes=[AllowAny]), name="api-schema"),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="api-schema", permission_classes=[AllowAny]), name="api-swagger-ui"),
+    path("api/redoc/", SpectacularRedocView.as_view(url_name="api-schema", permission_classes=[AllowAny]), name="api-redoc"),
+
     path("admin/", admin.site.urls),
 
     path("api/v1/health/", HealthCheckView.as_view(), name="health-check"),
     path("api/v1/ready/", ReadinessCheckView.as_view(), name="readiness-check"),
     path("api/v1/live/", LivenessCheckView.as_view(), name="liveness-check"),
-
-    path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),
-    path("api/docs/", SpectacularSwaggerView.as_view(url_name="api-schema"), name="api-swagger-ui"),
-    path("api/redoc/", SpectacularRedocView.as_view(url_name="api-schema"), name="api-redoc"),
 
     path("api/v1/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 
@@ -81,7 +83,7 @@ urlpatterns += [
 ]
 
 urlpatterns += [
-    re_path(r"^.*$", serve_react, name="frontend"),
+    re_path(r"^(?!api|admin|media|__debug__|assets|static).*$", serve_react, name="frontend"),
 ]
 
 if settings.DEBUG:

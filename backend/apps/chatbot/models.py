@@ -7,6 +7,7 @@ class Conversation(BaseModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="conversations")
     title = models.CharField(max_length=500, blank=True)
     subject_context = models.CharField(max_length=255, blank=True)
+    is_archived = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     message_count = models.PositiveIntegerField(default=0)
     last_message_at = models.DateTimeField(blank=True, null=True)

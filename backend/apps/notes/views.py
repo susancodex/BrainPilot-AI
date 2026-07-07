@@ -53,10 +53,22 @@ class GenerateNoteSummaryView(APIView):
 
     def post(self, request, pk):
         note = NoteService.get_note(request.user, pk)
-        note = NoteService.generate_summary(note)
+        
+        # Trigger async task instead of synchronous call
+        from .tasks import generate_note_summary_task
+        task = generate_note_summary_task.delay(str(note.id))
+        
+        # Update status to pending
+        note.summary_status = "processing"
+        note.save(update_fields=["summary_status"])
+        
         return success_response(
-            data={"summary": note.ai_summary, "generated_at": note.summary_generated_at},
-            message="Summary generated.",
+            data={
+                "task_id": task.id,
+                "status": "processing",
+                "note_id": str(note.id),
+            },
+            message="Summary generation started. Check status later.",
         )
 
 
@@ -66,13 +78,22 @@ class GenerateFlashcardsView(APIView):
 
     def post(self, request, pk):
         note = NoteService.get_note(request.user, pk)
-        serializer = GenerateFlashcardsSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        count = serializer.validated_data.get("count", 5)
-        flashcards = NoteService.generate_flashcards(request.user, note, count=count)
-        return created_response(
-            data=FlashcardSerializer(flashcards, many=True).data,
-            message=f"{len(flashcards)} flashcard(s) generated.",
+        
+        # Trigger async task instead of synchronous call
+        from .tasks import generate_flashcards_task
+        task = generate_flashcards_task.delay(str(note.id))
+        
+        # Update status to pending
+        note.flashcards_status = "processing"
+        note.save(update_fields=["flashcards_status"])
+        
+        return success_response(
+            data={
+                "task_id": task.id,
+                "status": "processing",
+                "note_id": str(note.id),
+            },
+            message="Flashcard generation started. Check status later.",
         )
 
 
@@ -131,3 +152,22 @@ class FlashcardReviewView(APIView):
             correct = False
         flashcard = NoteService.review_flashcard(request.user, pk, correct)
         return success_response(data=FlashcardSerializer(flashcard).data)
+
+
+class AITaskStatusView(APIView):
+    """Check the status of async AI generation tasks."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        """Get the status of AI operations for a note."""
+        note = NoteService.get_note(request.user, pk)
+        
+        return success_response(
+            data={
+                "note_id": str(note.id),
+                "summary_status": note.summary_status,
+                "flashcards_status": note.flashcards_status,
+                "has_summary": bool(note.ai_summary),
+                "flashcard_count": note.flashcards.count() if hasattr(note, 'flashcards') else 0,
+            }
+        )

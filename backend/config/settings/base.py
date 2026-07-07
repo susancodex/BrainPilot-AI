@@ -49,6 +49,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "common.middleware.SecurityHeadersMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -56,6 +57,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "common.middleware.RequestLoggingMiddleware",
+    "common.middleware.HealthCheckMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -159,10 +162,36 @@ REST_FRAMEWORK = {
         "anon": "30/minute",
         "user": "120/minute",
         "auth": "10/minute",
-        "ai_generate": "20/minute",
-        "ai_chat": "60/minute",
+        "auth_register": "5/hour",
+        "auth_reset": "3/hour",
+        "ai_generate": "10/minute",
+        "ai_chat": "30/minute",
+        "profile_update": "20/minute",
+        "file_upload": "10/minute",
+        "expensive": "5/minute",
     },
     "EXCEPTION_HANDLER": "common.exceptions.custom_exception_handler",
+}
+
+# drf-spectacular configuration
+SPECTACULAR_SETTINGS = {
+    "TITLE": "BrainPilot AI API",
+    "DESCRIPTION": "AI-powered study companion API for students",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "COMPONENT_NO_READ_ONLY_REQUIRED": True,
+    "SWAGGER_UI_DIST": "https://cdn.jsdelivr.net/npm/swagger-ui-dist@latest",
+    "REDOC_DIST": "https://cdn.jsdelivr.net/npm/redoc@latest",
+    "SCHEMA_PATH_PREFIX": "/api/v1",
+    "SWAGGER_UI_SETTINGS": {
+        "deepLinking": True,
+        "persistAuthorization": True,
+        "displayRequestDuration": True,
+    },
+    "SERVERS": [
+        {"url": "http://localhost:8000", "description": "Development server"},
+    ],
 }
 
 SIMPLE_JWT = {
@@ -202,6 +231,8 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")

@@ -14,7 +14,7 @@ from utils.helpers import generate_token
 logger = logging.getLogger(__name__)
 
 MAX_LOGIN_ATTEMPTS = 5
-LOCKOUT_DURATION_MINUTES = 15
+LOCKOUT_DURATION_MINUTES = 30
 
 
 class AuthService:

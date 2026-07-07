@@ -15,6 +15,7 @@ from common.responses import success_response, created_response
 
 class PDFListView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_scope = "file_upload"
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request):

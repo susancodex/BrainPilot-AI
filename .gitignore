@@ -67,4 +67,7 @@ Thumbs.db
 *.log
 *.pid
 *.bak
+*.tmp
+*.swp
+*.swo
 uv.lock

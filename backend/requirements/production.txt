@@ -9,3 +9,6 @@ psycopg[binary]>=3.1
 
 # Groq AI fallback (not in base.txt)
 groq>=0.9
+
+# Structured JSON logging for production
+python-json-logger>=2.0.0

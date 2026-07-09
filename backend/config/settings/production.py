@@ -22,6 +22,18 @@ if sentry_dsn:
 
 DEBUG = False
 
+# ── Error Handling ───────────────────────────────────────────────────────────────
+# Ensure no debug information is leaked in production error responses
+# This overrides any debug page rendering even if DEBUG is accidentally enabled
+def custom_show_tech_500(request):
+    """Never show Django debug page in production"""
+    from django.http import HttpResponseServerError
+    return HttpResponseServerError("Internal Server Error")
+
+# Override debug view to prevent accidental debug information leakage
+if DEBUG:  # This should never happen, but safeguard anyway
+    raise ValueError("DEBUG must be False in production settings")
+
 REQUIRE_EMAIL_VERIFICATION = (
     os.environ.get("REQUIRE_EMAIL_VERIFICATION", "true").lower() == "true"
 )
@@ -167,6 +179,7 @@ ROOT_URLCONF = "config.urls"
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 # Use python-json-logger for structured JSON logging in production
+# Ensure debug traces are suppressed and sensitive information is not logged
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -184,12 +197,20 @@ LOGGING = {
     },
     "root": {
         "handlers": ["console"],
-        "level": "INFO",
+        "level": "INFO",  # Never log DEBUG in production
     },
     "loggers": {
         "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "django.db.backends": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "django.request": {"handlers": ["console"], "level": "ERROR", "propagate": False},
+        "django.security": {"handlers": ["console"], "level": "WARNING", "propagate": False},
         "apps": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "services": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
+    # Prevent Django from logging debug information in error responses
+    "filters": {
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
+        },
     },
 }

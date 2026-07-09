@@ -130,13 +130,46 @@ class AIGateway:
             except ProviderError as exc:
                 latency = (time.monotonic() - start) * 1000
                 health.record_failure()
-                logger.warning(
-                    "Provider %s failed (method=%s latency=%.1fms): %s — trying next",
-                    provider.name,
-                    method,
-                    latency,
-                    exc,
-                )
+                
+                # Enhanced logging for monitoring/alerting
+                if exc.status_code == 429:
+                    # Rate limit error - high priority for alerting
+                    logger.error(
+                        "RATE_LIMIT_ALERT: Provider %s hit rate limit (method=%s latency=%.1fms) - retry_after=%s",
+                        provider.name,
+                        method,
+                        latency,
+                        getattr(exc, 'retry_after', 'unknown'),
+                        extra={
+                            "alert_type": "rate_limit",
+                            "provider": provider.name,
+                            "status_code": exc.status_code,
+                            "retry_after": getattr(exc, 'retry_after', None),
+                        }
+                    )
+                elif exc.status_code in [502, 504]:
+                    # Provider gateway errors - medium priority for alerting
+                    logger.warning(
+                        "PROVIDER_UNSTABLE: Provider %s returned %s (method=%s latency=%.1fms)",
+                        provider.name,
+                        exc.status_code,
+                        method,
+                        latency,
+                        extra={
+                            "alert_type": "provider_unstable",
+                            "provider": provider.name,
+                            "status_code": exc.status_code,
+                        }
+                    )
+                else:
+                    logger.warning(
+                        "Provider %s failed (method=%s latency=%.1fms): %s — trying next",
+                        provider.name,
+                        method,
+                        latency,
+                        exc,
+                    )
+                
                 last_exc = exc
                 continue
 

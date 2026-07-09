@@ -9,6 +9,8 @@ const api = axios.create({
   // Prod: baseURL="https://brainpilot-api.onrender.com"  → absolute calls to Render
   baseURL: _apiOrigin || "/api/v1",
   withCredentials: true, // Important for HttpOnly cookies
+  // Extended timeouts for PaaS cold starts (Render free tier sleeps after 15min)
+  timeout: 60000, // 60 seconds - handles cold start delays gracefully
 });
 
 // Unwrap the standard backend envelope: { success, message, data: X } → X

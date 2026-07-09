@@ -8,6 +8,9 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   timeout: 120000, // 2 minutes for AI workflows in eager mode
+  expect: {
+    timeout: 90000, // 90 seconds for assertions waiting for AI-generated content
+  },
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',

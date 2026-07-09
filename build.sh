@@ -6,10 +6,16 @@ set -euo pipefail
 
 log() { echo "[BUILD $(date -u '+%H:%M:%S')] $*"; }
 
-# ── Python dependencies ────────────────────────────────────────────────────────
-log "Installing Python dependencies..."
+# ── Install uv for fast dependency management ───────────────────────────────────
+log "Installing uv..."
 pip install --upgrade pip --quiet
-pip install -r backend/requirements/production.txt
+pip install uv --quiet
+
+# ── Python dependencies ────────────────────────────────────────────────────────
+log "Installing Python dependencies with uv..."
+cd backend
+uv sync --frozen --no-dev
+cd ..
 
 # ── Django collectstatic ───────────────────────────────────────────────────────
 log "Collecting Django static files (admin panel, DRF browseable API, etc.)..."

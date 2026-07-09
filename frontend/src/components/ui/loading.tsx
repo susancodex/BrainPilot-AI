@@ -20,14 +20,23 @@ export function LoadingSpinner({ size = "md", className }: LoadingSpinnerProps) 
 
 interface LoadingPageProps {
   message?: string;
+  showColdStartHint?: boolean;
 }
 
-export function LoadingPage({ message = "Loading..." }: LoadingPageProps) {
+export function LoadingPage({ 
+  message = "Loading...", 
+  showColdStartHint = false 
+}: LoadingPageProps) {
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
+      <div className="text-center max-w-md px-4">
         <LoadingSpinner size="lg" className="mx-auto mb-4" />
-        <p className="text-muted-foreground">{message}</p>
+        <p className="text-muted-foreground mb-2">{message}</p>
+        {showColdStartHint && (
+          <p className="text-xs text-muted-foreground/60">
+            Server may be waking up from sleep. This may take up to 60 seconds.
+          </p>
+        )}
       </div>
     </div>
   );

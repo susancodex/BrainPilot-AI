@@ -79,10 +79,12 @@ services:
       - key: FRONTEND_URL
         sync: false
 
-      # ── Free-tier tweaks ──────────────────────────────────────────────────────
-      # No Redis on free tier — Celery tasks run synchronously in-process
+      # ── Redis / Celery ──────────────────────────────────────────────────────────
+      # Upstash Redis for async Celery tasks
+      - key: REDIS_URL
+        sync: false                        # set manually in Render dashboard
       - key: CELERY_ALWAYS_EAGER
-        value: "true"
+        value: "false"                      # async mode with Redis
 
       # ── Security ──────────────────────────────────────────────────────────────
       - key: SECURE_SSL_REDIRECT

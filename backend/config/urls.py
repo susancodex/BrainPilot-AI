@@ -69,6 +69,9 @@ urlpatterns = [
     path("api/v1/pdfs/", include("apps.pdfs.urls")),
     path("api/v1/subscriptions/", include("apps.subscriptions.urls")),
 
+    # Prometheus metrics endpoint
+    path("", include("django_prometheus.urls")),
+
     re_path(r"^assets/(?P<path>.+)$", serve_asset, name="frontend-asset"),
 ]
 

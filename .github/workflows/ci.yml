@@ -66,6 +66,81 @@ jobs:
           file: backend/coverage.xml
           flags: backend
 
+  backend-lint:
+    name: Backend lint & format
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync
+
+      - name: Run Ruff linter
+        working-directory: backend
+        run: uv run ruff check .
+
+      - name: Run Ruff formatter check
+        working-directory: backend
+        run: uv run ruff format --check .
+
+  backend-security:
+    name: Backend security scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Bandit
+        run: pip install bandit[toml]
+
+      - name: Run Bandit security scan
+        working-directory: backend
+        run: bandit -r . -f json -o bandit-report.json || true
+
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: backend/bandit-report.json
+
+  frontend-test:
+    name: Frontend unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run unit tests
+        run: pnpm --filter @workspace/brainpilot-web run test
+
   frontend-typecheck:
     name: Frontend type check
     runs-on: ubuntu-latest
@@ -88,3 +163,130 @@ jobs:
 
       - name: Type check
         run: pnpm --filter @workspace/brainpilot-web run typecheck
+
+  frontend-lint:
+    name: Frontend lint & format
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        run: pnpm --filter @workspace/brainpilot-web run lint
+
+      - name: Run Prettier check
+        run: pnpm --filter @workspace/brainpilot-web run format:check
+
+  docker-security:
+    name: Docker security scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker images
+        run: docker-compose -f docker-compose.prod.yml build
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'brainpilot-api:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  e2e-test:
+    name: E2E tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: brainpilot_test
+          POSTGRES_USER: brainpilot
+          POSTGRES_PASSWORD: testpassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.development
+      DATABASE_URL: postgresql://brainpilot:testpassword@localhost:5432/brainpilot_test
+      DJANGO_SECRET_KEY: ci-test-secret-key-not-used-in-production
+      PYTHONPATH: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync
+
+      - name: Run migrations
+        working-directory: backend
+        run: python manage.py migrate --noinput
+
+      - name: Start backend server
+        working-directory: backend
+        run: |
+          uv run gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 &
+          sleep 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright
+        run: pnpm exec playwright install --with-deps
+
+      - name: Run Playwright tests
+        run: pnpm --filter @workspace/brainpilot-web run test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/

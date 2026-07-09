@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
+import { visualizer } from "rollup-plugin-visualizer";
 
 const port = parseInt(process.env.PORT ?? "5173", 10);
 const basePath = process.env.BASE_PATH ?? "/";
@@ -11,6 +12,12 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    visualizer({
+      open: false,
+      gzipSize: true,
+      brotliSize: true,
+      filename: "dist/stats.html",
+    }),
   ],
   resolve: {
     alias: {

@@ -42,6 +42,11 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOWED_ORIGIN_REGEXES = []
 
+# Security: Never allow all origins in production
+CORS_ALLOW_ALL_ORIGINS = False
+if os.environ.get("CORS_ALLOW_ALL_ORIGINS", "false").lower() == "true":
+    raise ValueError("CORS_ALLOW_ALL_ORIGINS must not be enabled in production")
+
 # ── CSRF ──────────────────────────────────────────────────────────────────────
 # Comma-separated list of trusted origins for CSRF protection.
 # Must include every origin that submits forms/POST requests (e.g. your Vercel URL).
@@ -149,24 +154,32 @@ if os.environ.get("EMAIL_HOST_USER", "").strip():
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
+# ── Prometheus Metrics ─────────────────────────────────────────────────────────
+# Add Prometheus middleware for metrics collection
+MIDDLEWARE = (
+    ["django_prometheus.middleware.PrometheusBeforeMiddleware"]
+    + MIDDLEWARE
+    + ["django_prometheus.middleware.PrometheusAfterMiddleware"]
+)
+
+# Add Prometheus URLs to the root URL configuration
+ROOT_URLCONF = "config.urls"
+
 # ── Logging ───────────────────────────────────────────────────────────────────
+# Use python-json-logger for structured JSON logging in production
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
-        "verbose": {
-            "format": "level={levelname} time={asctime} logger={name} module={module} message={message}",
-            "style": "{",
-        },
-        "simple": {
-            "format": "level={levelname} time={asctime} logger={name} message={message}",
-            "style": "{",
+        "json": {
+            "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+            "format": "%(asctime)s %(name)s %(levelname)s %(message)s",
         },
     },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "formatter": "simple",
+            "formatter": "json",
         },
     },
     "root": {

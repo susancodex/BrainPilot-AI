@@ -12,8 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-COPY requirements/ requirements/
-RUN uv pip install --system --no-cache -r requirements/production.txt
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev
 
 # ── Stage 2: Production image ─────────────────────────────────────────────────
 FROM python:3.12-slim AS production
@@ -30,9 +30,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=dependencies /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=dependencies /usr/local/bin/gunicorn /usr/local/bin/gunicorn
-COPY --from=dependencies /usr/local/bin/celery /usr/local/bin/celery
+COPY --from=dependencies /app/.venv /app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
 
 RUN groupadd -r brainpilot && useradd -r -g brainpilot brainpilot
 

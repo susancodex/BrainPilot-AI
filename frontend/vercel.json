@@ -1,8 +1,8 @@
 {
-  "buildCommand": "cd .. && pnpm install --no-frozen-lockfile && pnpm --filter @workspace/brainpilot-web run build",
+  "buildCommand": "pnpm install && pnpm run build",
   "outputDirectory": "dist/public",
-  "installCommand": "echo 'install handled by buildCommand'",
-  "framework": null,
+  "installCommand": "pnpm install",
+  "framework": "vite",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ],

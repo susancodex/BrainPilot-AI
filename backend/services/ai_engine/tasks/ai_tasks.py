@@ -1,10 +1,11 @@
 import logging
 from celery import shared_task
+from ai.exceptions import RateLimitError, TimeoutError
 
 logger = logging.getLogger(__name__)
 
 
-@shared_task(bind=True, max_retries=2, default_retry_delay=30)
+@shared_task(bind=True, max_retries=3)
 def generate_study_plan_async(self, user_id: str, request_data: dict):
     try:
         from apps.accounts.models import User
@@ -17,12 +18,16 @@ def generate_study_plan_async(self, user_id: str, request_data: dict):
         plan = PlannerService.create_ai_plan(user, ai_response, request_data)
         logger.info("Async study plan created: %s", plan.id)
         return str(plan.id)
+    except (RateLimitError, TimeoutError) as exc:
+        # Exponential backoff: 2s, 4s, 8s
+        logger.warning("Rate limit or timeout on study plan generation, retrying: %s", exc)
+        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
     except Exception as exc:
         logger.error("Async study plan generation failed: %s", exc)
-        self.retry(exc=exc)
+        raise
 
 
-@shared_task(bind=True, max_retries=2, default_retry_delay=30)
+@shared_task(bind=True, max_retries=3)
 def generate_note_summary_async(self, note_id: str):
     try:
         from apps.notes.models import Note
@@ -35,9 +40,13 @@ def generate_note_summary_async(self, note_id: str):
         summary = adapter.generate_text(build_summary_prompt(note.content))
         NoteService.save_ai_summary(note, summary)
         logger.info("Async note summary generated for: %s", note_id)
+    except (RateLimitError, TimeoutError) as exc:
+        # Exponential backoff: 2s, 4s, 8s
+        logger.warning("Rate limit or timeout on note summary, retrying: %s", exc)
+        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
     except Exception as exc:
         logger.error("Async note summary failed: %s", exc)
-        self.retry(exc=exc)
+        raise
 
 
 @shared_task(bind=True)

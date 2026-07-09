@@ -56,6 +56,10 @@ jobs:
         working-directory: backend
         run: python manage.py migrate --noinput
 
+      - name: Django deployment check
+        working-directory: backend
+        run: python manage.py check --deploy
+
       - name: Run tests
         working-directory: backend
         run: pytest tests/ -v --tb=short --cov=apps --cov=services --cov-report=xml

@@ -73,11 +73,11 @@ services:
       # ── CORS / CSRF — set to your Vercel URL after first deploy ───────────────
       # Example: https://brainpilot.vercel.app
       - key: CORS_ALLOWED_ORIGINS
-        sync: false
+        value: https://brain-pilot-ai-frontend-smoky.vercel.app
       - key: CSRF_TRUSTED_ORIGINS
-        sync: false
+        value: https://brain-pilot-ai-frontend-smoky.vercel.app
       - key: FRONTEND_URL
-        sync: false
+        value: https://brain-pilot-ai-frontend-smoky.vercel.app
 
       # ── Redis / Celery ──────────────────────────────────────────────────────────
       # Upstash Redis for async Celery tasks

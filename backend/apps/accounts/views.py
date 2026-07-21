@@ -4,7 +4,7 @@ from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view, throttle_classes, permission_classes, authentication_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
@@ -25,6 +25,8 @@ logger = logging.getLogger(__name__)
 
 @api_view(['GET'])
 @throttle_classes([])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def api_root(request):
     """Root API endpoint - returns simple JSON response."""
     return Response({

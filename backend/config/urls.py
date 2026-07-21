@@ -9,7 +9,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.permissions import AllowAny
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
-from apps.accounts.views import HealthCheckView, ReadinessCheckView, LivenessCheckView
+from apps.accounts.views import HealthCheckView, ReadinessCheckView, LivenessCheckView, api_root
 
 FRONTEND_BUILD_DIR = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist" / "public"
 
@@ -41,6 +41,9 @@ def serve_asset(request, path, *args, **kwargs):
 
 
 urlpatterns = [
+    # Root API endpoint - must be before catch-all
+    path("", api_root, name="api-root"),
+
     # API Documentation - must be before catch-all
     path("api/schema/", SpectacularAPIView.as_view(permission_classes=[AllowAny]), name="api-schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="api-schema", permission_classes=[AllowAny]), name="api-swagger-ui"),

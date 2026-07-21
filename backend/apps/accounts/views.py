@@ -4,6 +4,8 @@ from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
+from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 
@@ -19,6 +21,17 @@ from common.exceptions import AppError
 from common.responses import success_response, created_response, error_response
 
 logger = logging.getLogger(__name__)
+
+
+@api_view(['GET'])
+@throttle_classes([])
+def api_root(request):
+    """Root API endpoint - returns simple JSON response."""
+    return Response({
+        "status": "online",
+        "message": "Welcome to the BrainPilot API.",
+        "version": "v1"
+    })
 
 
 class HealthCheckView(APIView):

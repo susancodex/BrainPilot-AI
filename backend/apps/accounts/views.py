@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 class HealthCheckView(APIView):
     """Basic liveness probe — returns 200 if the process is running."""
     permission_classes = [AllowAny]
+    throttle_classes = []
 
     @extend_schema(
         summary="Health Check",
@@ -45,6 +46,7 @@ class HealthCheckView(APIView):
 class ReadinessCheckView(APIView):
     """Readiness probe — returns 200 only when DB and cache are reachable."""
     permission_classes = [AllowAny]
+    throttle_classes = []
 
     def get(self, request):
         from django.db import connection, OperationalError as DBError
@@ -85,6 +87,7 @@ class ReadinessCheckView(APIView):
 class LivenessCheckView(APIView):
     """Liveness probe — lightweight alive signal, never touches DB or cache."""
     permission_classes = [AllowAny]
+    throttle_classes = []
 
     def get(self, request):
         return success_response(

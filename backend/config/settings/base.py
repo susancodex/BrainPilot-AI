@@ -143,7 +143,7 @@ SPECTACULAR_SETTINGS = {
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "config.settings.authentication.CookieJWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
@@ -210,7 +210,7 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": True,
     "ALGORITHM": "HS256",
     "AUTH_HEADER_TYPES": ("Bearer",),
-    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "AUTH_TOKEN_CLASSES": ("config.settings.authentication.CustomAccessToken",),
 }
 
 CORS_ALLOW_ALL_ORIGINS = False

@@ -28,9 +28,15 @@ class PDFListView(APIView):
         )
 
     def post(self, request):
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"PDF Upload: request.data keys = {list(request.data.keys())}")
+        logger.info(f"PDF Upload: request.FILES keys = {list(request.FILES.keys())}")
+        logger.info(f"PDF Upload: request.user = {request.user.email if request.user else 'None'}")
         serializer = PDFUploadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         d = serializer.validated_data
+        logger.info(f"PDF Upload: validated data keys = {list(d.keys())}")
         doc = PDFService.upload_pdf(
             user=request.user,
             file=d["file"],

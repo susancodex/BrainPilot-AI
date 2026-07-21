@@ -73,20 +73,6 @@ const queryClient = new QueryClient({
   },
 });
 
-function AuthExpiredListener() {
-  const [, navigate] = useLocation();
-
-  useEffect(() => {
-    const handleAuthExpired = () => navigate("/");
-    window.addEventListener("brainpilot:auth-expired", handleAuthExpired);
-    return () => {
-      window.removeEventListener("brainpilot:auth-expired", handleAuthExpired);
-    };
-  }, [navigate]);
-
-  return null;
-}
-
 function PrivateRoutes() {
   return (
     <AppLayout>
@@ -122,20 +108,17 @@ function PrivateRoutes() {
 
 function Router() {
   return (
-    <>
-      <AuthExpiredListener />
-      <Switch>
-        <Route path="/"                      component={Home} />
-        <Route path="/login"                 component={Login} />
-        <Route path="/register"              component={Register} />
-        <Route path="/verify-email"          component={VerifyEmail} />
-        <Route path="/password-reset"        component={PasswordReset} />
-        <Route path="/password-reset/confirm" component={PasswordResetConfirm} />
-        <Route path="/(.*)">
-          <PrivateRoute component={PrivateRoutes} />
-        </Route>
-      </Switch>
-    </>
+    <Switch>
+      <Route path="/"                      component={Home} />
+      <Route path="/login"                 component={Login} />
+      <Route path="/register"              component={Register} />
+      <Route path="/verify-email"          component={VerifyEmail} />
+      <Route path="/password-reset"        component={PasswordReset} />
+      <Route path="/password-reset/confirm" component={PasswordResetConfirm} />
+      <Route path="/(.*)">
+        <PrivateRoute component={PrivateRoutes} />
+      </Route>
+    </Switch>
   );
 }
 

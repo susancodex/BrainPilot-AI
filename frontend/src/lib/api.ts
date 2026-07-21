@@ -1,19 +1,22 @@
 import axios from "axios";
+import { getAccessToken, getRefreshToken, setTokens, clearTokens } from "./auth";
 
-// VITE_API_URL = the Render backend origin, e.g. "https://brainpilot-api.onrender.com"
-// In dev (no env var): empty string → relative URLs handled by the Vite proxy (/api → localhost:8000)
 const _apiOrigin = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
 
 const api = axios.create({
-  // Dev:  baseURL="/api/v1"  → relative, Vite proxy forwards to Django on localhost:8000
-  // Prod: baseURL="https://brainpilot-api.onrender.com"  → absolute calls to Render
   baseURL: _apiOrigin || "/api/v1",
-  withCredentials: true, // Important for HttpOnly cookies
-  // Extended timeouts for PaaS cold starts (Render free tier sleeps after 15min)
-  timeout: 60000, // 60 seconds - handles cold start delays gracefully
+  withCredentials: true,
+  timeout: 60000,
 });
 
-// Unwrap the standard backend envelope: { success, message, data: X } → X
+api.interceptors.request.use((config) => {
+  const token = getAccessToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 api.interceptors.response.use(
   (response) => {
     if (
@@ -34,29 +37,37 @@ api.interceptors.response.use(
         return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
         })
-          .then(() => {
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
             return api(originalRequest);
           })
-          .catch((err) => {
-            return Promise.reject(err);
-          });
+          .catch((err) => Promise.reject(err));
       }
 
       originalRequest._retry = true;
       isRefreshing = true;
 
+      const refresh = getRefreshToken();
+      if (!refresh) {
+        clearTokens();
+        redirectToLogin();
+        return Promise.reject(error);
+      }
+
       try {
-        // With HttpOnly cookies, the browser automatically sends the refresh token cookie
-        // We just need to call the refresh endpoint
         const { data } = await axios.post(
-          `${_apiOrigin}/api/v1/token/refresh/`,
-          {},
+          `${_apiOrigin || ""}/api/v1/token/refresh/`,
+          { refresh },
           { withCredentials: true },
         );
+        setTokens(data.access, refresh);
+        api.defaults.headers.common.Authorization = `Bearer ${data.access}`;
+        originalRequest.headers.Authorization = `Bearer ${data.access}`;
         processQueue(null, data.access);
         return api(originalRequest);
       } catch (err) {
         processQueue(err, null);
+        clearTokens();
         redirectToLogin();
         return Promise.reject(err);
       } finally {
@@ -65,7 +76,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 function redirectToLogin() {

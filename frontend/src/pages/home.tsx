@@ -82,10 +82,6 @@ const HIGHLIGHTS = [
 ];
 
 export default function Home() {
-  if (isAuthenticated()) {
-    return <Redirect to="/dashboard" />;
-  }
-
   return (
     <div className="min-h-screen bg-background text-foreground antialiased overflow-x-hidden">
 

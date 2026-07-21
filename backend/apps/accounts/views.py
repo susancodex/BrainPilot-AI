@@ -131,6 +131,8 @@ class RegisterView(APIView):
         
         response = created_response(
             data={
+                "access": tokens["access"],
+                "refresh": tokens["refresh"],
                 "user": UserSerializer(tokens["user"], context={"request": request}).data,
             },
             message="Account created. Please verify your email."
@@ -183,6 +185,8 @@ class LoginView(APIView):
         
         response = success_response(
             data={
+                "access": tokens["access"],
+                "refresh": tokens["refresh"],
                 "user": UserSerializer(tokens["user"], context={"request": request}).data,
             },
             message="Login successful.",
@@ -209,7 +213,7 @@ class LogoutView(APIView):
         tags=["Authentication"]
     )
     def post(self, request):
-        refresh_token = request.data.get("refresh")
+        refresh_token = request.data.get("refresh") or request.COOKIES.get("refresh_token")
         if refresh_token:
             try:
                 token = RefreshToken(refresh_token)

@@ -45,7 +45,7 @@ export const useAuth = () => {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const refresh = localStorage.getItem("refresh_token");
+      const refresh = getAccessToken() ? localStorage.getItem("refresh_token") : null;
       if (refresh) {
         await api.post("/auth/logout/", { refresh });
       }

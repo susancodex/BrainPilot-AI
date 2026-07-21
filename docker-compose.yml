@@ -1,0 +1,127 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL Database ───────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: brainpilot-db
+    environment:
+      POSTGRES_DB: brainpilot_db
+      POSTGRES_USER: brainpilot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localpassword}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brainpilot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis Cache/Queue ────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: brainpilot-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Django Backend API ────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: brainpilot-backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://brainpilot:${POSTGRES_PASSWORD:-localpassword}@db:5432/brainpilot_db
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_SETTINGS_MODULE: config.settings.development
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - ./backend/logs:/app/logs
+      - ./backend/media:/app/media
+    command: >
+      sh -c "
+        python manage.py migrate --noinput &&
+        python manage.py collectstatic --noinput &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+
+  # ── Celery Worker ─────────────────────────────────────────────────────────────
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: brainpilot-celery
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://brainpilot:${POSTGRES_PASSWORD:-localpassword}@db:5432/brainpilot_db
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_SETTINGS_MODULE: config.settings.development
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - ./backend/logs:/app/logs
+      - ./backend/media:/app/media
+    command: celery -A config.celery worker --loglevel=info --concurrency=2
+
+  # ── Celery Beat Scheduler ─────────────────────────────────────────────────────
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: brainpilot-celery-beat
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://brainpilot:${POSTGRES_PASSWORD:-localpassword}@db:5432/brainpilot_db
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_SETTINGS_MODULE: config.settings.development
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - ./backend/logs:/app/logs
+    command: celery -A config.celery beat --loglevel=info
+
+  # ── React Frontend ──────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: brainpilot-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./frontend:/workspace
+      - /workspace/node_modules
+    command: npm run dev -- --host 0.0.0.0
+
+volumes:
+  postgres_data:

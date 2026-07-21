@@ -27,11 +27,17 @@ export const useCreateNote = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { title: string; content: string; subject?: string }) => {
+      console.log('Creating note with payload:', payload);
       const { data } = await api.post("/notes/", payload);
+      console.log('Note created successfully:', data);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Create note onSuccess, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ["notes"] });
+    },
+    onError: (error) => {
+      console.error('Failed to create note:', error);
     },
   });
 };

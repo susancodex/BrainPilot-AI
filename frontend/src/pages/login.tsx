@@ -26,9 +26,19 @@ export default function Login() {
   });
 
   const onSubmit = (data: z.infer<typeof loginSchema>) => {
+    console.log('Login form submitted');
     login.mutate(data, {
-      onSuccess: () => setLocation("/dashboard"),
+      onSuccess: () => {
+        console.log('Login onSuccess callback triggered, navigating to /dashboard');
+        setLocation("/dashboard");
+        // Fallback: force navigation after a short delay
+        setTimeout(() => {
+          console.log('Fallback navigation to /dashboard');
+          window.location.href = '/dashboard';
+        }, 100);
+      },
       onError: (error) => {
+        console.error('Login failed:', error);
         toast({
           title: "Sign in failed",
           description: getApiErrorMessage(error, "Check your email and password."),

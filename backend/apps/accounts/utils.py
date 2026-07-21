@@ -1,5 +1,6 @@
 from datetime import timedelta
 from rest_framework_simplejwt.settings import api_settings
+from django.conf import settings
 
 
 def set_jwt_cookies(response, access_token, refresh_token):
@@ -7,12 +8,15 @@ def set_jwt_cookies(response, access_token, refresh_token):
     access_token_lifetime = api_settings.ACCESS_TOKEN_LIFETIME.total_seconds()
     refresh_token_lifetime = api_settings.REFRESH_TOKEN_LIFETIME.total_seconds()
     
+    # In development, don't use secure flag (cookies work over HTTP)
+    secure = not settings.DEBUG
+    
     response.set_cookie(
         'access_token',
         access_token,
         max_age=int(access_token_lifetime),
         httponly=True,
-        secure=True,
+        secure=secure,
         samesite='Lax',
         path='/',
     )
@@ -22,7 +26,7 @@ def set_jwt_cookies(response, access_token, refresh_token):
         refresh_token,
         max_age=int(refresh_token_lifetime),
         httponly=True,
-        secure=True,
+        secure=secure,
         samesite='Lax',
         path='/',
     )

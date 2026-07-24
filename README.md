@@ -2,16 +2,21 @@
 
 An AI-powered study companion SaaS that helps students plan, revise, quiz themselves, and track academic progress — built with Django 6 + React 19 and powered by Google Gemini with automatic multi-provider failover.
 
+**Live Demo:** [brain-pilot-ai-frontend-ifvm.vercel.app](https://brain-pilot-ai-frontend-ifvm.vercel.app)
+
 ## Table of Contents
 
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
+- [Deployment](#deployment)
 - [Local Development Setup](#local-development-setup)
 - [Environment Variables](#environment-variables)
 - [API Reference](#api-reference)
 - [AI Gateway](#ai-gateway)
 - [Architecture Notes](#architecture-notes)
+- [Performance Optimizations](#performance-optimizations)
+- [Mobile Responsiveness](#mobile-responsiveness)
 - [Testing](#testing)
 - [Contributing](#contributing)
 - [License](#license)
@@ -60,12 +65,15 @@ brainpilot/
 │   │   ├── components/         Shared UI components (shadcn/ui)
 │   │   ├── hooks/              Domain-specific API hooks
 │   │   ├── pages/              Route-level page components
-│   │   ├── store/              Zustand global state
+│   │   ├── lib/                Utilities (API client, auth, error handling)
 │   │   └── types/              TypeScript interfaces
 │   ├── public/                 Static assets
 │   ├── package.json            Frontend dependencies
-│   └── vite.config.ts          Vite configuration
+│   ├── vite.config.ts          Vite configuration with code splitting
+│   ├── vercel.json             Vercel deployment config
+│   └── .env.example            Frontend environment variables template
 │
+
 ├── backend/                    Django 6 + DRF API
 │   ├── ai/                     Multi-provider AI gateway
 │   │   ├── gateway.py          Core routing, failover, health tracking
@@ -76,11 +84,11 @@ brainpilot/
 │   │   └── exceptions.py       AI-specific exceptions
 │   │
 │   ├── apps/                   Feature applications
-│   │   ├── accounts/           Auth, JWT, user profiles
+│   │   ├── accounts/           Auth, JWT, user profiles, avatar upload
 │   │   │   ├── models.py        User, UserProfile models
 │   │   │   ├── serializers.py   DRF serializers
 │   │   │   ├── views.py         API views with Swagger docs
-│   │   │   ├── services.py      Business logic
+│   │   │   ├── services.py      Business logic with error logging
 │   │   │   └── urls.py          URL routing
 │   │   ├── planner/            AI study plans + sessions
 │   │   ├── goals/              Learning goals
@@ -92,7 +100,7 @@ brainpilot/
 │   │   ├── analytics/          Study trend queries (no models)
 │   │   ├── productivity/       Pomodoro, focus logs, streaks
 │   │   ├── pdfs/               PDF upload + processing
-│   │   ├── dashboard/          Summary view
+│   │   ├── dashboard/          Summary view with optimized queries
 │   │   └── notifications/      In-app alerts
 │   │
 │   ├── common/                 Shared utilities
@@ -106,7 +114,7 @@ brainpilot/
 │   │   ├── settings/
 │   │   │   ├── base.py         Base settings
 │   │   │   ├── development.py  Development overrides
-│   │   │   ├── production.py   Production settings
+│   │   │   ├── production.py   Production settings with security
 │   │   │   └── test.py         Test settings
 │   │   ├── urls.py             Root URL configuration
 │   │   ├── celery.py           Celery configuration
@@ -128,18 +136,53 @@ brainpilot/
 │   ├── docker-compose.yml      Docker services
 │   └── pyproject.toml          Project configuration
 │
+
 ├── .github/                    GitHub CI/CD
 │   └── workflows/
-│       └── main.yml            CI/CD pipeline
+│       └── ci.yml              CI/CD pipeline
 │
+
 ├── docs/                       Documentation
-│   └── testing/
-│       └── guide.md           Testing strategy
+│   ├── AI_PROVIDERS.md         AI provider system documentation
+│   └── DEPLOYMENT.md           Deployment guide
 │
+
 ├── README.md                   Project documentation
 ├── .gitignore                  Git ignore rules
 └── render.yaml                 Render deployment config
 ```
+
+## Deployment
+
+BrainPilot AI is deployed on free hosting platforms:
+
+### Production URLs
+- **Frontend:** https://brain-pilot-ai-frontend-ifvm.vercel.app
+- **Backend:** https://brainpilot-api-vazj.onrender.com
+
+### Hosting Services
+| Service | Platform | Purpose |
+|---------|----------|---------|
+| Frontend | Vercel | React application hosting |
+| Backend | Render | Django API server |
+| Database | Neon | PostgreSQL database |
+| Cache/Queue | Upstash | Redis for caching and Celery |
+
+### Deployment Configuration
+
+**Frontend (Vercel):**
+- Build command: `pnpm install && pnpm run build`
+- Output directory: `dist/public`
+- Environment variable: `VITE_API_URL=https://brainpilot-api-vazj.onrender.com/api/v1`
+
+**Backend (Render):**
+- Build command: `pip install uv && uv sync && python manage.py migrate`
+- Start command: `gunicorn config.wsgi:application`
+- Environment variables configured in Render dashboard
+
+### Quick Deployment Guide
+
+For detailed deployment instructions, see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Local Development Setup
 
@@ -338,6 +381,54 @@ Request → Gemini (primary)
 - **Analytics** — has no models; queries cross-app tables at runtime
 - **Auto-verify in development** — email verification is skipped in `DEBUG=True` so you can sign up and immediately sign in
 - **API Documentation** — Comprehensive Swagger/OpenAPI documentation via `drf-spectacular` with all endpoints documented
+- **Error Logging** — Comprehensive error logging for avatar uploads and AI operations for debugging production issues
+
+## Performance Optimizations
+
+### Frontend Optimizations
+- **Code Splitting:** Vite configuration splits vendor chunks (React, UI, editor, charts, markdown) for optimal caching
+- **Lazy Loading:** All pages use React.lazy() with Suspense boundaries for on-demand loading
+- **Build Optimizations:**
+  - Terser minification with console.log removal in production
+  - ESNext target for modern JavaScript optimization
+  - Proper asset naming with hashes for long-term caching
+- **Query Optimization:** TanStack Query with 30-second stale time and disabled refetch on window focus
+- **API Client:** Axios with automatic retry on 401 errors and JWT token refresh
+
+### Backend Optimizations
+- **Database Query Optimization:**
+  - Dashboard service uses `only()` to fetch only required fields
+  - AI suggestions only generated when user has active goals or due revisions
+  - Select-related queries to reduce N+1 query problems
+- **Connection Pooling:** PostgreSQL connection pooling with 10-minute connection age
+- **Caching:** Redis caching with 5-second socket timeouts for fast cache access
+- **Static Files:** WhiteNoise with compressed manifest for efficient static file serving
+- **Rate Limiting:** Configured rate limits per endpoint to prevent abuse
+
+## Mobile Responsiveness
+
+The application is fully responsive and optimized for mobile devices:
+
+### Responsive Design Features
+- **Mobile-First Approach:** All pages use responsive breakpoints (sm, md, lg, xl)
+- **Adaptive Layouts:**
+  - Auth pages with compact card layouts on mobile
+  - Dashboard with responsive KPI grids and chart heights
+  - Navigation with mobile menu toggle
+  - Tables and cards that adapt to screen size
+- **Touch-Friendly UI:**
+  - Minimum 44px touch targets for buttons
+  - Proper spacing for touch interactions
+  - Responsive font sizes and padding
+- **Performance on Mobile:**
+  - Optimized bundle sizes with code splitting
+  - Lazy loading reduces initial load time
+  - Efficient API calls to minimize data transfer
+
+### Mobile Breakpoints
+- Mobile: < 640px (sm)
+- Tablet: 640px - 1024px (md, lg)
+- Desktop: > 1024px (xl)
 
 ## Testing
 

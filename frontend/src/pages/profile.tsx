@@ -14,7 +14,7 @@ import {
   getUserInitials,
   type AvatarPresetId,
 } from "@/lib/avatar-presets";
-import { Camera, Trash2, ImageIcon } from "lucide-react";
+import { Camera, Trash2, ImageIcon, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getApiErrorMessage } from "@/lib/api-error";
 
@@ -25,6 +25,8 @@ export default function Profile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedPreset, setSelectedPreset] = useState<AvatarPresetId>(DEFAULT_AVATAR_PRESET);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [profileData, setProfileData] = useState({
     first_name: "",
     last_name: "",
@@ -364,23 +366,45 @@ export default function Profile() {
           <form onSubmit={handlePasswordChange} className="space-y-4 max-w-sm">
             <div className="space-y-2">
               <Label>Current Password</Label>
-              <Input
-                type="password"
-                value={pwdData.current_password}
-                onChange={(e) => setPwdData({ ...pwdData, current_password: e.target.value })}
-                autoComplete="current-password"
-                required
-              />
+              <div className="relative">
+                <Input
+                  type={showCurrentPassword ? "text" : "password"}
+                  value={pwdData.current_password}
+                  onChange={(e) => setPwdData({ ...pwdData, current_password: e.target.value })}
+                  autoComplete="current-password"
+                  required
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                >
+                  {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>New Password</Label>
-              <Input
-                type="password"
-                value={pwdData.new_password}
-                onChange={(e) => setPwdData({ ...pwdData, new_password: e.target.value })}
-                autoComplete="new-password"
-                required
-              />
+              <div className="relative">
+                <Input
+                  type={showNewPassword ? "text" : "password"}
+                  value={pwdData.new_password}
+                  onChange={(e) => setPwdData({ ...pwdData, new_password: e.target.value })}
+                  autoComplete="new-password"
+                  required
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                >
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <Button type="submit" variant="secondary" disabled={changePassword.isPending}>
               {changePassword.isPending ? "Updating…" : "Update Password"}

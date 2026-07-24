@@ -489,6 +489,9 @@ class ProfileAvatarView(APIView):
             profile = UserProfileService.set_avatar_upload(request.user, uploaded)
         except AppError as exc:
             return error_response(str(exc.message), status_code=exc.status_code)
+        except Exception as e:
+            logger.error(f"Unexpected error during avatar upload for user {request.user.email}: {str(e)}", exc_info=True)
+            return error_response("An unexpected error occurred. Please try again.", status_code=500)
         return success_response(
             data=UserProfileSerializer(profile, context={"request": request}).data,
             message="Profile photo updated.",

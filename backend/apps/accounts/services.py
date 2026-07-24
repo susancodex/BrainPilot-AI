@@ -181,18 +181,25 @@ class UserProfileService:
     @staticmethod
     def set_avatar_upload(user: User, uploaded_file) -> UserProfile:
         if not UserProfileService._avatar_is_allowed(uploaded_file):
+            logger.warning(f"Invalid avatar file type for user {user.email}: {uploaded_file.name}")
             raise AppError("Avatar must be a JPEG, PNG, or WebP image.")
 
         if uploaded_file.size > UserProfileService.MAX_AVATAR_BYTES:
+            logger.warning(f"Avatar file too large for user {user.email}: {uploaded_file.size} bytes")
             raise AppError("Avatar must be 2 MB or smaller.")
 
-        profile = UserProfileService.get_or_create_profile(user)
-        if profile.avatar:
-            profile.avatar.delete(save=False)
-        profile.avatar = uploaded_file
-        profile.avatar_preset = ""
-        profile.save(update_fields=["avatar", "avatar_preset", "updated_at"])
-        return profile
+        try:
+            profile = UserProfileService.get_or_create_profile(user)
+            if profile.avatar:
+                profile.avatar.delete(save=False)
+            profile.avatar = uploaded_file
+            profile.avatar_preset = ""
+            profile.save(update_fields=["avatar", "avatar_preset", "updated_at"])
+            logger.info(f"Avatar uploaded successfully for user {user.email}")
+            return profile
+        except Exception as e:
+            logger.error(f"Failed to save avatar for user {user.email}: {str(e)}", exc_info=True)
+            raise AppError("Failed to save avatar. Please try again.")
 
     @staticmethod
     def clear_avatar(user: User) -> UserProfile:

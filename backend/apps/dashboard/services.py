@@ -44,9 +44,13 @@ class DashboardService:
 
         recent_activity = DashboardService._build_recent_activity(user)
         upcoming_sessions = DashboardService._build_upcoming_sessions(user, today)
-        ai_suggestion = DashboardService._build_ai_suggestion(
-            user, streak, active_goals, due_revisions
-        )
+        
+        # Only call AI suggestion if there are active goals or due revisions
+        ai_suggestion = None
+        if active_goals > 0 or due_revisions > 0 or streak.current_streak > 0:
+            ai_suggestion = DashboardService._build_ai_suggestion(
+                user, streak, active_goals, due_revisions
+            )
 
         return {
             "streak": streak.current_streak,
@@ -73,7 +77,8 @@ class DashboardService:
 
         activities = []
 
-        for log in FocusLog.objects.filter(user=user).order_by("-date")[:3]:
+        # Use only() to fetch only needed fields
+        for log in FocusLog.objects.filter(user=user).only('date', 'focus_minutes', 'subjects_studied').order_by("-date")[:3]:
             subjects = ", ".join(log.subjects_studied) if log.subjects_studied else "study"
             ts = datetime.combine(log.date, datetime.min.time(), tzinfo=dt_timezone.utc)
             activities.append({
@@ -83,7 +88,7 @@ class DashboardService:
                 "_ts": ts,
             })
 
-        for attempt in QuizAttempt.objects.filter(user=user, completed=True).select_related("quiz").order_by("-created_at")[:3]:
+        for attempt in QuizAttempt.objects.filter(user=user, completed=True).select_related("quiz").only('created_at', 'percentage', 'quiz__subject').order_by("-created_at")[:3]:
             activities.append({
                 "description": f"Completed {attempt.quiz.subject} quiz — {attempt.percentage:.0f}%",
                 "time": attempt.created_at.strftime("%b %d"),
@@ -91,7 +96,7 @@ class DashboardService:
                 "_ts": attempt.created_at,
             })
 
-        for note in Note.objects.filter(user=user).order_by("-updated_at")[:2]:
+        for note in Note.objects.filter(user=user).only('title', 'updated_at').order_by("-updated_at")[:2]:
             activities.append({
                 "description": f"Updated note: {note.title}",
                 "time": note.updated_at.strftime("%b %d"),
@@ -114,7 +119,9 @@ class DashboardService:
             scheduled_date__gte=today,
             scheduled_date__lte=today + timedelta(days=7),
             status="scheduled",
-        ).select_related("plan").order_by("scheduled_date", "start_time")[:5]
+        ).select_related("plan").only(
+            'id', 'subject', 'topic', 'scheduled_date', 'start_time', 'end_time', 'status', 'duration_minutes'
+        ).order_by("scheduled_date", "start_time")[:5]
 
         return [
             {

@@ -272,9 +272,15 @@ Copy `backend/.env.example` to `backend/.env` and configure the following:
 
 All endpoints are under `/api/v1/`. Interactive documentation is available via:
 
+**Local Development:**
 - **Swagger UI**: `http://localhost:8000/api/docs/`
 - **ReDoc**: `http://localhost:8000/api/redoc/`
 - **OpenAPI Schema**: `http://localhost:8000/api/schema/`
+
+**Production:**
+- **Swagger UI**: `https://brainpilot-api-vazj.onrender.com/api/docs/`
+- **ReDoc**: `https://brainpilot-api-vazj.onrender.com/api/redoc/`
+- **OpenAPI Schema**: `https://brainpilot-api-vazj.onrender.com/api/schema/`
 
 The API documentation is powered by `drf-spectacular` and provides comprehensive Swagger/OpenAPI specifications for all endpoints, including request/response schemas, authentication requirements, and example usage.
 

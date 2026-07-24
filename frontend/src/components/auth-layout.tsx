@@ -29,7 +29,7 @@ export function AuthLayout({ title, description, children, footer }: AuthLayoutP
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-6xl gap-12 px-6 py-16 sm:px-8 lg:grid-cols-2 lg:gap-16 lg:py-24">
+      <div className="mx-auto grid max-w-6xl gap-12 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-2 lg:gap-16 lg:py-24">
         <section className="hidden lg:flex flex-col justify-center space-y-8">
           <div>
             <h1 className="text-4xl font-semibold tracking-tight text-foreground xl:text-5xl">
@@ -50,14 +50,14 @@ export function AuthLayout({ title, description, children, footer }: AuthLayoutP
         </section>
 
         <section className="mx-auto w-full max-w-md lg:max-w-none">
-          <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
-            <div className="mb-8 lg:hidden">
+          <div className="rounded-lg border border-border bg-card p-4 sm:p-6 md:p-8">
+            <div className="mb-6 lg:hidden">
               <BrandMark compact subtitle="Study workspace" />
             </div>
-            <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
-            <p className="mt-2 text-base text-muted-foreground">{description}</p>
-            <div className="mt-8">{children}</div>
-            <div className="mt-6 text-center text-base">{footer}</div>
+            <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">{title}</h2>
+            <p className="mt-2 text-sm text-muted-foreground sm:text-base">{description}</p>
+            <div className="mt-6 sm:mt-8">{children}</div>
+            <div className="mt-4 text-center text-sm sm:mt-6 sm:text-base">{footer}</div>
           </div>
         </section>
       </div>

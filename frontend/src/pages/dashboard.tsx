@@ -130,38 +130,40 @@ export default function Dashboard() {
   const todayHours = ((s?.today_focus_minutes ?? 0) / 60).toFixed(1);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6">
 
       {/* ── Header banner ─────────────────────────────────────────────────── */}
-      <div className="rounded-lg border border-border bg-card px-6 py-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="rounded-lg border border-border bg-card px-4 py-4 sm:px-6 sm:py-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="min-w-0">
-            <h1 className="flex flex-wrap items-center gap-3 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+            <h1 className="flex flex-wrap items-center gap-2 text-xl font-semibold tracking-tight text-foreground sm:gap-3 sm:text-2xl sm:text-3xl">
               {getGreeting(user?.first_name ?? user?.full_name)}
               {(streak?.current_streak ?? 0) > 0 && (
-                <span className="inline-flex items-center gap-2 text-xl font-semibold">
-                  <Flame className="h-5 w-5 fill-current" />
+                <span className="inline-flex items-center gap-1.5 text-lg font-semibold sm:gap-2 sm:text-xl">
+                  <Flame className="h-4 w-4 fill-current sm:h-5 sm:w-5" />
                   {streak?.current_streak}
                 </span>
               )}
             </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">
               {s?.due_revisions
                 ? `You have ${s.due_revisions} revision${s.due_revisions > 1 ? "s" : ""} due today.`
                 : "You're all caught up — keep the streak going!"}
             </p>
           </div>
           <div className="flex shrink-0 gap-2">
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="sm" asChild className="h-9 sm:h-10">
               <Link href="/chat">
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Ask AI
+                <MessageSquare className="mr-1.5 h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Ask AI</span>
+                <span className="sm:hidden">AI</span>
               </Link>
             </Button>
-            <Button asChild>
+            <Button size="sm" asChild className="h-9 sm:h-10">
               <Link href="/productivity">
-                <Play className="mr-2 h-4 w-4 fill-current" />
-                Focus now
+                <Play className="mr-1.5 h-4 w-4 fill-current sm:mr-2" />
+                <span className="hidden sm:inline">Focus now</span>
+                <span className="sm:hidden">Focus</span>
               </Link>
             </Button>
           </div>
@@ -169,7 +171,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── KPI row ───────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard
           title="Streak"
           value={`${s?.streak ?? 0}d`}
@@ -205,15 +207,15 @@ export default function Dashboard() {
       </div>
 
       {/* ── Charts row ────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
 
         {/* Weekly bar chart */}
         <Card className="border-border lg:col-span-2">
-          <CardHeader className="px-6 pb-4 pt-6">
+          <CardHeader className="px-4 pb-3 pt-4 sm:px-6 sm:pb-4 sm:pt-6">
             <SectionHeader icon={BarChart2} title="Weekly Study Hours" href="/analytics" />
           </CardHeader>
-          <CardContent className="px-6 pb-6">
-            <div className="h-72">
+          <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6">
+            <div className="h-56 sm:h-72">
               {trendsLoading ? (
                 <Skeleton className="h-full w-full rounded" />
               ) : (
@@ -240,7 +242,7 @@ export default function Dashboard() {
                         borderRadius: 8,
                         border: "1px solid hsl(var(--border))",
                         background: "hsl(var(--card))",
-                        fontSize: 13,
+                        fontSize: 12,
                       }}
                       formatter={(v: number) => [`${v}h`, "Study time"]}
                     />
@@ -254,11 +256,11 @@ export default function Dashboard() {
 
         {/* Subject donut */}
         <Card className="border-border">
-          <CardHeader className="px-6 pb-4 pt-6">
+          <CardHeader className="px-4 pb-3 pt-4 sm:px-6 sm:pb-4 sm:pt-6">
             <SectionHeader icon={BookOpen} title="Subject Breakdown" />
           </CardHeader>
-          <CardContent className="flex flex-col items-center px-6 pb-6">
-            <div className="h-72 w-full">
+          <CardContent className="flex flex-col items-center px-4 pb-4 sm:px-6 sm:pb-6">
+            <div className="h-56 w-full sm:h-72">
               {subjectsLoading ? (
                 <Skeleton className="h-full w-full rounded" />
               ) : (subjects as SubjectBreakdown[] | undefined)?.length ? (
@@ -281,15 +283,15 @@ export default function Dashboard() {
                           borderRadius: 8,
                           border: "1px solid hsl(var(--border))",
                           background: "hsl(var(--card))",
-                          fontSize: 13,
+                          fontSize: 12,
                         }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
-                  <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2">
+                  <div className="mt-3 flex flex-wrap justify-center gap-x-3 gap-y-1.5 sm:mt-4 sm:gap-x-4 sm:gap-y-2">
                     {(subjects as SubjectBreakdown[]).slice(0, 4).map((sub, i) => (
-                      <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <div className={cn("h-2.5 w-2.5 shrink-0 rounded-full", CHART_DOT_CLASSES[i % CHART_DOT_CLASSES.length])} />
+                      <div key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm sm:gap-2">
+                        <div className={cn("h-2 w-2 shrink-0 rounded-full sm:h-2.5 sm:w-2.5", CHART_DOT_CLASSES[i % CHART_DOT_CLASSES.length])} />
                         {sub.name}
                       </div>
                     ))}
@@ -297,8 +299,8 @@ export default function Dashboard() {
                 </>
               ) : (
                 <div className="flex h-full flex-col items-center justify-center text-center text-muted-foreground">
-                  <BookOpen className="mb-3 h-10 w-10 text-border" />
-                  <p className="text-sm">Start studying to see your breakdown</p>
+                  <BookOpen className="mb-2 h-8 w-8 text-border sm:mb-3 sm:h-10 sm:w-10" />
+                  <p className="text-xs sm:text-sm">Start studying to see your breakdown</p>
                 </div>
               )}
             </div>
@@ -307,56 +309,57 @@ export default function Dashboard() {
       </div>
 
       {/* ── Bottom row ────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
 
         {/* Recent activity */}
         <Card className="border-border lg:col-span-2">
-          <CardHeader className="px-6 pb-4 pt-6">
+          <CardHeader className="px-4 pb-3 pt-4 sm:px-6 sm:pb-4 sm:pt-6">
             <SectionHeader icon={TrendingUp} title="Recent Activity" />
           </CardHeader>
-          <CardContent className="px-6 pb-6">
+          <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6">
             {s?.recent_activity?.length ? (
-              <ul className="space-y-4">
+              <ul className="space-y-3 sm:space-y-4">
                 {s.recent_activity.slice(0, 6).map((activity, i) => (
-                  <li key={i} className="flex min-w-0 items-start gap-4">
-                    <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary/80" />
-                    <span className="min-w-0 flex-1 break-words text-sm text-foreground">
+                  <li key={i} className="flex min-w-0 items-start gap-3 sm:gap-4">
+                    <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/80 sm:mt-2 sm:h-2 sm:w-2" />
+                    <span className="min-w-0 flex-1 break-words text-xs text-foreground sm:text-sm">
                       {activity.description}
                     </span>
-                    <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+                    <span className="shrink-0 whitespace-nowrap text-[10px] text-muted-foreground sm:text-xs">
                       {activity.time}
                     </span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-                <Calendar className="mb-4 h-10 w-10 text-border" />
-                <p className="text-sm">No activity yet — start a session to see it here.</p>
+              <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground sm:py-12">
+                <Calendar className="mb-3 h-8 w-8 text-border sm:mb-4 sm:h-10 sm:w-10" />
+                <p className="text-xs sm:text-sm">No activity yet — start a session to see it here.</p>
               </div>
             )}
           </CardContent>
         </Card>
 
         {/* Right column: AI suggestion + quick actions */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
 
           {/* AI suggestion */}
           <Card className="border-primary/20 bg-primary/[0.02]">
-            <CardHeader className="px-6 pb-3 pt-6">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-primary">
-                <Sparkles className="h-4 w-4" />
+            <CardHeader className="px-4 pb-2 pt-4 sm:px-6 sm:pb-3 sm:pt-6">
+              <CardTitle className="flex items-center gap-2 text-xs font-semibold text-primary sm:text-sm">
+                <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 AI Suggestion
               </CardTitle>
             </CardHeader>
-            <CardContent className="px-6 pb-6">
-              <p className="text-sm leading-relaxed text-foreground">
+            <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6">
+              <p className="text-xs leading-relaxed text-foreground sm:text-sm">
                 {s?.ai_suggestion ?? "Great consistency! Keep reviewing your topics and stay ahead of your goals."}
               </p>
-              <Button variant="outline" size="sm" asChild className="mt-4 w-full border-primary/20">
+              <Button variant="outline" size="sm" asChild className="mt-3 w-full border-primary/20 h-9 sm:mt-4 sm:h-10">
                 <Link href="/chat">
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Discuss with AI
+                  <MessageSquare className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Discuss with AI</span>
+                  <span className="sm:hidden">Discuss</span>
                 </Link>
               </Button>
             </CardContent>
@@ -364,10 +367,10 @@ export default function Dashboard() {
 
           {/* Quick actions */}
           <Card className="border-border">
-            <CardHeader className="px-6 pb-3 pt-6">
-              <CardTitle className="text-sm font-semibold text-foreground">Quick actions</CardTitle>
+            <CardHeader className="px-4 pb-2 pt-4 sm:px-6 sm:pb-3 sm:pt-6">
+              <CardTitle className="text-xs font-semibold text-foreground sm:text-sm">Quick actions</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3 px-6 pb-6">
+            <CardContent className="grid grid-cols-2 gap-2 px-4 pb-4 sm:gap-3 sm:px-6 sm:pb-6">
               {[
                 { label: "New Note",   icon: FileText, href: "/notes",     color: "text-slate-600" },
                 { label: "Flashcards", icon: Layers,   href: "/flashcards", color: "text-amber-600" },
@@ -379,11 +382,11 @@ export default function Dashboard() {
                   variant="outline"
                   size="sm"
                   asChild
-                  className="flex h-auto min-h-[72px] flex-col gap-2 border-border py-4"
+                  className="flex h-auto min-h-[60px] flex-col gap-1.5 border-border py-3 sm:min-h-[72px] sm:gap-2 sm:py-4"
                 >
                   <Link href={href}>
-                    <Icon className={cn("h-5 w-5", color)} />
-                    <span className="text-xs font-medium">{label}</span>
+                    <Icon className={cn("h-4 w-4", color)} />
+                    <span className="text-[10px] font-medium sm:text-xs">{label}</span>
                   </Link>
                 </Button>
               ))}

@@ -25,6 +25,7 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: false,
     minify: "terser",
+    target: "esnext",
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -89,10 +90,20 @@ export default defineConfig({
             return "vendor-misc";
           }
         },
+        chunkFileNames: "assets/[name]-[hash].js",
+        entryFileNames: "assets/[name]-[hash].js",
+        assetFileNames: "assets/[name]-[hash].[ext]",
       },
     },
     // Raise the warning threshold — per-chunk warnings are now meaningful
     chunkSizeWarningLimit: 600,
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        pure_funcs: ["console.log"],
+      },
+    },
   },
   server: {
     port,
